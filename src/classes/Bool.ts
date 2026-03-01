@@ -12,18 +12,19 @@ export const Bool = class Bool implements MpClassInterface<boolean> {
      * @default false
      *
      * @example new Bool(); // creates a boolean wrapper and defaults to `false`
-     * @example new Bool(false); // wraps a `false` boolean value
+     * @example new Bool(false); // wraps a `false` boolean
      */
     constructor(data?: boolean);
 
-    /** Interprets the first byte (derived from `Uint8Array.byteOffset`) from a buffer to a MessagePack boolean wrapper.
+    /** Interprets the first bytes (derived from `Uint8Array.byteOffset`) from a buffer to a MessagePack boolean wrapper.
      *
-     * @example new Bool(new Uint8Array([0x00])); // interprets the falsy first byte (`0x00`) as `false`
-     * @example new Bool(new Uint8Array([0x01, 0x02, 0x03])); // interprets the truthy first byte (`0x01`) as `true`
+     * @example new Bool(new Uint8Array([0x00])); // interprets the falsy byte (`0x00`) as `false`
+     * @example new Bool(new Uint8Array([0x01, 0x02, 0x03])); // interprets the truthy byte (`0x01`) as `true`
      *
      * @example new Bool(new Uint8Array()); // interprets an empty buffer as `false`
      */
     constructor(bfr: Uint8Array);
+
     constructor(a: boolean | Uint8Array = false) {
         this.#nullable = false;
         this.#isNull = false;
@@ -52,21 +53,22 @@ export const Bool = class Bool implements MpClassInterface<boolean> {
      *
      * @default null
      *
-     * @example new Bool(); // creates a nullable boolean wrapper and defaults to `null`
-     * @example new Bool(null); // wraps `null` and allow it to be upgraded to a boolean
+     * @example Bool.nullable(); // creates a nullable boolean wrapper and defaults to `null`
+     * @example Bool.nullable(null); // wraps `null` and allow it to be upgraded to a boolean
      *
-     * @example new Bool(false); // wraps a `false` boolean value
+     * @example Bool.nullable(false); // wraps a `false` boolean
      */
     static nullable(data?: boolean | null): MpClassInterface<boolean | null>;
 
-    /** Interprets the first byte (derived from `Uint8Array.byteOffset`) from a buffer to a MessagePack nullable boolean wrapper.
+    /** Interprets the first bytes (derived from `Uint8Array.byteOffset`) from a buffer to a MessagePack nullable boolean wrapper.
      *
-     * @example new Bool(new Uint8Array([0x00])); // interprets the falsy first byte (`0x00`) as `false`
-     * @example new Bool(new Uint8Array([0x01, 0x02, 0x03])); // interprets the truthy first byte (`0x01`) as `true`
+     * @example Bool.nullable(new Uint8Array([0x00])); // interprets the falsy byte (`0x00`) as `false`
+     * @example Bool.nullable(new Uint8Array([0x01, 0x02, 0x03])); // interprets the truthy byte (`0x01`) as `true`
      *
-     * @example new Bool(new Uint8Array()); // interprets an empty buffer as `null`
+     * @example Bool.nullable(new Uint8Array()); // interprets an empty buffer as `null`
      */
     static nullable(bfr: Uint8Array): MpClassInterface<boolean | null>;
+
     static nullable(a: boolean | null | Uint8Array = null): MpClassInterface<boolean | null> {
         let isNull: boolean;
 
@@ -75,7 +77,10 @@ export const Bool = class Bool implements MpClassInterface<boolean> {
 
             const byte = bfr[bfr.byteOffset];
             isNull = byte === undefined;
-        } else isNull = Object.is(a, null);
+        } else {
+            const data = a;
+            isNull = Object.is(data, null);
+        }
 
         const bool = isNull ? new Bool() : new Bool(<boolean>a);
         bool.#nullable = true;
@@ -89,6 +94,7 @@ export const Bool = class Bool implements MpClassInterface<boolean> {
 
     /** Sets a new boolean value and wrap it. */
     raw(data: boolean): void;
+
     raw(data?: boolean): boolean | void {
         if (data === undefined && arguments.length === 0) return this.#state;
 
@@ -96,11 +102,11 @@ export const Bool = class Bool implements MpClassInterface<boolean> {
 
         if (Bool.isRawValid(data)) {
             this.#state = data;
-            if (this.#nullable) this.#isNull = false;
-        } else throw new TypeError(`Invalid value was passed into Bool. Did not expect ${toLegible(data)}.`);
+            this.#isNull = false;
+        } else throw new TypeError(`Invalid value was passed into \`Bool\`. Did not expect ${toLegible(data)}.`);
     }
 
-    /** Encodes the wrapped boolean value and converts it to a MessagePack chunk. */
+    /** Encodes the wrapped boolean and converts it to a MessagePack chunk. */
     encode(): Uint8Array {
         return new Uint8Array([
             this.#nullable && this.#isNull
@@ -119,7 +125,7 @@ export const Bool = class Bool implements MpClassInterface<boolean> {
         if (code === 0xc2) return new Bool(false);
         if (code === 0xc3) return new Bool(true );
 
-        throw new TypeError(`Invalid chunk header for Bool. Did not expect ${toLegible(code, true)}.`);
+        throw new TypeError(`Invalid chunk header for \`Bool\`. Did not expect ${toLegible(code, true)}.`);
     }
 
     /** Checks whether a value is valid for a Bool. */
