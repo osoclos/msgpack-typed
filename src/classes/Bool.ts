@@ -13,6 +13,7 @@ export const Bool = class Bool implements MpClassInterface<boolean> {
      *
      * @example new Bool(); // creates a boolean wrapper and defaults to `false`
      * @example new Bool(false); // wraps a `false` boolean
+     *
      */
     constructor(data?: boolean);
 
@@ -22,6 +23,7 @@ export const Bool = class Bool implements MpClassInterface<boolean> {
      * @example new Bool(new Uint8Array([0x01, 0x02, 0x03])); // interprets the truthy byte (`0x01`) as `true`
      *
      * @example new Bool(new Uint8Array()); // interprets an empty buffer as `false`
+     *
      */
     constructor(bfr: Uint8Array);
 
@@ -57,6 +59,7 @@ export const Bool = class Bool implements MpClassInterface<boolean> {
      * @example Bool.nullable(null); // wraps `null` and allow it to be upgraded to a boolean
      *
      * @example Bool.nullable(false); // wraps a `false` boolean
+     *
      */
     static nullable(data?: boolean | null): MpClassInterface<boolean | null>;
 
@@ -66,6 +69,7 @@ export const Bool = class Bool implements MpClassInterface<boolean> {
      * @example Bool.nullable(new Uint8Array([0x01, 0x02, 0x03])); // interprets the truthy byte (`0x01`) as `true`
      *
      * @example Bool.nullable(new Uint8Array()); // interprets an empty buffer as `null`
+     *
      */
     static nullable(bfr: Uint8Array): MpClassInterface<boolean | null>;
 
@@ -96,7 +100,7 @@ export const Bool = class Bool implements MpClassInterface<boolean> {
     raw(data: boolean): void;
 
     raw(data?: boolean): boolean | void {
-        if (data === undefined && arguments.length === 0) return this.#state;
+        if (data === undefined && arguments.length === 0) return this.#nullable && this.#isNull ? <boolean><unknown>null : this.#state;
 
         if (this.#nullable && Object.is(data, null)) this.#isNull = true;
 
