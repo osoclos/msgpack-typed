@@ -133,18 +133,6 @@ export const Flt = class Flt implements MpClassInterface<number> {
         return bfr;
     }
 
-    /** Allows this wrapper to have `null` as a value */
-    makeNullable(): this is MpClassInterface<number | null> {
-        this.#nullable = true;
-        return true;
-    }
-
-    /** Denies this wrapper of having `null` as a value */
-    makeRequired(): this is MpClassInterface<number> {
-        this.#nullable = false;
-        return true;
-    }
-
     /** Decodes a float MessagePack chunk, validates it and parses it to a Flt. */
     static decode(chunk: Uint8Array): Flt {
         const code = chunk[chunk.byteOffset];

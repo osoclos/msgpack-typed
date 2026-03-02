@@ -180,18 +180,6 @@ export const Uint = class Uint implements MpClassInterface<number | bigint> {
         return chunk;
     }
 
-    /** Allows this wrapper to have `null` as a value */
-    makeNullable(): this is MpClassInterface<number | bigint | null> {
-        this.#nullable = true;
-        return true;
-    }
-
-    /** Denies this wrapper of having `null` as a value */
-    makeRequired(): this is MpClassInterface<number | bigint> {
-        this.#nullable = false;
-        return true;
-    }
-
     /** Decodes an unsigned integer MessagePack chunk, validates it and parses it to an Uint. */
     static decode(chunk: Uint8Array): Uint {
         const code = chunk[chunk.byteOffset];

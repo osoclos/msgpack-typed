@@ -121,18 +121,6 @@ export const Bool = class Bool implements MpClassInterface<boolean> {
         ]);
     }
 
-    /** Allows this wrapper to have `null` as a value */
-    makeNullable(): this is MpClassInterface<boolean | null> {
-        this.#nullable = true;
-        return true;
-    }
-
-    /** Denies this wrapper of having `null` as a value */
-    makeRequired(): this is MpClassInterface<boolean> {
-        this.#nullable = false;
-        return true;
-    }
-
     /** Decodes a boolean MessagePack chunk, validates it and parses it to a Bool. */
     static decode(chunk: Uint8Array): Bool {
         const code = chunk[chunk.byteOffset];

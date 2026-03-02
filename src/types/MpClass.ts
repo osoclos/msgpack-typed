@@ -3,9 +3,6 @@ export interface MpClassInterface<T> {
     raw(data: T): void;
 
     encode(): Uint8Array;
-
-    makeNullable(): this is MpClassInterface<T | null>;
-    makeRequired(): this is MpClassInterface<NonNullable<T>>;
 }
 
 export interface MpClassModule<T> {
