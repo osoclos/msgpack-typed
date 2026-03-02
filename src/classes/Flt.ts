@@ -1,7 +1,7 @@
 import { MpClassImpl, MpClassInterface, MpClassModule } from "../types";
 import { toLegible } from "../utils";
 
-export const Flt = class Flt implements MpClassInterface<number> {
+export const Flt = class Flt implements MpClassInterface<FltPrimitive> {
     #data: number;
 
     #nullable: boolean;
@@ -17,7 +17,7 @@ export const Flt = class Flt implements MpClassInterface<number> {
      * @example new Flt(64); // wraps a `64` integer
      *
      */
-    constructor(data?: number);
+    constructor(data?: FltPrimitive);
 
     /** Interprets the first bytes (derived from `Uint8Array.byteOffset`) from a buffer to a MessagePack float wrapper.
      *
@@ -29,7 +29,7 @@ export const Flt = class Flt implements MpClassInterface<number> {
      */
     constructor(bfr: Uint8Array);
 
-    constructor(a: number | Uint8Array = 0.0) {
+    constructor(a: FltPrimitive | Uint8Array = 0.0) {
         this.#nullable = false;
         this.#isNull = false;
 
@@ -60,7 +60,7 @@ export const Flt = class Flt implements MpClassInterface<number> {
      * @example Flt.nullable(64); // wraps a `64` integer
      *
      */
-    static nullable(data?: number | null): MpClassInterface<number | null>;
+    static nullable(data?: FltPrimitive | null): MpClassInterface<FltPrimitive | null>;
 
     /** Interprets the first bytes (derived from `Uint8Array.byteOffset`) from a buffer to a MessagePack nullable float wrapper.
      *
@@ -70,9 +70,9 @@ export const Flt = class Flt implements MpClassInterface<number> {
      * @example Flt.nullable(new Uint8Array()); // interprets an empty buffer as `null`
      *
      */
-    static nullable(bfr: Uint8Array): MpClassInterface<number | null>;
+    static nullable(bfr: Uint8Array): MpClassInterface<FltPrimitive | null>;
 
-    static nullable(a: number | null | Uint8Array = null): MpClassInterface<number | null> {
+    static nullable(a: FltPrimitive | null | Uint8Array = null): MpClassInterface<FltPrimitive | null> {
         let isNull: boolean;
 
         if (a instanceof Uint8Array) {
@@ -85,7 +85,7 @@ export const Flt = class Flt implements MpClassInterface<number> {
             isNull = Object.is(data, null);
         }
 
-        const flt = isNull ? new Flt() : new Flt(<number>a);
+        const flt = isNull ? new Flt() : new Flt(<FltPrimitive>a);
         flt.#nullable = true;
         flt.#isNull = isNull;
 
@@ -93,13 +93,13 @@ export const Flt = class Flt implements MpClassInterface<number> {
     }
 
     /** Retrieves the wrapped float value. */
-    raw(): number;
+    raw(): FltPrimitive;
 
     /** Sets a new float value and wrap it. */
-    raw(data: number): void;
+    raw(data: FltPrimitive): void;
 
-    raw(data?: number): number | void {
-        if (data === undefined && arguments.length === 0) return this.#nullable && this.#isNull ? <number><unknown>null : this.#data;
+    raw(data?: FltPrimitive): FltPrimitive | void {
+        if (data === undefined && arguments.length === 0) return this.#nullable && this.#isNull ? <FltPrimitive><unknown>null : this.#data;
 
         if (this.#nullable && Object.is(data, null)) this.#isNull = true;
 
@@ -159,7 +159,7 @@ export const Flt = class Flt implements MpClassInterface<number> {
     }
 
     /** Checks whether a value is valid for a Flt. */
-    static isRawValid(data: any): data is number {
+    static isRawValid(data: any): data is FltPrimitive {
         return typeof data === "number";
     }
 
@@ -173,4 +173,7 @@ export const Flt = class Flt implements MpClassInterface<number> {
 
     /** Checks whether a chunk is valid for a Flt. */
     static isChunkValid = MpClassImpl.isChunkValid.bind(Flt);
-} satisfies MpClassModule<number>;
+} satisfies MpClassModule<FltPrimitive>;
+
+export type Flt = typeof Flt;
+export type FltPrimitive = number;

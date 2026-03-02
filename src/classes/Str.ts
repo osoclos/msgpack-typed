@@ -1,7 +1,7 @@
 import { MpClassImpl, MpClassInterface, MpClassModule } from "../types";
 import { toLegible } from "../utils";
 
-export const Str = class Str implements MpClassInterface<string> {
+export const Str = class Str implements MpClassInterface<StrPrimitive> {
     #data: string;
 
     #nullable: boolean;
@@ -18,7 +18,7 @@ export const Str = class Str implements MpClassInterface<string> {
      * @example new Str("foo"); // wraps a "foo" string
      *
      */
-    constructor(data?: string);
+    constructor(data?: StrPrimitive);
 
     /** Interprets the first bytes (derived from `Uint8Array.byteOffset`) from a buffer to a MessagePack string wrapper.
      *
@@ -28,7 +28,7 @@ export const Str = class Str implements MpClassInterface<string> {
      */
     constructor(bfr: Uint8Array);
 
-    constructor(a: string | Uint8Array = "") {
+    constructor(a: StrPrimitive | Uint8Array = "") {
         this.#nullable = false;
         this.#isNull = false;
 
@@ -53,7 +53,7 @@ export const Str = class Str implements MpClassInterface<string> {
      * @example Str.nullable("foo"); // wraps a "foo" string
      *
      */
-    static nullable(data?: string | null): MpClassInterface<string | null>;
+    static nullable(data?: StrPrimitive | null): MpClassInterface<StrPrimitive | null>;
 
     /** Interprets the first bytes (derived from `Uint8Array.byteOffset`) from a buffer to a MessagePack nullable string wrapper.
      *
@@ -61,9 +61,9 @@ export const Str = class Str implements MpClassInterface<string> {
      * @example Str.nullable(new Uint8Array([])); // interprets an empty buffer as `null`
      *
      */
-    static nullable(bfr: Uint8Array): MpClassInterface<string | null>;
+    static nullable(bfr: Uint8Array): MpClassInterface<StrPrimitive | null>;
 
-    static nullable(a: string | null | Uint8Array = null): MpClassInterface<string | null> {
+    static nullable(a: StrPrimitive | null | Uint8Array = null): MpClassInterface<StrPrimitive | null> {
         let isNull: boolean;
 
         if (a instanceof Uint8Array) {
@@ -76,7 +76,7 @@ export const Str = class Str implements MpClassInterface<string> {
             isNull = Object.is(data, null);
         }
 
-        const str = isNull ? new Str() : new Str(<string>a);
+        const str = isNull ? new Str() : new Str(<StrPrimitive>a);
         str.#nullable = true;
         str.#isNull = isNull;
 
@@ -84,13 +84,13 @@ export const Str = class Str implements MpClassInterface<string> {
     }
 
     /** Retrieves the wrapped string value. */
-    raw(): string;
+    raw(): StrPrimitive;
 
     /** Sets a new string value and wrap it. */
-    raw(data: string): void;
+    raw(data: StrPrimitive): void;
 
-    raw(data?: string): string | void {
-        if (data === undefined && arguments.length === 0) return this.#nullable && this.#isNull ? <string><unknown>null : this.#data;
+    raw(data?: StrPrimitive): StrPrimitive | void {
+        if (data === undefined && arguments.length === 0) return this.#nullable && this.#isNull ? <StrPrimitive><unknown>null : this.#data;
 
         if (this.#nullable && Object.is(data, null)) this.#isNull = true;
 
@@ -200,7 +200,7 @@ export const Str = class Str implements MpClassInterface<string> {
     }
 
     /** Checks whether a value is valid for a Str. */
-    static isRawValid(data: any): data is string {
+    static isRawValid(data: any): data is StrPrimitive {
         return typeof data === "string";
     }
 
@@ -217,4 +217,7 @@ export const Str = class Str implements MpClassInterface<string> {
 
     /** Checks whether a chunk is valid for a Str. */
     static isChunkValid = MpClassImpl.isChunkValid.bind(Str);
-} satisfies MpClassModule<string>;
+} satisfies MpClassModule<StrPrimitive>;
+
+export type Str = typeof Str;
+export type StrPrimitive = string;

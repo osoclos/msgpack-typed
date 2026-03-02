@@ -1,7 +1,7 @@
 import { MpClassImpl, MpClassInterface, MpClassModule } from "../types";
 import { toLegible } from "../utils";
 
-export const Int = class Int implements MpClassInterface<number | bigint> {
+export const Int = class Int implements MpClassInterface<IntPrimitive> {
     #data: bigint;
 
     #nullable: boolean;
@@ -19,7 +19,7 @@ export const Int = class Int implements MpClassInterface<number | bigint> {
      * @example new Int(537n); // wraps a `537` positive integer as a bigint
      *
      */
-    constructor(data?: number | bigint);
+    constructor(data?: IntPrimitive);
 
     /** Interprets the first bytes (derived from `Uint8Array.byteOffset`) from a buffer to a MessagePack signed integer wrapper.
      *
@@ -33,7 +33,7 @@ export const Int = class Int implements MpClassInterface<number | bigint> {
      */
     constructor(bfr: Uint8Array);
 
-    constructor(a: number | bigint | Uint8Array = 0) {
+    constructor(a: IntPrimitive | Uint8Array = 0) {
         this.#nullable = false;
         this.#isNull = false;
 
@@ -103,7 +103,7 @@ export const Int = class Int implements MpClassInterface<number | bigint> {
      * @example Int.nullable(537n); // wraps a `537` positive integer as a bigint
      *
      */
-    static nullable(data?: number | bigint | null): MpClassInterface<number | bigint | null>;
+    static nullable(data?: IntPrimitive | null): MpClassInterface<IntPrimitive | null>;
 
     /** Interprets the first bytes (derived from `Uint8Array.byteOffset`) from a buffer to a MessagePack nullable signed integer wrapper.
      *
@@ -115,9 +115,9 @@ export const Int = class Int implements MpClassInterface<number | bigint> {
      * @example Int.nullable(new Uint8Array()); // interprets an empty buffer as `null`
      *
      */
-    static nullable(bfr: Uint8Array): MpClassInterface<number | bigint | null>;
+    static nullable(bfr: Uint8Array): MpClassInterface<IntPrimitive | null>;
 
-    static nullable(a: number | bigint | null | Uint8Array = null): MpClassInterface<number | bigint | null> {
+    static nullable(a: IntPrimitive | null | Uint8Array = null): MpClassInterface<IntPrimitive | null> {
         let isNull: boolean;
 
         if (a instanceof Uint8Array) {
@@ -130,7 +130,7 @@ export const Int = class Int implements MpClassInterface<number | bigint> {
             isNull = Object.is(data, null);
         }
 
-        const int = isNull ? new Int() : new Int(<number | bigint>a);
+        const int = isNull ? new Int() : new Int(<IntPrimitive>a);
         int.#nullable = true;
         int.#isNull = isNull;
 
@@ -138,15 +138,15 @@ export const Int = class Int implements MpClassInterface<number | bigint> {
     }
 
     /** Retrieves the wrapped signed integer value. */
-    raw(): number | bigint;
+    raw(): IntPrimitive;
 
     /** Sets a new signed integer value and wrap it. */
-    raw(data: number | bigint): void;
+    raw(data: IntPrimitive): void;
 
-    raw(data?: number | bigint): number | bigint | void {
+    raw(data?: IntPrimitive): IntPrimitive | void {
         if (data === undefined && arguments.length === 0) return (
             this.#nullable && this.#isNull
-                ? <number | bigint><unknown>null
+                ? <IntPrimitive><unknown>null
                 : Number.MIN_SAFE_INTEGER <= this.#data && this.#data <= Number.MAX_SAFE_INTEGER
                     ? Number(this.#data)
                     : this.#data
@@ -261,7 +261,7 @@ export const Int = class Int implements MpClassInterface<number | bigint> {
     }
 
     /** Checks whether a value is valid for an Int. */
-    static isRawValid(data: any): data is number | bigint {
+    static isRawValid(data: any): data is IntPrimitive {
         return ((typeof data === "number" && Number.isInteger(data)) || typeof data === "bigint") && data >= -0x8000_0000_0000_0000n && data <= 0x7fff_ffff_ffff_ffffn;
     }
 
@@ -279,4 +279,7 @@ export const Int = class Int implements MpClassInterface<number | bigint> {
 
     /** Checks whether a chunk is valid for an Int. */
     static isChunkValid = MpClassImpl.isChunkValid.bind(Int);
-} satisfies MpClassModule<number | bigint>;
+} satisfies MpClassModule<IntPrimitive>;
+
+export type Int = typeof Int;
+export type IntPrimitive = number | bigint;

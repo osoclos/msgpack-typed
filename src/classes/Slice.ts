@@ -1,7 +1,7 @@
 import { MpClassImpl, MpClassInterface, MpClassModule } from "../types";
 import { toLegible } from "../utils";
 
-export const Slice = class Slice implements MpClassInterface<Uint8Array> {
+export const Slice = class Slice implements MpClassInterface<SlicePrimitive> {
     #data: Uint8Array;
 
     #nullable: boolean;
@@ -15,7 +15,7 @@ export const Slice = class Slice implements MpClassInterface<Uint8Array> {
      * @example new Slice(new Uint8Array([0x01, 0x02, 0x03])); // wraps byte data containing (`0x01`, `0x02`, `0x03`)
      *
      */
-    constructor(data?: Uint8Array);
+    constructor(data?: SlicePrimitive);
 
     /** Interprets the first bytes (derived from `Uint8Array.byteOffset`) from a buffer to a MessagePack byte data wrapper.
      *
@@ -25,7 +25,7 @@ export const Slice = class Slice implements MpClassInterface<Uint8Array> {
      */
     constructor(bfr: Uint8Array);
 
-    constructor(a: Uint8Array = new Uint8Array()) {
+    constructor(a: SlicePrimitive | Uint8Array = new Uint8Array()) {
         this.#nullable = false;
         this.#isNull = false;
 
@@ -50,17 +50,17 @@ export const Slice = class Slice implements MpClassInterface<Uint8Array> {
      * @example Slice.nullable(new Uint8Array([0x01, 0x02, 0x03])); // wraps byte data containing (`0x01`, `0x02`, `0x03`)
      *
      */
-    static nullable(data?: Uint8Array | null): MpClassInterface<Uint8Array | null>;
+    static nullable(data?: SlicePrimitive | null): MpClassInterface<SlicePrimitive | null>;
 
     /** Interprets the first bytes (derived from `Uint8Array.byteOffset`) from a buffer to a MessagePack nullable byte data wrapper.
      *
      * @example new Slice(new Uint8Array([0x01, 0x02, 0x03])); // interprets the bytes (`0x01`, `0x02`, `0x03`) as `[0x01, 0x02, 0x03]`
-     * @example new Slice(new Uint8Array([])); // interprets an empty buffer as `null`
+     * @example new Slice(new Uint8Array([])); // interprets an empty buffer as `[]`
      *
      */
-    static nullable(bfr: Uint8Array): MpClassInterface<Uint8Array | null>;
+    static nullable(bfr: Uint8Array): MpClassInterface<SlicePrimitive | null>;
 
-    static nullable(a: Uint8Array | null | Uint8Array = null): MpClassInterface<Uint8Array | null> {
+    static nullable(a: SlicePrimitive | null | Uint8Array = null): MpClassInterface<SlicePrimitive | null> {
         let isNull: boolean;
 
         if (a instanceof Uint8Array) isNull = false;
@@ -69,7 +69,7 @@ export const Slice = class Slice implements MpClassInterface<Uint8Array> {
             isNull = Object.is(data, null);
         }
 
-        const slice = isNull ? new Slice() : new Slice(<Uint8Array>a);
+        const slice = isNull ? new Slice() : new Slice(<SlicePrimitive>a);
         slice.#nullable = true;
         slice.#isNull = isNull;
 
@@ -77,13 +77,13 @@ export const Slice = class Slice implements MpClassInterface<Uint8Array> {
     }
 
     /** Retrieves the wrapped byte data values. */
-    raw(): Uint8Array;
+    raw(): SlicePrimitive;
 
     /** Sets new byte data values and wrap it. */
-    raw(data: Uint8Array): void;
+    raw(data: SlicePrimitive): void;
 
-    raw(data?: Uint8Array): Uint8Array | void {
-        if (data === undefined && arguments.length === 0) return this.#nullable && this.#isNull ? <Uint8Array><unknown>null : this.#data;
+    raw(data?: SlicePrimitive): SlicePrimitive | void {
+        if (data === undefined && arguments.length === 0) return this.#nullable && this.#isNull ? <SlicePrimitive><unknown>null : this.#data;
 
         if (this.#nullable && Object.is(data, null)) this.#isNull = true;
 
@@ -181,7 +181,7 @@ export const Slice = class Slice implements MpClassInterface<Uint8Array> {
     }
 
     /** Checks whether a value is valid for a Slice. */
-    static isRawValid(data: any): data is Uint8Array {
+    static isRawValid(data: any): data is SlicePrimitive {
         return data instanceof Uint8Array;
     }
 
@@ -196,4 +196,7 @@ export const Slice = class Slice implements MpClassInterface<Uint8Array> {
 
     /** Checks whether a chunk is valid for a Slice. */
     static isChunkValid = MpClassImpl.isChunkValid.bind(Slice);
-} satisfies MpClassModule<Uint8Array>;
+} satisfies MpClassModule<SlicePrimitive>;
+
+export type Slice = typeof Slice;
+export type SlicePrimitive = Uint8Array;

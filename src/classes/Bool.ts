@@ -1,7 +1,7 @@
 import { MpClassImpl, MpClassInterface, MpClassModule } from "../types";
 import { toLegible } from "../utils";
 
-export const Bool = class Bool implements MpClassInterface<boolean> {
+export const Bool = class Bool implements MpClassInterface<BoolPrimitive> {
     #state: boolean;
 
     #nullable: boolean;
@@ -15,7 +15,7 @@ export const Bool = class Bool implements MpClassInterface<boolean> {
      * @example new Bool(false); // wraps a `false` boolean
      *
      */
-    constructor(data?: boolean);
+    constructor(data?: BoolPrimitive);
 
     /** Interprets the first bytes (derived from `Uint8Array.byteOffset`) from a buffer to a MessagePack boolean wrapper.
      *
@@ -27,7 +27,7 @@ export const Bool = class Bool implements MpClassInterface<boolean> {
      */
     constructor(bfr: Uint8Array);
 
-    constructor(a: boolean | Uint8Array = false) {
+    constructor(a: BoolPrimitive | Uint8Array = false) {
         this.#nullable = false;
         this.#isNull = false;
 
@@ -56,7 +56,7 @@ export const Bool = class Bool implements MpClassInterface<boolean> {
      * @example Bool.nullable(false); // wraps a `false` boolean
      *
      */
-    static nullable(data?: boolean | null): MpClassInterface<boolean | null>;
+    static nullable(data?: BoolPrimitive | null): MpClassInterface<BoolPrimitive | null>;
 
     /** Interprets the first bytes (derived from `Uint8Array.byteOffset`) from a buffer to a MessagePack nullable boolean wrapper.
      *
@@ -66,9 +66,9 @@ export const Bool = class Bool implements MpClassInterface<boolean> {
      * @example Bool.nullable(new Uint8Array()); // interprets an empty buffer as `null`
      *
      */
-    static nullable(bfr: Uint8Array): MpClassInterface<boolean | null>;
+    static nullable(bfr: Uint8Array): MpClassInterface<BoolPrimitive | null>;
 
-    static nullable(a: boolean | null | Uint8Array = null): MpClassInterface<boolean | null> {
+    static nullable(a: BoolPrimitive | null | Uint8Array = null): MpClassInterface<BoolPrimitive | null> {
         let isNull: boolean;
 
         if (a instanceof Uint8Array) {
@@ -81,7 +81,7 @@ export const Bool = class Bool implements MpClassInterface<boolean> {
             isNull = Object.is(data, null);
         }
 
-        const bool = isNull ? new Bool() : new Bool(<boolean>a);
+        const bool = isNull ? new Bool() : new Bool(<BoolPrimitive>a);
         bool.#nullable = true;
         bool.#isNull = isNull;
 
@@ -89,13 +89,13 @@ export const Bool = class Bool implements MpClassInterface<boolean> {
     }
 
     /** Retrieves the wrapped boolean value. */
-    raw(): boolean;
+    raw(): BoolPrimitive;
 
     /** Sets a new boolean value and wrap it. */
-    raw(data: boolean): void;
+    raw(data: BoolPrimitive): void;
 
-    raw(data?: boolean): boolean | void {
-        if (data === undefined && arguments.length === 0) return this.#nullable && this.#isNull ? <boolean><unknown>null : this.#state;
+    raw(data?: BoolPrimitive): BoolPrimitive | void {
+        if (data === undefined && arguments.length === 0) return this.#nullable && this.#isNull ? <BoolPrimitive><unknown>null : this.#state;
 
         if (this.#nullable && Object.is(data, null)) this.#isNull = true;
 
@@ -123,7 +123,7 @@ export const Bool = class Bool implements MpClassInterface<boolean> {
     }
 
     /** Checks whether a value is valid for a Bool. */
-    static isRawValid(data: any): data is boolean {
+    static isRawValid(data: any): data is BoolPrimitive {
         return typeof data === "boolean";
     }
 
@@ -137,4 +137,7 @@ export const Bool = class Bool implements MpClassInterface<boolean> {
 
     /** Checks whether a chunk is valid for a Bool. */
     static isChunkValid = MpClassImpl.isChunkValid.bind(Bool);
-} satisfies MpClassModule<boolean>;
+} satisfies MpClassModule<BoolPrimitive>;
+
+export type Bool = typeof Bool;
+export type BoolPrimitive = boolean;

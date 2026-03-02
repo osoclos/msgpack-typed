@@ -1,7 +1,7 @@
 import { MpClassImpl, MpClassInterface, MpClassModule } from "../types";
 import { toLegible } from "../utils";
 
-export const Uint = class Uint implements MpClassInterface<number | bigint> {
+export const Uint = class Uint implements MpClassInterface<UintPrimitive> {
     #data: bigint;
 
     #nullable: boolean;
@@ -17,7 +17,7 @@ export const Uint = class Uint implements MpClassInterface<number | bigint> {
      * @example new Uint(537n); // wraps a `537` integer as a bigint
      *
      */
-    constructor(data?: number | bigint);
+    constructor(data?: UintPrimitive);
 
     /** Interprets the first bytes (derived from `Uint8Array.byteOffset`) from a buffer to a MessagePack unsigned integer wrapper.
      *
@@ -29,7 +29,7 @@ export const Uint = class Uint implements MpClassInterface<number | bigint> {
      */
     constructor(bfr: Uint8Array);
 
-    constructor(a: number | bigint | Uint8Array = 0) {
+    constructor(a: UintPrimitive | Uint8Array = 0) {
         this.#nullable = false;
         this.#isNull = false;
 
@@ -60,7 +60,7 @@ export const Uint = class Uint implements MpClassInterface<number | bigint> {
      * @example Uint.nullable(537n); // wraps a `537` integer as a bigint
      *
      */
-    static nullable(data?: number | bigint | null): MpClassInterface<number | bigint | null>;
+    static nullable(data?: UintPrimitive | null): MpClassInterface<UintPrimitive | null>;
 
     /** Interprets the first bytes (derived from `Uint8Array.byteOffset`) from a buffer to a MessagePack nullable unsigned integer wrapper.
      *
@@ -70,9 +70,9 @@ export const Uint = class Uint implements MpClassInterface<number | bigint> {
      * @example Uint.nullable(new Uint8Array()); // interprets an empty buffer as `null`
      *
      */
-    static nullable(bfr: Uint8Array): MpClassInterface<number | bigint | null>;
+    static nullable(bfr: Uint8Array): MpClassInterface<UintPrimitive | null>;
 
-    static nullable(a: number | bigint | null | Uint8Array = null): MpClassInterface<number | bigint | null> {
+    static nullable(a: UintPrimitive | null | Uint8Array = null): MpClassInterface<UintPrimitive | null> {
         let isNull: boolean;
 
         if (a instanceof Uint8Array) {
@@ -85,7 +85,7 @@ export const Uint = class Uint implements MpClassInterface<number | bigint> {
             isNull = Object.is(data, null);
         }
 
-        const uint = isNull ? new Uint() : new Uint(<number | bigint>a);
+        const uint = isNull ? new Uint() : new Uint(<UintPrimitive>a);
         uint.#nullable = true;
         uint.#isNull = isNull;
 
@@ -93,15 +93,15 @@ export const Uint = class Uint implements MpClassInterface<number | bigint> {
     }
 
     /** Retrieves the wrapped unsigned integer value. */
-    raw(): number | bigint;
+    raw(): UintPrimitive;
 
     /** Sets a new unsigned integer value and wrap it. */
-    raw(data: number | bigint): void;
+    raw(data: UintPrimitive): void;
 
-    raw(data?: number | bigint): number | bigint | void {
+    raw(data?: UintPrimitive): UintPrimitive | void {
         if (data === undefined && arguments.length === 0) return (
             this.#nullable && this.#isNull
-                ? <number | bigint><unknown>null
+                ? <UintPrimitive><unknown>null
                 : this.#data <= Number.MAX_SAFE_INTEGER
                     ? Number(this.#data)
                     : this.#data
@@ -216,7 +216,7 @@ export const Uint = class Uint implements MpClassInterface<number | bigint> {
     }
 
     /** Checks whether a value is valid for an Uint. */
-    static isRawValid(data: any): data is number | bigint {
+    static isRawValid(data: any): data is UintPrimitive {
         return ((typeof data === "number" && Number.isInteger(data)) || typeof data === "bigint") && data >= 0n && data <= 0xffff_ffff_ffff_ffffn;
     }
 
@@ -234,4 +234,7 @@ export const Uint = class Uint implements MpClassInterface<number | bigint> {
 
     /** Checks whether a chunk is valid for an Uint. */
     static isChunkValid = MpClassImpl.isChunkValid.bind(Uint);
-} satisfies MpClassModule<number | bigint>;
+} satisfies MpClassModule<UintPrimitive>;
+
+export type Uint = typeof Uint;
+export type UintPrimitive = number | bigint;
