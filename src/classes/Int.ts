@@ -2,7 +2,7 @@ import { MpClassImpl, MpClassInterface, MpClassModule } from "../types";
 import { toLegible } from "../utils";
 
 export const Int = class Int implements MpClassInterface<number | bigint> {
-    #val: bigint;
+    #data: bigint;
 
     #nullable: boolean;
     #isNull: boolean;
@@ -40,10 +40,10 @@ export const Int = class Int implements MpClassInterface<number | bigint> {
         if (a instanceof Uint8Array) {
             const bfr = a;
 
-            this.#val = 0n;
+            this.#data = 0n;
 
             let nBytes: bigint = 0n;
-            for (let i: number = bfr.byteOffset; i < bfr.byteLength && nBytes < 8n; i++, nBytes++) this.#val |= BigInt(bfr[i]!) << (8n * nBytes);
+            for (let i: number = bfr.byteOffset; i < bfr.byteLength && nBytes < 8n; i++, nBytes++) this.#data |= BigInt(bfr[i]!) << (8n * nBytes);
 
             const maxByteLen =
                 nBytes <= 1n
@@ -57,40 +57,35 @@ export const Int = class Int implements MpClassInterface<number | bigint> {
             let needsInterpreting: boolean = false;
             switch (maxByteLen) {
                 case 1: {
-                    needsInterpreting = this.#val > 0x7fn;
+                    needsInterpreting = this.#data > 0x7fn;
                     break;
                 }
 
                 case 2: {
-                    needsInterpreting = this.#val > 0x7fffn;
+                    needsInterpreting = this.#data > 0x7fffn;
                     break;
                 }
 
                 case 4: {
-                    needsInterpreting = this.#val > 0x7fff_ffffn;
+                    needsInterpreting = this.#data > 0x7fff_ffffn;
                     break;
                 }
 
                 case 8: {
-                    needsInterpreting = this.#val > 0x7fff_ffff_ffff_ffffn;
+                    needsInterpreting = this.#data > 0x7fff_ffff_ffff_ffffn;
                     break;
                 }
 
                 default: break;
             }
 
-            if (needsInterpreting) this.#val = BigInt.asIntN(maxByteLen * 8, this.#val);
+            if (needsInterpreting) this.#data = BigInt.asIntN(maxByteLen * 8, this.#data);
             return;
         }
 
         const data = a;
 
-        if (data === undefined && arguments.length === 0) {
-            this.#val = 0n;
-            return;
-        }
-
-        if (Int.isRawValid(data)) this.#val = BigInt(data);
+        if (Int.isRawValid(data)) this.#data = BigInt(data);
         else throw new TypeError(`Invalid value was passed into \`Int\`. Did not expect ${toLegible(data)}.`);
     }
 
@@ -152,15 +147,15 @@ export const Int = class Int implements MpClassInterface<number | bigint> {
         if (data === undefined && arguments.length === 0) return (
             this.#nullable && this.#isNull
                 ? <number | bigint><unknown>null
-                : Number.MIN_SAFE_INTEGER <= this.#val && this.#val <= Number.MAX_SAFE_INTEGER
-                    ? Number(this.#val)
-                    : this.#val
+                : Number.MIN_SAFE_INTEGER <= this.#data && this.#data <= Number.MAX_SAFE_INTEGER
+                    ? Number(this.#data)
+                    : this.#data
         );
 
         if (this.#nullable && Object.is(data, null)) this.#isNull = true;
 
         if (Int.isRawValid(data)) {
-            this.#val = BigInt(data);
+            this.#data = BigInt(data);
             this.#isNull = false;
         } else throw new TypeError(`Invalid value was passed into \`Int\`. Did not expect ${toLegible(data)}.`);
     }
@@ -173,28 +168,28 @@ export const Int = class Int implements MpClassInterface<number | bigint> {
         let len: number;
 
         switch (true) {
-            case this.#val >= -0x20n && this.#val < 0x00: {
-                code = Number(this.#val);
+            case this.#data >= -0x20n && this.#data < 0x00: {
+                code = Number(this.#data);
                 len = 0;
 
                 break;
             }
 
-            case this.#val >= -0x80n && this.#val <= 0x7fn: {
+            case this.#data >= -0x80n && this.#data <= 0x7fn: {
                 code = 0xd0;
                 len = 1;
 
                 break;
             }
 
-            case this.#val >= -0x8000n && this.#val <= 0x7fffn: {
+            case this.#data >= -0x8000n && this.#data <= 0x7fffn: {
                 code = 0xd1;
                 len = 2;
 
                 break;
             }
 
-            case this.#val >= -0x8000_0000n && this.#val <= 0x7fff_ffffn: {
+            case this.#data >= -0x8000_0000n && this.#data <= 0x7fff_ffffn: {
                 code = 0xd2;
                 len = 4;
 
@@ -216,10 +211,10 @@ export const Int = class Int implements MpClassInterface<number | bigint> {
 
         if (len === 0) return chunk;
 
-        let tmpVal = BigInt.asUintN(64, this.#val);
+        let tmpData = BigInt.asUintN(64, this.#data);
         for (let i: number = 1; i < chunkLen; i++) {
-            chunk[i] = Number(tmpVal & 0xffn);
-            tmpVal >>= 8n;
+            chunk[i] = Number(tmpData & 0xffn);
+            tmpData >>= 8n;
         }
 
         return chunk;

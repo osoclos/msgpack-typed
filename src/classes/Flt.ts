@@ -2,7 +2,7 @@ import { MpClassImpl, MpClassInterface, MpClassModule } from "../types";
 import { toLegible } from "../utils";
 
 export const Flt = class Flt implements MpClassInterface<number> {
-    #val: number;
+    #data: number;
 
     #nullable: boolean;
     #isNull: boolean;
@@ -38,18 +38,13 @@ export const Flt = class Flt implements MpClassInterface<number> {
 
             const len = bfr.byteLength - bfr.byteOffset;
 
-            this.#val = len < 0 ? 0.0 : new (len <= 4 ? Float32Array : Float64Array)(bfr.slice(bfr.byteOffset, bfr.byteLength))[0]!;
+            this.#data = len < 0 ? 0.0 : new (len <= 4 ? Float32Array : Float64Array)(bfr.slice(bfr.byteOffset, bfr.byteLength))[0]!;
             return;
         }
 
         const data = a;
 
-        if (data === undefined && arguments.length === 0) {
-            this.#val = 0.0;
-            return;
-        }
-
-        if (Flt.isRawValid(data)) this.#val = data;
+        if (Flt.isRawValid(data)) this.#data = data;
         else throw new TypeError(`Invalid value was passed into \`Flt\`. Did not expect ${toLegible(data)}.`);
     }
 
@@ -104,25 +99,27 @@ export const Flt = class Flt implements MpClassInterface<number> {
     raw(data: number): void;
 
     raw(data?: number): number | void {
-        if (data === undefined && arguments.length === 0) return this.#nullable && this.#isNull ? <number><unknown>null : this.#val;
+        if (data === undefined && arguments.length === 0) return this.#nullable && this.#isNull ? <number><unknown>null : this.#data;
 
         if (this.#nullable && Object.is(data, null)) this.#isNull = true;
 
         if (Flt.isRawValid(data)) {
-            this.#val = data;
+            this.#data = data;
             this.#isNull = false;
         } else throw new TypeError(`Invalid value was passed into \`Flt\`. Did not expect ${toLegible(data)}.`);
     }
 
     /** Encodes the wrapped float and converts it to a MessagePack chunk. */
     encode(): Uint8Array {
-        const canBe32Bit = Object.is(this.#val, Math.fround(this.#val));
+        if (this.#nullable && this.#isNull) return new Uint8Array([0xc0]);
+
+        const canBe32Bit = Object.is(this.#data, Math.fround(this.#data));
 
         const code: number =      canBe32Bit ? 0xca : 0xcb;
         const len : number = 1 + (canBe32Bit ? 4    : 8   );
 
         const flt = new (canBe32Bit ? Float32Array : Float64Array)(1);
-        flt[0] = this.#val;
+        flt[0] = this.#data;
 
         const fltBytes = new Uint8Array(flt.buffer);
 

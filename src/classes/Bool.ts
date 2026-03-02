@@ -19,8 +19,8 @@ export const Bool = class Bool implements MpClassInterface<boolean> {
 
     /** Interprets the first bytes (derived from `Uint8Array.byteOffset`) from a buffer to a MessagePack boolean wrapper.
      *
-     * @example new Bool(new Uint8Array([0x00])); // interprets the falsy byte (`0x00`) as `false`
-     * @example new Bool(new Uint8Array([0x01, 0x02, 0x03])); // interprets the truthy byte (`0x01`) as `true`
+     * @example new Bool(new Uint8Array([0x00])); // interprets the bytes (`0x00`) as `false`
+     * @example new Bool(new Uint8Array([0x01, 0x02, 0x03])); // interprets the bytes (`0x01`) as `true`
      *
      * @example new Bool(new Uint8Array()); // interprets an empty buffer as `false`
      *
@@ -42,11 +42,6 @@ export const Bool = class Bool implements MpClassInterface<boolean> {
 
         const data = a;
 
-        if (data === undefined && arguments.length === 0) {
-            this.#state = false;
-            return;
-        }
-
         if (Bool.isRawValid(data)) this.#state = data;
         else throw new TypeError(`Invalid value was passed into \`Bool\`. Did not expect ${toLegible(data)}.`);
     }
@@ -65,8 +60,8 @@ export const Bool = class Bool implements MpClassInterface<boolean> {
 
     /** Interprets the first bytes (derived from `Uint8Array.byteOffset`) from a buffer to a MessagePack nullable boolean wrapper.
      *
-     * @example Bool.nullable(new Uint8Array([0x00])); // interprets the falsy byte (`0x00`) as `false`
-     * @example Bool.nullable(new Uint8Array([0x01, 0x02, 0x03])); // interprets the truthy byte (`0x01`) as `true`
+     * @example Bool.nullable(new Uint8Array([0x00])); // interprets the bytes (`0x00`) as `false`
+     * @example Bool.nullable(new Uint8Array([0x01, 0x02, 0x03])); // interprets the bytes (`0x01`) as `true`
      *
      * @example Bool.nullable(new Uint8Array()); // interprets an empty buffer as `null`
      *
@@ -112,13 +107,8 @@ export const Bool = class Bool implements MpClassInterface<boolean> {
 
     /** Encodes the wrapped boolean and converts it to a MessagePack chunk. */
     encode(): Uint8Array {
-        return new Uint8Array([
-            this.#nullable && this.#isNull
-                ? 0xc0 :
-            this.#state
-                ? 0xc3
-                : 0xc2
-        ]);
+        if (this.#nullable && this.#isNull) return new Uint8Array([0xc0]);
+        return new Uint8Array([this.#state ? 0xc3 : 0xc2]);
     }
 
     /** Decodes a boolean MessagePack chunk, validates it and parses it to a Bool. */

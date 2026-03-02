@@ -2,7 +2,7 @@ import { MpClassImpl, MpClassInterface, MpClassModule } from "../types";
 import { toLegible } from "../utils";
 
 export const Uint = class Uint implements MpClassInterface<number | bigint> {
-    #val: bigint;
+    #data: bigint;
 
     #nullable: boolean;
     #isNull: boolean;
@@ -36,20 +36,15 @@ export const Uint = class Uint implements MpClassInterface<number | bigint> {
         if (a instanceof Uint8Array) {
             const bfr = a;
 
-            this.#val = 0n;
-            for (let i: number = bfr.byteOffset, nBytes = 0n; i < bfr.byteLength && nBytes < 8n; i++, nBytes++) this.#val |= BigInt(bfr[i]!) << (8n * nBytes);
+            this.#data = 0n;
+            for (let i: number = bfr.byteOffset, nBytes = 0n; i < bfr.byteLength && nBytes < 8n; i++, nBytes++) this.#data |= BigInt(bfr[i]!) << (8n * nBytes);
 
             return;
         }
 
         const data = a;
 
-        if (data === undefined && arguments.length === 0) {
-            this.#val = 0n;
-            return;
-        }
-
-        if (Uint.isRawValid(data)) this.#val = BigInt(data);
+        if (Uint.isRawValid(data)) this.#data = BigInt(data);
         else throw new TypeError(`Invalid value was passed into \`Uint\`. Did not expect ${toLegible(data)}.`);
     }
 
@@ -107,15 +102,15 @@ export const Uint = class Uint implements MpClassInterface<number | bigint> {
         if (data === undefined && arguments.length === 0) return (
             this.#nullable && this.#isNull
                 ? <number | bigint><unknown>null
-                : this.#val <= Number.MAX_SAFE_INTEGER
-                    ? Number(this.#val)
-                    : this.#val
+                : this.#data <= Number.MAX_SAFE_INTEGER
+                    ? Number(this.#data)
+                    : this.#data
         );
 
         if (this.#nullable && Object.is(data, null)) this.#isNull = true;
 
         if (Uint.isRawValid(data)) {
-            this.#val = BigInt(data);
+            this.#data = BigInt(data);
             this.#isNull = false;
         } else throw new TypeError(`Invalid value was passed into \`Uint\`. Did not expect ${toLegible(data)}.`);
     }
@@ -128,28 +123,28 @@ export const Uint = class Uint implements MpClassInterface<number | bigint> {
         let len: number;
 
         switch (true) {
-            case this.#val <= 0x7fn: {
-                code = Number(this.#val);
+            case this.#data <= 0x7fn: {
+                code = Number(this.#data);
                 len = 0;
 
                 break;
             }
 
-            case this.#val <= 0xffn: {
+            case this.#data <= 0xffn: {
                 code = 0xcc;
                 len = 1;
 
                 break;
             }
 
-            case this.#val <= 0xffffn: {
+            case this.#data <= 0xffffn: {
                 code = 0xcd;
                 len = 2;
 
                 break;
             }
 
-            case this.#val <= 0xffff_ffffn: {
+            case this.#data <= 0xffff_ffffn: {
                 code = 0xce;
                 len = 4;
 
@@ -171,10 +166,10 @@ export const Uint = class Uint implements MpClassInterface<number | bigint> {
 
         if (len === 0) return chunk;
 
-        let tmpVal = this.#val;
+        let tmpData = this.#data;
         for (let i: number = 1; i < chunkLen; i++) {
-            chunk[i] = Number(tmpVal & 0xffn);
-            tmpVal >>= 8n;
+            chunk[i] = Number(tmpData & 0xffn);
+            tmpData >>= 8n;
         }
 
         return chunk;
