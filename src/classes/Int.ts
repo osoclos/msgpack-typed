@@ -225,6 +225,18 @@ export const Int = class Int implements MpClassInterface<number | bigint> {
         return chunk;
     }
 
+    /** Allows this wrapper to have `null` as a value */
+    makeNullable(): this is MpClassInterface<number | bigint | null> {
+        this.#nullable = true;
+        return true;
+    }
+
+    /** Denies this wrapper of having `null` as a value */
+    makeRequired(): this is MpClassInterface<number | bigint> {
+        this.#nullable = false;
+        return true;
+    }
+
     /** Decodes a signed integer MessagePack chunk, validates it and parses it to an Int. */
     static decode(chunk: Uint8Array): Int {
         const code = chunk[chunk.byteOffset];
