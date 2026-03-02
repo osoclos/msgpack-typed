@@ -1,10 +1,11 @@
-import { NoThisOverrideSym, RequireThisOverrideClass } from "./utils";
-
 export interface MpClassInterface<T> {
     raw(): T;
     raw(data: T): void;
 
     encode(): Uint8Array;
+
+    makeNullable(): this is MpClassInterface<T | null>;
+    makeRequired(): this is MpClassInterface<NonNullable<T>>;
 }
 
 export interface MpClassModule<T> {
@@ -20,6 +21,12 @@ export interface MpClassModule<T> {
 
     isCodeValid(code: number): boolean;
     isChunkValid(chunk: Uint8Array): boolean;
+}
+
+const NoThisOverrideSym: unique symbol = Symbol();
+interface RequireThisOverrideClass {
+    [NoThisOverrideSym]: true;
+    prototype: { [NoThisOverrideSym]: true; };
 }
 
 export const MpClassImpl = {
