@@ -82,7 +82,7 @@ export const Flt = class Flt implements MpClassInterface<FltPrimitive> {
             isNull = byte === undefined;
         } else {
             const data = a;
-            isNull = Object.is(data, null);
+            isNull = data === null;
         }
 
         const flt = isNull ? new Flt() : new Flt(<FltPrimitive>a);
@@ -101,7 +101,7 @@ export const Flt = class Flt implements MpClassInterface<FltPrimitive> {
     raw(data?: FltPrimitive): FltPrimitive | void {
         if (data === undefined && arguments.length === 0) return this.#nullable && this.#isNull ? <FltPrimitive><unknown>null : this.#data;
 
-        if (this.#nullable && Object.is(data, null)) this.#isNull = true;
+        if (this.#nullable && data === null) this.#isNull = true;
 
         if (Flt.isRawValid(data)) {
             this.#data = data;
@@ -175,5 +175,5 @@ export const Flt = class Flt implements MpClassInterface<FltPrimitive> {
     static isChunkValid = MpClassImpl.isChunkValid.bind(Flt);
 } satisfies MpClassModule<FltPrimitive>;
 
-export type Flt = typeof Flt;
+export type Flt = typeof Flt["prototype"];
 export type FltPrimitive = number;

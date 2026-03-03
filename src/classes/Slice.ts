@@ -66,7 +66,7 @@ export const Slice = class Slice implements MpClassInterface<SlicePrimitive> {
         if (a instanceof Uint8Array) isNull = false;
         else {
             const data = a;
-            isNull = Object.is(data, null);
+            isNull = data === null;
         }
 
         const slice = isNull ? new Slice() : new Slice(<SlicePrimitive>a);
@@ -85,7 +85,7 @@ export const Slice = class Slice implements MpClassInterface<SlicePrimitive> {
     raw(data?: SlicePrimitive): SlicePrimitive | void {
         if (data === undefined && arguments.length === 0) return this.#nullable && this.#isNull ? <SlicePrimitive><unknown>null : this.#data;
 
-        if (this.#nullable && Object.is(data, null)) this.#isNull = true;
+        if (this.#nullable && data === null) this.#isNull = true;
 
         if (Slice.isRawValid(data)) {
             this.#data = data;
@@ -198,5 +198,5 @@ export const Slice = class Slice implements MpClassInterface<SlicePrimitive> {
     static isChunkValid = MpClassImpl.isChunkValid.bind(Slice);
 } satisfies MpClassModule<SlicePrimitive>;
 
-export type Slice = typeof Slice;
+export type Slice = typeof Slice["prototype"];
 export type SlicePrimitive = Uint8Array;

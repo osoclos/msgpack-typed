@@ -78,7 +78,7 @@ export const Bool = class Bool implements MpClassInterface<BoolPrimitive> {
             isNull = byte === undefined;
         } else {
             const data = a;
-            isNull = Object.is(data, null);
+            isNull = data === null;
         }
 
         const bool = isNull ? new Bool() : new Bool(<BoolPrimitive>a);
@@ -97,7 +97,7 @@ export const Bool = class Bool implements MpClassInterface<BoolPrimitive> {
     raw(data?: BoolPrimitive): BoolPrimitive | void {
         if (data === undefined && arguments.length === 0) return this.#nullable && this.#isNull ? <BoolPrimitive><unknown>null : this.#state;
 
-        if (this.#nullable && Object.is(data, null)) this.#isNull = true;
+        if (this.#nullable && data === null) this.#isNull = true;
 
         if (Bool.isRawValid(data)) {
             this.#state = data;
@@ -139,5 +139,5 @@ export const Bool = class Bool implements MpClassInterface<BoolPrimitive> {
     static isChunkValid = MpClassImpl.isChunkValid.bind(Bool);
 } satisfies MpClassModule<BoolPrimitive>;
 
-export type Bool = typeof Bool;
+export type Bool = typeof Bool["prototype"];
 export type BoolPrimitive = boolean;

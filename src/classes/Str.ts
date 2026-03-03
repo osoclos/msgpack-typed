@@ -73,7 +73,7 @@ export const Str = class Str implements MpClassInterface<StrPrimitive> {
             isNull = byte === undefined;
         } else {
             const data = a;
-            isNull = Object.is(data, null);
+            isNull = data === null;
         }
 
         const str = isNull ? new Str() : new Str(<StrPrimitive>a);
@@ -92,7 +92,7 @@ export const Str = class Str implements MpClassInterface<StrPrimitive> {
     raw(data?: StrPrimitive): StrPrimitive | void {
         if (data === undefined && arguments.length === 0) return this.#nullable && this.#isNull ? <StrPrimitive><unknown>null : this.#data;
 
-        if (this.#nullable && Object.is(data, null)) this.#isNull = true;
+        if (this.#nullable && data === null) this.#isNull = true;
 
         if (Str.isRawValid(data)) {
             this.#data = data;
@@ -219,5 +219,5 @@ export const Str = class Str implements MpClassInterface<StrPrimitive> {
     static isChunkValid = MpClassImpl.isChunkValid.bind(Str);
 } satisfies MpClassModule<StrPrimitive>;
 
-export type Str = typeof Str;
+export type Str = typeof Str["prototype"];
 export type StrPrimitive = string;

@@ -82,7 +82,7 @@ export const Uint = class Uint implements MpClassInterface<UintPrimitive> {
             isNull = byte === undefined;
         } else {
             const data = a;
-            isNull = Object.is(data, null);
+            isNull = data === null;
         }
 
         const uint = isNull ? new Uint() : new Uint(<UintPrimitive>a);
@@ -107,7 +107,7 @@ export const Uint = class Uint implements MpClassInterface<UintPrimitive> {
                     : this.#data
         );
 
-        if (this.#nullable && Object.is(data, null)) this.#isNull = true;
+        if (this.#nullable && data === null) this.#isNull = true;
 
         if (Uint.isRawValid(data)) {
             this.#data = BigInt(data);
@@ -236,5 +236,5 @@ export const Uint = class Uint implements MpClassInterface<UintPrimitive> {
     static isChunkValid = MpClassImpl.isChunkValid.bind(Uint);
 } satisfies MpClassModule<UintPrimitive>;
 
-export type Uint = typeof Uint;
+export type Uint = typeof Uint["prototype"];
 export type UintPrimitive = number | bigint;

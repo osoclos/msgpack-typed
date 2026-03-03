@@ -127,7 +127,7 @@ export const Int = class Int implements MpClassInterface<IntPrimitive> {
             isNull = byte === undefined;
         } else {
             const data = a;
-            isNull = Object.is(data, null);
+            isNull = data === null;
         }
 
         const int = isNull ? new Int() : new Int(<IntPrimitive>a);
@@ -152,7 +152,7 @@ export const Int = class Int implements MpClassInterface<IntPrimitive> {
                     : this.#data
         );
 
-        if (this.#nullable && Object.is(data, null)) this.#isNull = true;
+        if (this.#nullable && data === null) this.#isNull = true;
 
         if (Int.isRawValid(data)) {
             this.#data = BigInt(data);
@@ -281,5 +281,5 @@ export const Int = class Int implements MpClassInterface<IntPrimitive> {
     static isChunkValid = MpClassImpl.isChunkValid.bind(Int);
 } satisfies MpClassModule<IntPrimitive>;
 
-export type Int = typeof Int;
+export type Int = typeof Int["prototype"];
 export type IntPrimitive = number | bigint;
