@@ -131,10 +131,10 @@ export const Slice = class Slice implements MpClassInterface<SlicePrimitive> {
         const bfr = new Uint8Array(iDataStart + len);
         bfr[0] = code;
 
-        let tmpByteLen = len;
+        let tmpLen = len;
         for (let i: number = 1; i <= lenLen; i++) {
-            bfr[i] = tmpByteLen & 0xff;
-            tmpByteLen >>>= 8;
+            bfr[i] = tmpLen & 0xff;
+            tmpLen >>>= 8;
         }
 
         bfr.set(bytes, iDataStart);
