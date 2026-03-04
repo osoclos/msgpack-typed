@@ -177,10 +177,50 @@ export const Uint = class Uint implements MpClassInterface<UintPrimitive> {
 
     /** Decodes an unsigned integer MessagePack chunk, validates it and parses it to an Uint. */
     static decode(chunk: Uint8Array): Uint {
-        const code = chunk[chunk.byteOffset];
+        const ranges = this.deriveChunkRanges(chunk);
+
+        const nRanges = ranges.length;
+        if (nRanges === 2) {
+            const code = ranges[0];
+            return new Uint(code);
+        }
+
+        const [, iDataStart, iDataEnd] = ranges;
+        if (iDataEnd > chunk.byteLength) console.warn("Chunk buffer has insufficient data to be decoded. Was the chunk truncated?");
+
+        return new Uint(chunk.slice(iDataStart, iDataEnd));
+    }
+
+    /** Checks whether a value is valid for an Uint. */
+    static isRawValid(data: any): data is UintPrimitive {
+        return ((typeof data === "number" && Number.isInteger(data)) || typeof data === "bigint") && data >= 0n && data <= 0xffff_ffff_ffff_ffffn;
+    }
+
+    /** Checks whether a chunk header code is valid for an Uint. */
+    static isCodeValid(code: number): boolean {
+        return (
+            code <=  0x7f ||
+
+            code === 0xcc ||
+            code === 0xcd ||
+            code === 0xce ||
+            code === 0xcf
+        );
+    }
+
+    /** Checks whether a chunk is valid for an Uint. */
+    static isChunkValid = MpClassImpl.isChunkValid.bind(Uint);
+
+    /** Retrieves the starting index of each section of the chunk, as well as the final exclusive index, for an Uint */
+    static deriveChunkRanges(chunk: Uint8Array): [number, number] | [number, number, number] {
+        const iChunkStart = chunk.byteOffset;
+
+        const code = chunk[iChunkStart];
         if (code === undefined) throw new Error("Unable to retrieve header code from `chunk`. Is the chunk empty/truncated or `chunk.byteOffset` exceeded its length?");
 
-        if (code <= 0x7f) return new Uint(code);
+        const iDataStart = iChunkStart + 1;
+
+        if (code <= 0x7f) return [iChunkStart, iDataStart /* there is no "data", so its index can be used as the final exclusive index */];
 
         let len: number;
         switch (code) {
@@ -207,33 +247,10 @@ export const Uint = class Uint implements MpClassInterface<UintPrimitive> {
             default: throw new TypeError(`Invalid chunk header for \`Uint\`. Did not expect ${toLegible(code, true)}.`);
         }
 
-        const iDataStart = chunk.byteOffset + 1;
-
         const iDataEnd = iDataStart + len;
-        if (iDataEnd > chunk.byteLength) console.warn("Chunk buffer has insufficient data to be decoded. Was the chunk truncated?");
 
-        return new Uint(chunk.slice(iDataStart, iDataEnd));
+        return [iChunkStart, iDataStart, iDataEnd];
     }
-
-    /** Checks whether a value is valid for an Uint. */
-    static isRawValid(data: any): data is UintPrimitive {
-        return ((typeof data === "number" && Number.isInteger(data)) || typeof data === "bigint") && data >= 0n && data <= 0xffff_ffff_ffff_ffffn;
-    }
-
-    /** Checks whether a chunk header code is valid for an Uint. */
-    static isCodeValid(code: number): boolean {
-        return (
-            code <=  0x7f ||
-
-            code === 0xcc ||
-            code === 0xcd ||
-            code === 0xce ||
-            code === 0xcf
-        );
-    }
-
-    /** Checks whether a chunk is valid for an Uint. */
-    static isChunkValid = MpClassImpl.isChunkValid.bind(Uint);
 } satisfies MpClassModule<UintPrimitive>;
 
 export type Uint = typeof Uint["prototype"];

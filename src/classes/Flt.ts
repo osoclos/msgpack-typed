@@ -132,27 +132,9 @@ export const Flt = class Flt implements MpClassInterface<FltPrimitive> {
 
     /** Decodes a float MessagePack chunk, validates it and parses it to a Flt. */
     static decode(chunk: Uint8Array): Flt {
-        const code = chunk[chunk.byteOffset];
-        if (code === undefined) throw new Error("Unable to retrieve header code from `chunk`. Is the chunk empty/truncated or `chunk.byteOffset` exceeded its length?");
+        const ranges = this.deriveChunkRanges(chunk);
 
-        let len: number;
-        switch (code) {
-            case 0xca: {
-                len = 4;
-                break;
-            }
-
-            case 0xcb: {
-                len = 8;
-                break;
-            }
-
-            default: throw new TypeError(`Invalid chunk header for \`Flt\`. Did not expect ${toLegible(code, true)}.`);
-        }
-
-        const iDataStart = chunk.byteOffset + 1;
-
-        const iDataEnd = iDataStart + len;
+        const [, iDataStart, iDataEnd] = ranges;
         if (iDataEnd > chunk.byteLength) console.warn("Chunk buffer has insufficient data to be decoded. Was the chunk truncated?");
 
         return new Flt(chunk.slice(iDataStart, iDataEnd));
@@ -173,6 +155,34 @@ export const Flt = class Flt implements MpClassInterface<FltPrimitive> {
 
     /** Checks whether a chunk is valid for a Flt. */
     static isChunkValid = MpClassImpl.isChunkValid.bind(Flt);
+
+    /** Retrieves the starting index of each section of the chunk, as well as the final exclusive index, for a Flt */
+    static deriveChunkRanges(chunk: Uint8Array): [number, number, number] {
+        const iChunkStart = chunk.byteOffset;
+
+        const code = chunk[iChunkStart];
+        if (code === undefined) throw new Error("Unable to retrieve header code from `chunk`. Is the chunk empty/truncated or `chunk.byteOffset` exceeded its length?");
+
+        let len: number;
+        switch (code) {
+            case 0xca: {
+                len = 4;
+                break;
+            }
+
+            case 0xcb: {
+                len = 8;
+                break;
+            }
+
+            default: throw new TypeError(`Invalid chunk header for \`Flt\`. Did not expect ${toLegible(code, true)}.`);
+        }
+
+        const iDataStart = iChunkStart + 1;
+        const iDataEnd = iDataStart + len;
+
+        return [iChunkStart, iDataStart, iDataEnd];
+    }
 } satisfies MpClassModule<FltPrimitive>;
 
 export type Flt = typeof Flt["prototype"];

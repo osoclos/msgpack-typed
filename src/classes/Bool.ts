@@ -113,13 +113,10 @@ export const Bool = class Bool implements MpClassInterface<BoolPrimitive> {
 
     /** Decodes a boolean MessagePack chunk, validates it and parses it to a Bool. */
     static decode(chunk: Uint8Array): Bool {
-        const code = chunk[chunk.byteOffset];
-        if (code === undefined) throw new Error("Unable to retrieve header code from `chunk`. Is the chunk empty/truncated or `chunk.byteOffset` exceeded its length?");
+        const ranges = this.deriveChunkRanges(chunk);
 
-        if (code === 0xc2) return new Bool(false);
-        if (code === 0xc3) return new Bool(true );
-
-        throw new TypeError(`Invalid chunk header for \`Bool\`. Did not expect ${toLegible(code, true)}.`);
+        const code = ranges[0];
+        return new Bool(code === 0xc3);
     }
 
     /** Checks whether a value is valid for a Bool. */
@@ -137,6 +134,23 @@ export const Bool = class Bool implements MpClassInterface<BoolPrimitive> {
 
     /** Checks whether a chunk is valid for a Bool. */
     static isChunkValid = MpClassImpl.isChunkValid.bind(Bool);
+
+    /** Retrieves the starting index of each section of the chunk, as well as the final exclusive index, for a Bool */
+    static deriveChunkRanges(chunk: Uint8Array): [number, number] {
+        const iChunkStart = chunk.byteOffset;
+
+        const code = chunk[iChunkStart];
+        if (code === undefined) throw new Error("Unable to retrieve header code from `chunk`. Is the chunk empty/truncated or `chunk.byteOffset` exceeded its length?");
+
+        const iChunkEnd = iChunkStart + 1;
+
+        if (
+            code === 0xc2 ||
+            code === 0xc3
+        ) return [iChunkStart, iChunkEnd];
+
+        throw new TypeError(`Invalid chunk header for \`Bool\`. Did not expect ${toLegible(code, true)}.`);
+    }
 } satisfies MpClassModule<BoolPrimitive>;
 
 export type Bool = typeof Bool["prototype"];

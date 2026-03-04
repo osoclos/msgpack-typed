@@ -18,6 +18,8 @@ export interface MpClassModule<T> {
 
     isCodeValid(code: number): boolean;
     isChunkValid(chunk: Uint8Array): boolean;
+
+    deriveChunkRanges(chunk: Uint8Array): number[];
 }
 
 const NoThisOverrideSym: unique symbol = Symbol();

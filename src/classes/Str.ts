@@ -158,42 +158,13 @@ export const Str = class Str implements MpClassInterface<StrPrimitive> {
 
     /** Decodes a string MessagePack chunk, validates it and parses it to a Str. */
     static decode(chunk: Uint8Array): Str {
-        const code = chunk[chunk.byteOffset];
-        if (code === undefined) throw new Error("Unable to retrieve header code from `chunk`. Is the chunk empty/truncated or `chunk.byteOffset` exceeded its length?");
+        const ranges = this.deriveChunkRanges(chunk);
 
-        let len: number;
-        let iDataStart = chunk.byteOffset + 1;
+        const hasLenStartIdx = ranges.length === 4;
 
-        if ((code & 0xa0) === 0xa0) len = code & 0x1f;
-        else {
-            let lenLen: number;
+        const iDataStart = ranges[<typeof hasLenStartIdx extends true ? 2 : 1>(1 + +hasLenStartIdx)];
+        const iDataEnd   = ranges[<typeof hasLenStartIdx extends true ? 3 : 2>(2 + +hasLenStartIdx)];
 
-            switch (code) {
-                case 0xd9: {
-                    lenLen = 1;
-                    break;
-                }
-
-                case 0xda: {
-                    lenLen = 2;
-                    break;
-                }
-
-                case 0xdb: {
-                    lenLen = 4;
-                    break;
-                }
-
-                default: throw new TypeError(`Invalid chunk header for \`Str\`. Did not expect ${toLegible(code, true)}.`);
-            }
-
-            len = 0;
-            for (let i: number = iDataStart, nBytes = 0; i < chunk.byteLength && nBytes < lenLen; i++, nBytes++) len |= chunk[i]! << (8 * nBytes);
-
-            iDataStart += lenLen;
-        }
-
-        const iDataEnd = iDataStart + len;
         if (iDataEnd > chunk.byteLength) console.warn("Chunk buffer has insufficient data to be decoded. Was the chunk truncated?");
 
         return new Str(chunk.slice(iDataStart, iDataEnd));
@@ -217,6 +188,54 @@ export const Str = class Str implements MpClassInterface<StrPrimitive> {
 
     /** Checks whether a chunk is valid for a Str. */
     static isChunkValid = MpClassImpl.isChunkValid.bind(Str);
+
+    /** Retrieves the starting index of each section of the chunk, as well as the final exclusive index, for a Str */
+    static deriveChunkRanges(chunk: Uint8Array): [number, number, number] | [number, number, number, number] {
+        const iChunkStart = chunk.byteOffset;
+
+        const code = chunk[iChunkStart];
+        if (code === undefined) throw new Error("Unable to retrieve header code from `chunk`. Is the chunk empty/truncated or `chunk.byteOffset` exceeded its length?");
+
+        if ((code & 0xa0) === 0xa0) {
+            const len = code & 0x1f;
+
+            const iDataStart = chunk.byteOffset + 1;
+            const iDataEnd = iDataStart + len;
+
+            return [iChunkStart, iDataStart, iDataEnd];
+        }
+
+        let lenLen: number;
+
+        switch (code) {
+            case 0xd9: {
+                lenLen = 1;
+                break;
+            }
+
+            case 0xda: {
+                lenLen = 2;
+                break;
+            }
+
+            case 0xdb: {
+                lenLen = 4;
+                break;
+            }
+
+            default: throw new TypeError(`Invalid chunk header for \`Str\`. Did not expect ${toLegible(code, true)}.`);
+        }
+
+        const iLenStart = iChunkStart + 1;
+
+        let len = 0;
+        for (let i: number = iLenStart, nBytes = 0; i < chunk.byteLength && nBytes < lenLen; i++, nBytes++) len |= chunk[i]! << (8 * nBytes);
+
+        const iDataStart = iLenStart + lenLen;
+        const iDataEnd = iDataStart + len;
+
+        return [iChunkStart, iLenStart, iDataStart, iDataEnd];
+    }
 } satisfies MpClassModule<StrPrimitive>;
 
 export type Str = typeof Str["prototype"];

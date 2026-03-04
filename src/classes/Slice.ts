@@ -144,7 +144,36 @@ export const Slice = class Slice implements MpClassInterface<SlicePrimitive> {
 
     /** Decodes a byte data MessagePack chunk, validates it and parses it to a Slice. */
     static decode(chunk: Uint8Array): Slice {
-        const code = chunk[chunk.byteOffset];
+        const ranges = this.deriveChunkRanges(chunk);
+
+        const [, , iDataStart, iDataEnd] = ranges;
+        if (iDataEnd > chunk.byteLength) console.warn("Chunk buffer has insufficient data to be decoded. Was the chunk truncated?");
+
+        return new Slice(chunk.slice(iDataStart, iDataEnd));
+    }
+
+    /** Checks whether a value is valid for a Slice. */
+    static isRawValid(data: any): data is SlicePrimitive {
+        return data instanceof Uint8Array;
+    }
+
+    /** Checks whether a chunk header code is valid for a Slice. */
+    static isCodeValid(code: number): boolean {
+        return (
+            code === 0xc4 ||
+            code === 0xc5 ||
+            code === 0xc6
+        );
+    }
+
+    /** Checks whether a chunk is valid for a Slice. */
+    static isChunkValid = MpClassImpl.isChunkValid.bind(Slice);
+
+    /** Retrieves the starting index of each section of the chunk, as well as the final exclusive index, for a Slice */
+    static deriveChunkRanges(chunk: Uint8Array): [number, number, number, number] {
+        const iChunkStart = chunk.byteOffset;
+
+        const code = chunk[iChunkStart];
         if (code === undefined) throw new Error("Unable to retrieve header code from `chunk`. Is the chunk empty/truncated or `chunk.byteOffset` exceeded its length?");
 
         let lenLen: number;
@@ -167,35 +196,16 @@ export const Slice = class Slice implements MpClassInterface<SlicePrimitive> {
             default: throw new TypeError(`Invalid chunk header for \`Slice\`. Did not expect ${toLegible(code, true)}.`);
         }
 
-        let iDataStart = chunk.byteOffset + 1;
+        const iLenStart = iChunkStart + 1;
 
-        let len: number = 0;
-        for (let i: number = iDataStart, nBytes = 0; i < chunk.byteLength && nBytes < lenLen; i++, nBytes++) len |= chunk[i]! << (8 * nBytes);
+        let len = 0;
+        for (let i: number = iLenStart, nBytes = 0; i < chunk.byteLength && nBytes < lenLen; i++, nBytes++) len |= chunk[i]! << (8 * nBytes);
 
-        iDataStart += lenLen;
-
+        const iDataStart = iLenStart + lenLen;
         const iDataEnd = iDataStart + len;
-        if (iDataEnd > chunk.byteLength) console.warn("Chunk buffer has insufficient data to be decoded. Was the chunk truncated?");
 
-        return new Slice(chunk.slice(iDataStart, iDataEnd));
+        return [iChunkStart, iLenStart, iDataStart, iDataEnd];
     }
-
-    /** Checks whether a value is valid for a Slice. */
-    static isRawValid(data: any): data is SlicePrimitive {
-        return data instanceof Uint8Array;
-    }
-
-    /** Checks whether a chunk header code is valid for a Slice. */
-    static isCodeValid(code: number): boolean {
-        return (
-            code === 0xc4 ||
-            code === 0xc5 ||
-            code === 0xc6
-        );
-    }
-
-    /** Checks whether a chunk is valid for a Slice. */
-    static isChunkValid = MpClassImpl.isChunkValid.bind(Slice);
 } satisfies MpClassModule<SlicePrimitive>;
 
 export type Slice = typeof Slice["prototype"];
