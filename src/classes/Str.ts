@@ -199,7 +199,7 @@ export const Str = class Str implements MpClassInterface<StrPrimitive> {
         if ((code & 0xa0) === 0xa0) {
             const len = code & 0x1f;
 
-            const iDataStart = chunk.byteOffset + 1;
+            const iDataStart = iChunkStart + 1;
             const iDataEnd = iDataStart + len;
 
             return [iChunkStart, iDataStart, iDataEnd];
