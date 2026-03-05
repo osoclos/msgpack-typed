@@ -135,7 +135,7 @@ export const Bool = class Bool implements MpClassInterface<BoolPrimitive> {
     /** Checks whether a chunk is valid for a Bool. */
     static isChunkValid = MpClassImpl.isChunkValid.bind(Bool);
 
-    /** Retrieves the starting index of each section of the chunk, as well as the final exclusive index, for a Bool */
+    /** Retrieves the starting index of each section of the chunk, as well as the final exclusive index, for a Bool. */
     static deriveChunkRanges(chunk: Uint8Array): [number, number] {
         const iChunkStart = chunk.byteOffset;
 

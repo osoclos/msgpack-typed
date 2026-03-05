@@ -211,7 +211,7 @@ export const Uint = class Uint implements MpClassInterface<UintPrimitive> {
     /** Checks whether a chunk is valid for an Uint. */
     static isChunkValid = MpClassImpl.isChunkValid.bind(Uint);
 
-    /** Retrieves the starting index of each section of the chunk, as well as the final exclusive index, for an Uint */
+    /** Retrieves the starting index of each section of the chunk, as well as the final exclusive index, for an Uint. */
     static deriveChunkRanges(chunk: Uint8Array): [number, number] | [number, number, number] {
         const iChunkStart = chunk.byteOffset;
 

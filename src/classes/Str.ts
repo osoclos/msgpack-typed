@@ -189,7 +189,7 @@ export const Str = class Str implements MpClassInterface<StrPrimitive> {
     /** Checks whether a chunk is valid for a Str. */
     static isChunkValid = MpClassImpl.isChunkValid.bind(Str);
 
-    /** Retrieves the starting index of each section of the chunk, as well as the final exclusive index, for a Str */
+    /** Retrieves the starting index of each section of the chunk, as well as the final exclusive index, for a Str. */
     static deriveChunkRanges(chunk: Uint8Array): [number, number, number] | [number, number, number, number] {
         const iChunkStart = chunk.byteOffset;
 

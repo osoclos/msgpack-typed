@@ -156,7 +156,7 @@ export const Flt = class Flt implements MpClassInterface<FltPrimitive> {
     /** Checks whether a chunk is valid for a Flt. */
     static isChunkValid = MpClassImpl.isChunkValid.bind(Flt);
 
-    /** Retrieves the starting index of each section of the chunk, as well as the final exclusive index, for a Flt */
+    /** Retrieves the starting index of each section of the chunk, as well as the final exclusive index, for a Flt. */
     static deriveChunkRanges(chunk: Uint8Array): [number, number, number] {
         const iChunkStart = chunk.byteOffset;
 

@@ -5,8 +5,8 @@ import { decodeGeneric, toLegible } from "../utils";
 
 export const Arr = {
     /** Converts an array of MessagePack classes and primitives to simply its primitives */
-    raw<T extends ArrRaw[number]>(arr: ArrPrimitive): T[] {
-        const raw: T[] = [];
+    raw<T extends ArrRaw>(arr: ArrPrimitive): T {
+        const raw: T = <T><unknown>[];
 
         for (let item of arr) {
             if (
@@ -23,12 +23,13 @@ export const Arr = {
 
             if (this.isRawValid(item)) item = this.raw(item);
 
-            raw.push(<T>item);
+            raw.push(<T[number]>item);
         }
 
         return raw;
     },
 
+    /** Encodes an array of MessagePack classes and primitives and converts it to a MessagePack chunk. */
     encode(arr: ArrPrimitive): Uint8Array {
         if (!this.isRawValid(arr)) throw new TypeError(`Invalid value was passed into \`Arr.encode\`. Did not expect ${toLegible(arr)}.`);
 
@@ -132,6 +133,7 @@ export const Arr = {
         return outBfr;
     },
 
+    /** Decodes an array MessagePack chunk, validates it and parses it to an array of MessagePack classes. */
     decode(chunk: Uint8Array): ArrClassed {
         const ranges = this.deriveChunkRanges(chunk);
 
@@ -145,10 +147,12 @@ export const Arr = {
         return arr;
     },
 
+    /** Checks whether a value is valid for an array of MessagePack classes and primitives. */
     isRawValid(data: any): data is ArrPrimitive {
         return Array.isArray(data);
     },
 
+    /** Checks whether a chunk header code corresponds to an array of MessagePack classes. */
     isCodeValid(code: number): boolean {
         return (
             (code & 0x90) === 0x90 ||
@@ -158,9 +162,10 @@ export const Arr = {
         )
     },
 
+    /** Checks whether a chunk corresponds to an array of MessagePack classes. */
     isChunkValid: MpClassImpl.isChunkValid.bind(this),
 
-    /** Retrieves the starting index of each section of the chunk, as well as the final exclusive index, for a Str */
+    /** Retrieves the starting index of each section of the chunk, as well as the final exclusive index, for an array of MessagePack classes. */
     deriveChunkRanges(chunk: Uint8Array): [number, number[], number] | [number, number, number[], number] {
         const iChunkStart = chunk.byteOffset;
 

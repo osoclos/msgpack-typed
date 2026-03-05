@@ -169,7 +169,7 @@ export const Slice = class Slice implements MpClassInterface<SlicePrimitive> {
     /** Checks whether a chunk is valid for a Slice. */
     static isChunkValid = MpClassImpl.isChunkValid.bind(Slice);
 
-    /** Retrieves the starting index of each section of the chunk, as well as the final exclusive index, for a Slice */
+    /** Retrieves the starting index of each section of the chunk, as well as the final exclusive index, for a Slice. */
     static deriveChunkRanges(chunk: Uint8Array): [number, number, number, number] {
         const iChunkStart = chunk.byteOffset;
 

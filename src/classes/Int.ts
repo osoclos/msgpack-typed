@@ -255,7 +255,7 @@ export const Int = class Int implements MpClassInterface<IntPrimitive> {
     /** Checks whether a chunk is valid for an Int. */
     static isChunkValid = MpClassImpl.isChunkValid.bind(Int);
 
-    /** Retrieves the starting index of each section of the chunk, as well as the final exclusive index, for an Int */
+    /** Retrieves the starting index of each section of the chunk, as well as the final exclusive index, for an Int. */
     static deriveChunkRanges(chunk: Uint8Array): [number, number] | [number, number, number] {
         const iChunkStart = chunk.byteOffset;
 
