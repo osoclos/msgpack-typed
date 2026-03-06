@@ -39,7 +39,7 @@ export const Arr = {
         let lenLen: number;
 
         switch (true) {
-            case len < 0x10: {
+            case len <= 0x0f: {
                 code = 0x90 | len;
                 lenLen = 0;
 
@@ -67,7 +67,7 @@ export const Arr = {
         header[0] = code;
 
         let tmpLen = len;
-        for (let i: number = 1; i <= lenLen; i++) {
+        for (let i: number = 1, nBytes: number = 0; nBytes < lenLen; i++, nBytes++) {
             header[i] = tmpLen & 0xff;
             tmpLen >>>= 8;
         }
@@ -159,7 +159,7 @@ export const Arr = {
 
             code === 0xdc ||
             code === 0xdd
-        )
+        );
     },
 
     /** Checks whether a chunk corresponds to an array of MessagePack classes. */
@@ -172,7 +172,7 @@ export const Arr = {
         const code = chunk[iChunkStart];
         if (code === undefined) throw new Error("Unable to retrieve header code from `chunk`. Is the chunk empty/truncated or `chunk.byteOffset` exceeded its length?");
 
-        const ranges: number[] = [iChunkStart];
+        const metaRanges: number[] = [iChunkStart];
 
         let len: number;
         let iDataStart: number;
@@ -198,7 +198,7 @@ export const Arr = {
             }
 
             const iLenStart = iChunkStart + 1;
-            ranges.push(iLenStart);
+            metaRanges.push(iLenStart);
 
             len = 0;
             for (let i: number = iLenStart, nBytes = 0; i < chunk.byteLength && nBytes < lenLen; i++, nBytes++) len |= chunk[i]! << (8 * nBytes);
@@ -220,7 +220,7 @@ export const Arr = {
             }
         }
 
-        return <any>[...ranges, dataIndices, iDataEnd];
+        return <any>[...metaRanges, dataIndices, iDataEnd];
     }
 };
 

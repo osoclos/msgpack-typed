@@ -146,7 +146,7 @@ export const Str = class Str implements MpClassInterface<StrPrimitive> {
         bfr[0] = code;
 
         let tmpLen = len;
-        for (let i: number = 1; i <= lenLen; i++) {
+        for (let i: number = 1, nBytes: number = 0; nBytes < lenLen; i++, nBytes++) {
             bfr[i] = tmpLen & 0xff;
             tmpLen >>>= 8;
         }
