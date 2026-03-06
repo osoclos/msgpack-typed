@@ -1,9 +1,9 @@
 import { Bool, Flt, Int, Slice, Str, Uint } from "../classes";
 import { MP_CLASS_CONTAINER_UNION_LIST, MpClassImpl, MpClassUnion, MpPrimitiveUnion } from "../types";
 
-import { decodeGeneric, toLegible } from "../utils";
+import { decodeGeneric, encodeGeneric, toLegible } from "../utils";
 
-import { IsMpObjSym, Obj, ObjClassed, ObjPrimitive, ObjRaw } from "./Obj";
+import { Obj, ObjClassed, ObjPrimitive, ObjRaw } from "./Obj";
 
 export const Arr = {
     /** Converts an array of MessagePack classes and primitives to simply its primitives */
@@ -76,62 +76,7 @@ export const Arr = {
         }
 
         const buffers: Uint8Array[] = [header];
-
-        for (let item of arr) {
-            switch (true) {
-                case typeof item === "number": {
-                    item = new Flt(item);
-                    break;
-                }
-
-                case typeof item === "bigint": {
-                    item = new Int((item & 0x7fff_ffff_ffff_ffffn) - (item & 0x8000_0000_0000_0000n));
-                    break;
-                }
-
-                case typeof item === "string": {
-                    item = new Str(item);
-                    break;
-                }
-
-                case typeof item === "boolean": {
-                    item = new Bool(item);
-                    break;
-                }
-
-                case item instanceof Uint8Array: {
-                    item = new Slice(item);
-                    break;
-                }
-
-                default: break;
-            }
-
-            let bfr: Uint8Array;
-            switch (true) {
-                case item === null: {
-                    bfr = new Uint8Array([0xc0]);
-                    break;
-                }
-
-                case (<ObjPrimitive>item)[IsMpObjSym]: {
-                    bfr = Obj.encode(<ObjPrimitive>item);
-                    break;
-                }
-
-                case Array.isArray(item): {
-                    bfr = Arr.encode(item);
-                    break;
-                }
-
-                default: {
-                    bfr = item.encode();
-                    break;
-                }
-            }
-
-            buffers.push(bfr);
-        }
+        for (let item of arr) buffers.push(encodeGeneric(item));
 
         const outBfrLen = buffers.reduce((a, b) => a + b.length, 0);
 

@@ -1,7 +1,7 @@
 import { Bool, Flt, Int, Slice, Str, Uint } from "../classes";
 import { MP_CLASS_CONTAINER_UNION_LIST, MpClassImpl, MpClassUnion, MpPrimitiveUnion } from "../types";
 
-import { decodeGeneric, toLegible } from "../utils";
+import { decodeGeneric, encodeGeneric, toLegible } from "../utils";
 
 import { Arr, ArrClassed, ArrPrimitive, ArrRaw } from "./Arr";
 
@@ -85,65 +85,8 @@ export const Obj = {
 
         const buffers: Uint8Array[] = [header];
 
-        for (let pair of obj) {
-            for (let i: number = 0; i < 2; i++) {
-                let item = pair[i]!;
-
-                switch (true) {
-                    case typeof item === "number": {
-                        item = new Flt(item);
-                        break;
-                    }
-
-                    case typeof item === "bigint": {
-                        item = new Int((item & 0x7fff_ffff_ffff_ffffn) - (item & 0x8000_0000_0000_0000n));
-                        break;
-                    }
-
-                    case typeof item === "string": {
-                        item = new Str(item);
-                        break;
-                    }
-
-                    case typeof item === "boolean": {
-                        item = new Bool(item);
-                        break;
-                    }
-
-                    case item instanceof Uint8Array: {
-                        item = new Slice(item);
-                        break;
-                    }
-
-                    default: break;
-                }
-
-                let bfr: Uint8Array;
-                switch (true) {
-                    case item === null: {
-                        bfr = new Uint8Array([0xc0]);
-                        break;
-                    }
-
-                    case (<ObjPrimitive>item)[IsMpObjSym]: {
-                        bfr = Obj.encode(<ObjPrimitive>item);
-                        break;
-                    }
-
-                    case Array.isArray(item): {
-                        bfr = Arr.encode(item);
-                        break;
-                    }
-
-                    default: {
-                        bfr = item.encode();
-                        break;
-                    }
-                }
-
-                buffers.push(bfr);
-            }
-        }
+        for (let pair of obj)
+            for (let i: number = 0; i < 2; i++) buffers.push(encodeGeneric(pair[i]!));
 
         const outBfrLen = buffers.reduce((a, b) => a + b.length, 0);
 
