@@ -3,6 +3,8 @@ import { MP_CLASS_CONTAINER_UNION_LIST, MpClassImpl, MpClassUnion, MpPrimitiveUn
 
 import { decodeGeneric, toLegible } from "../utils";
 
+import { IsMpObjSym, Obj, ObjClassed, ObjPrimitive, ObjRaw } from "./Obj";
+
 export const Arr = {
     /** Converts an array of MessagePack classes and primitives to simply its primitives */
     raw<T extends ArrRaw>(arr: ArrPrimitive): T {
@@ -21,7 +23,8 @@ export const Arr = {
                 item instanceof Slice
             ) item = item.raw();
 
-            if (this.isRawValid(item)) item = this.raw(item);
+            if (Arr.isRawValid(item)) item = Arr.raw(item);
+            if (Obj.isRawValid(item)) item = Obj.raw(item);
 
             raw.push(<T[number]>item);
         }
@@ -106,13 +109,18 @@ export const Arr = {
 
             let bfr: Uint8Array;
             switch (true) {
-                case Array.isArray(item): {
-                    bfr = this.encode(item);
+                case item === null: {
+                    bfr = new Uint8Array([0xc0]);
                     break;
                 }
 
-                case item === null: {
-                    bfr = new Uint8Array([0xc0]);
+                case (<ObjPrimitive>item)[IsMpObjSym]: {
+                    bfr = Obj.encode(<ObjPrimitive>item);
+                    break;
+                }
+
+                case Array.isArray(item): {
+                    bfr = Arr.encode(item);
                     break;
                 }
 
@@ -226,5 +234,5 @@ export const Arr = {
 
 export type ArrPrimitive = (MpClassUnion | MpPrimitiveUnion)[];
 
-export type ArrClassed = (MpClassUnion | ArrClassed | null)[];
-export type ArrRaw = (Exclude<MpPrimitiveUnion, ArrPrimitive> | ArrRaw)[];
+export type ArrClassed = (MpClassUnion | ArrClassed | ObjClassed | null)[];
+export type ArrRaw = (Exclude<MpPrimitiveUnion, ArrPrimitive | ObjPrimitive> | ArrRaw | ObjRaw)[];
