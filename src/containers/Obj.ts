@@ -8,10 +8,10 @@ import { Arr, ArrClassed, ArrPrimitive, ArrRaw } from "./Arr";
 export const Obj = {
     /** Converts a map of MessagePack classes and primitives to simply its primitives */
     raw<T extends ObjRaw>(obj: ObjPrimitive): T {
-        const raw: T = <T><unknown>[];
+        const raw: T = <T>new Map();
 
         for (let pair of obj) {
-            const rawPair: T[number] = <T[number]><unknown>[];
+            const rawPair: [Exclude<MpPrimitiveUnion, ArrPrimitive | ObjPrimitive> | ArrRaw | ObjRaw, Exclude<MpPrimitiveUnion, ArrPrimitive | ObjPrimitive> | ArrRaw | ObjRaw] = <any>[]
 
             for (let i: number = 0; i < 2; i++) {
                 let item = pair[i]!;
@@ -31,10 +31,10 @@ export const Obj = {
                 if (Arr.isRawValid(item)) item = Arr.raw(item);
                 if (Obj.isRawValid(item)) item = Obj.raw(item);
 
-                rawPair.push(<T[number][number]>item);
+                rawPair[i] = <any>item;
             }
 
-            raw.push(rawPair);
+            raw.set(rawPair[0], rawPair[1]);
         }
 
         return raw;
@@ -44,7 +44,7 @@ export const Obj = {
     encode(obj: ObjPrimitive): Uint8Array {
         if (!this.isRawValid(obj)) throw new TypeError(`Invalid value was passed into \`Obj.encode\`. Did not expect ${toLegible(obj)}.`);
 
-        const len = obj.length;
+        const len = obj.size;
 
         let code: number;
         let lenLen: number;
@@ -85,7 +85,7 @@ export const Obj = {
 
         const buffers: Uint8Array[] = [header];
 
-        for (let pair of obj)
+        for (const pair of obj)
             for (let i: number = 0; i < 2; i++) buffers.push(encodeGeneric(pair[i]!));
 
         const outBfrLen = buffers.reduce((a, b) => a + b.length, 0);
@@ -102,18 +102,17 @@ export const Obj = {
 
         const hasLenStartIdx = ranges.length === 4;
 
-        const obj: ObjClassed = <ObjClassed><unknown>[];
-        obj[IsMpObjSym] = true;
+        const obj: ObjClassed = new Map();
 
         const dataIndices = <[number, number][]>ranges[<typeof hasLenStartIdx extends true ? 2 : 1>(1 + +hasLenStartIdx)];
-        for (const [iKey, iItem] of dataIndices) obj.push([decodeGeneric(chunk.subarray(iKey)), decodeGeneric(chunk.subarray(iItem))]);
+        for (const [iKey, iItem] of dataIndices) obj.set(decodeGeneric(chunk.subarray(iKey)), decodeGeneric(chunk.subarray(iItem)));
 
         return obj;
     },
 
     /** Checks whether a value is valid for a map of MessagePack classes and primitives. */
     isRawValid(data: any): data is ObjPrimitive {
-        return data[IsMpObjSym];
+        return data instanceof Map;
     },
 
     /** Checks whether a chunk header code corresponds to a map of MessagePack classes. */
@@ -194,10 +193,7 @@ export const Obj = {
     }
 };
 
-export const IsMpObjSym: unique symbol = Symbol();
+export type ObjPrimitive = Map<MpClassUnion | MpPrimitiveUnion, MpClassUnion | MpPrimitiveUnion>;
 
-export type ObjPrimitive = [MpClassUnion | MpPrimitiveUnion, MpClassUnion | MpPrimitiveUnion][] & { [IsMpObjSym]: true; };
-
-export type ObjClassed = [MpClassUnion | ArrClassed | ObjClassed | null, MpClassUnion | ArrClassed | ObjClassed | null][] & { [IsMpObjSym]: true; };
-export type ObjRaw = [Exclude<MpPrimitiveUnion, ArrPrimitive | ObjPrimitive> | ArrRaw | ObjRaw, Exclude<MpPrimitiveUnion, ArrPrimitive | ObjPrimitive> | ArrRaw | ObjRaw][] & { [IsMpObjSym]: true; };
-
+export type ObjClassed = Map<MpClassUnion | ArrClassed | ObjClassed | null, MpClassUnion | ArrClassed | ObjClassed | null>;
+export type ObjRaw = Map<Exclude<MpPrimitiveUnion, ArrPrimitive | ObjPrimitive> | ArrRaw | ObjRaw, Exclude<MpPrimitiveUnion, ArrPrimitive | ObjPrimitive> | ArrRaw | ObjRaw>;

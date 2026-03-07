@@ -1,5 +1,5 @@
 import { Bool, Flt, Int, Slice, Str } from "../classes";
-import { Arr, IsMpObjSym, Obj, ObjPrimitive } from "../containers";
+import { Arr, Obj } from "../containers";
 
 import { MpClassUnion, MpPrimitiveUnion } from "../types";
 
@@ -41,13 +41,13 @@ export function encodeGeneric(data: MpClassUnion | MpPrimitiveUnion): Uint8Array
             break;
         }
 
-        case (<ObjPrimitive>data)[IsMpObjSym]: {
-            bfr = Obj.encode(<ObjPrimitive>data);
+        case Array.isArray(data): {
+            bfr = Arr.encode(data);
             break;
         }
 
-        case Array.isArray(data): {
-            bfr = Arr.encode(data);
+        case data instanceof Map: {
+            bfr = Obj.encode(data);
             break;
         }
 

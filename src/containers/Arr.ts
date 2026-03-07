@@ -76,7 +76,7 @@ export const Arr = {
         }
 
         const buffers: Uint8Array[] = [header];
-        for (let item of arr) buffers.push(encodeGeneric(item));
+        for (const item of arr) buffers.push(encodeGeneric(item));
 
         const outBfrLen = buffers.reduce((a, b) => a + b.length, 0);
 
