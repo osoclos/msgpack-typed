@@ -1,4 +1,5 @@
 import { defineConfig } from "tsdown";
+import watVitePlugin from "vite-plugin-wat2wasm";
 
 export default defineConfig({
     entry: "src/index.ts",
@@ -20,5 +21,16 @@ export default defineConfig({
     clean: true,
     minify: true,
 
-    unbundle: true
+    unbundle: true,
+
+    plugins: [
+        watVitePlugin({
+            emitWasm: true,
+
+            parser: {
+                exceptions: true,
+                mutable_globals: true
+            }
+        })
+    ]
 });
