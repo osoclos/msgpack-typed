@@ -37,10 +37,16 @@ export abstract class Ext<T extends RawClass<any, any[]>, C extends number> {
         const codes = Array.isArray(a) ? [...a] : [a];
         if (codes.length === 0) throw new Error("No codes were provided for usage when creating the extension. Did you add any one-byte code into the extension?");
 
-        for (const code of codes)
-            if (!Number.isInteger(code) || code < 0x00 || code > 0x7f) throw new TypeError(`Invalid code was passed into \`Ext\`. Did not expect ${toLegible(code)}.`);
+        this.#codes = [];
 
-        this.#codes   = codes;
+        for (const code of codes) {
+            if (Number.isInteger(code)) {
+                this.#codes.push(<C>((code >>> 0) & 0xff));
+                continue;
+            }
+
+            console.warn(`Invalid code was passed into \`Ext\`. Did not expect ${toLegible(code)}. Skipping code...`);
+        }
 
         const classes = Array.isArray(b) ? [...b] : [b];
         if (classes.length === 0) throw new Error("No classes were provided for usage when creating the extension. Did you add any classes into the extension?");
@@ -57,14 +63,14 @@ export abstract class Ext<T extends RawClass<any, any[]>, C extends number> {
      * @abstract
      *
      */
-    abstract encode(data: T): Uint8Array | [Uint8Array, C];
+    abstract encode(data: T["prototype"]): Uint8Array | [Uint8Array, C];
 
     /** Decodes a class extension MessagePack chunk, validates it and parses it as this custom class. Requires overriding or extension.
      *
      * @abstract
      *
      */
-    abstract decode<D extends T>(bfr: Uint8Array, code: C): D;
+    abstract decode<D extends T["prototype"]>(bfr: Uint8Array, code: C): D;
 
     /** Checks whether the extension support this code. */
     isCodeValid(code: number): code is C {
