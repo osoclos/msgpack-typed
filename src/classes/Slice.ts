@@ -171,7 +171,7 @@ export const Slice = class Slice implements MpClassInterface<SlicePrimitive> {
 
     /** Retrieves the starting index of each section of the chunk, as well as the final exclusive index, for a Slice. */
     static deriveChunkRanges(chunk: Uint8Array): [number, number, number, number] {
-        const iChunkStart = chunk.byteOffset;
+        const iChunkStart: number = 0;
 
         const code = chunk[iChunkStart];
         if (code === undefined) throw new Error("Unable to retrieve header code from `chunk`. Is the chunk empty/truncated or `chunk.byteOffset` exceeded its length?");
@@ -198,8 +198,10 @@ export const Slice = class Slice implements MpClassInterface<SlicePrimitive> {
 
         const iLenStart = iChunkStart + 1;
 
-        let len = 0;
-        for (let i: number = iLenStart, nBytes = 0; i < chunk.byteLength && nBytes < lenLen; i++, nBytes++) {
+        const nBytes = chunk.byteLength < lenLen ? chunk.byteLength : lenLen;
+
+        let len: number = 0;
+        for (let i: number = iLenStart; i < nBytes; i++) {
             len <<= 8;
             len |= chunk[i]!;
         }

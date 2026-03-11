@@ -17,7 +17,7 @@ export function decodeGeneric<T>(chunk: Uint8Array, exts: Ext<any, number> | Ext
 
     if (!Array.isArray(exts)) exts = [exts];
 
-    const iChunkStart = chunk.byteOffset;
+    const iChunkStart: number = 0;
 
     const code = chunk[iChunkStart];
     if (code === undefined) throw new Error("Unable to retrieve header code from `chunk`. Is the chunk empty/truncated or `chunk.byteOffset` exceeded its length?");
@@ -98,7 +98,9 @@ export function decodeGeneric<T>(chunk: Uint8Array, exts: Ext<any, number> | Ext
 
         const iLenStart = iChunkStart + 1;
 
-        for (let i: number = iLenStart, nBytes = 0; i < chunk.byteLength && nBytes < lenLen; i++, nBytes++) {
+        const nBytes = chunk.byteLength < lenLen ? chunk.byteLength : lenLen;
+
+        for (let i: number = iLenStart; i < nBytes; i++) {
             len <<= 8;
             len |= chunk[i]!;
         }

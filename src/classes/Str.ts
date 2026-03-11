@@ -69,7 +69,7 @@ export const Str = class Str implements MpClassInterface<StrPrimitive> {
         if (a instanceof Uint8Array) {
             const bfr = a;
 
-            const byte = bfr[bfr.byteOffset];
+            const byte = bfr[0];
             isNull = byte === undefined;
         } else {
             const data = a;
@@ -191,7 +191,7 @@ export const Str = class Str implements MpClassInterface<StrPrimitive> {
 
     /** Retrieves the starting index of each section of the chunk, as well as the final exclusive index, for a Str. */
     static deriveChunkRanges(chunk: Uint8Array): [number, number, number] | [number, number, number, number] {
-        const iChunkStart = chunk.byteOffset;
+        const iChunkStart: number = 0;
 
         const code = chunk[iChunkStart];
         if (code === undefined) throw new Error("Unable to retrieve header code from `chunk`. Is the chunk empty/truncated or `chunk.byteOffset` exceeded its length?");
@@ -228,8 +228,10 @@ export const Str = class Str implements MpClassInterface<StrPrimitive> {
 
         const iLenStart = iChunkStart + 1;
 
-        let len = 0;
-        for (let i: number = iLenStart, nBytes = 0; i < chunk.byteLength && nBytes < lenLen; i++, nBytes++) {
+        const nBytes = chunk.byteLength < lenLen ? chunk.byteLength : lenLen;
+
+        let len: number = 0;
+        for (let i: number = iLenStart; i < nBytes; i++) {
             len <<= 8;
             len |= chunk[i]!;
         }

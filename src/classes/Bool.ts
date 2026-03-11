@@ -34,7 +34,7 @@ export const Bool = class Bool implements MpClassInterface<BoolPrimitive> {
         if (a instanceof Uint8Array) {
             const bfr = a;
 
-            const byte = bfr[bfr.byteOffset];
+            const byte = bfr[0];
             this.#state = byte === undefined ? false : byte !== 0x00;
 
             return;
@@ -74,7 +74,7 @@ export const Bool = class Bool implements MpClassInterface<BoolPrimitive> {
         if (a instanceof Uint8Array) {
             const bfr = a;
 
-            const byte = bfr[bfr.byteOffset];
+            const byte = bfr[0];
             isNull = byte === undefined;
         } else {
             const data = a;
@@ -137,7 +137,7 @@ export const Bool = class Bool implements MpClassInterface<BoolPrimitive> {
 
     /** Retrieves the starting index of each section of the chunk, as well as the final exclusive index, for a Bool. */
     static deriveChunkRanges(chunk: Uint8Array): [number, number] {
-        const iChunkStart = chunk.byteOffset;
+        const iChunkStart: number = 0;
 
         const code = chunk[iChunkStart];
         if (code === undefined) throw new Error("Unable to retrieve header code from `chunk`. Is the chunk empty/truncated or `chunk.byteOffset` exceeded its length?");

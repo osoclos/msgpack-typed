@@ -36,8 +36,10 @@ export const Uint = class Uint implements MpClassInterface<UintPrimitive> {
         if (a instanceof Uint8Array) {
             const bfr = a;
 
+            const nBytes = bfr.byteLength < 8 ? bfr.byteLength : 8;
+
             this.#data = 0n;
-            for (let i: number = bfr.byteOffset, nBytes = 0; i < bfr.byteLength && nBytes < 8; i++, nBytes++) {
+            for (let i: number = 0; i < nBytes; i++) {
                 this.#data <<= 8n;
                 this.#data |= BigInt(bfr[i]!);
             }
@@ -81,7 +83,7 @@ export const Uint = class Uint implements MpClassInterface<UintPrimitive> {
         if (a instanceof Uint8Array) {
             const bfr = a;
 
-            const byte = bfr[bfr.byteOffset];
+            const byte = bfr[0];
             isNull = byte === undefined;
         } else {
             const data = a;
@@ -216,7 +218,7 @@ export const Uint = class Uint implements MpClassInterface<UintPrimitive> {
 
     /** Retrieves the starting index of each section of the chunk, as well as the final exclusive index, for an Uint. */
     static deriveChunkRanges(chunk: Uint8Array): [number, number] | [number, number, number] {
-        const iChunkStart = chunk.byteOffset;
+        const iChunkStart: number = 0;
 
         const code = chunk[iChunkStart];
         if (code === undefined) throw new Error("Unable to retrieve header code from `chunk`. Is the chunk empty/truncated or `chunk.byteOffset` exceeded its length?");

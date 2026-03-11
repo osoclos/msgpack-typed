@@ -130,7 +130,7 @@ export const Obj = {
 
     /** Retrieves the starting index of each section of the chunk, as well as the final exclusive index, for a map of MessagePack classes. */
     deriveChunkRanges(chunk: Uint8Array): [number, [number, number][], number] | [number, number, [number, number][], number] {
-        const iChunkStart = chunk.byteOffset;
+        const iChunkStart = 0;
 
         const code = chunk[iChunkStart];
         if (code === undefined) throw new Error("Unable to retrieve header code from `chunk`. Is the chunk empty/truncated or `chunk.byteOffset` exceeded its length?");
@@ -163,8 +163,10 @@ export const Obj = {
             const iLenStart = iChunkStart + 1;
             metaRanges.push(iLenStart);
 
+            const nBytes = chunk.byteLength < lenLen ? chunk.byteLength : lenLen;
+
             len = 0;
-            for (let i: number = iLenStart, nBytes = 0; i < chunk.byteLength && nBytes < lenLen; i++, nBytes++) {
+            for (let i: number = iLenStart; i < nBytes; i++) {
                 len <<= 8;
                 len |= chunk[i]!;
             }
