@@ -1,8 +1,6 @@
 (module
     ;; import N_HASH_BITS from options.nHashBits
     (global $N_HASH_BITS (import "options" "nHashBits") i32)
-
-    ;; mut ~TABLE_SIZE
     (global $~TABLE_SIZE (mut i32) (i32.const -1))
 
     ;; _m = new Memory(initial_size: 1)
@@ -48,17 +46,6 @@
         (call $get_raw)
     )
 
-    ;; func set(key: i32, val: i32):
-    (func $set (param $key i32) (param $val i32)
-        ;; _0_hash = knuth_mul_hash(n: key)
-        (local.get $key)
-        (call $knuth_mul_hash)
-
-        ;; set_raw(i: _0_hash, val: val)
-        (local.get $val)
-        (call $set_raw)
-    )
-
     (func $get_by_idx (param $i i32) (result i32)
         ;; if i >= TABLE_SIZE:
         (i32.ge_u (local.get $i) (global.get $~TABLE_SIZE))
@@ -71,6 +58,26 @@
 
         ;; return get_raw(i: i)
         (call $get_raw (local.get $i))
+    )
+
+    ;; func get_raw(i: i32) -> i32:
+    (func $get_raw (param $i i32) (result i32)
+        ;; _0_ptr = i << 3 // => i * sizeof(i32)
+        (i32.shl (local.get $i) (i32.const 3))
+
+        ;; return _m.i32(i: _0_ptr)
+        (i32.load)
+    )
+
+    ;; func set(key: i32, val: i32):
+    (func $set (param $key i32) (param $val i32)
+        ;; _0_hash = knuth_mul_hash(n: key)
+        (local.get $key)
+        (call $knuth_mul_hash)
+
+        ;; set_raw(i: _0_hash, val: val)
+        (local.get $val)
+        (call $set_raw)
     )
 
     (func $set_by_idx (param $i i32) (param $val i32)
@@ -87,23 +94,35 @@
         (call $set_raw (local.get $i) (local.get $val))
     )
 
-    ;; func get_raw(i: i32) -> i32:
-    (func $get_raw (param $i i32) (result i32)
-        ;; _0_i_mem = i << 3 // => i * sizeof(i32)
-        (i32.shl (local.get $i) (i32.const 3))
-
-        ;; return _m.i32(i: _0_i_mem)
-        (i32.load)
-    )
-
     ;; func set_raw(i: i32, val: i32) -> i32:
     (func $set_raw (param $i i32) (param $val i32)
-        ;; _0_i_mem = i << 3 // => i * sizeof(i32)
+        ;; _0_ptr = i << 3 // => i * sizeof(i32)
         (i32.shl (local.get $i) (i32.const 3))
 
-        ;; _m.i32(i: _0_i_mem, val: val)
+        ;; _m.i32(i: _0_ptr, val: val)
         (local.get $val)
         (i32.store)
+    )
+
+    ;; func displace(key: i32, val: i32) -> i32:
+    (func $displace (param $key i32) (param $val i32) (result i32)
+        (local $hash i32)
+
+        ;; hash = knuth_mul_hash(n: key)
+        (local.get $key)
+
+        (call $knuth_mul_hash)
+        ;; {t_0} (local.set $hash)
+
+        (local.tee $hash) (; {t_0} ;)
+
+        ;; _0_old_val = get_raw(hash)
+        (call $get_raw (; {t_0} (local.get $hash) ;))
+
+        ;; set_raw(hash, val)
+        (call $set_raw (local.get $hash) (local.get $val))
+
+        ;; return _0_old_val
     )
 
     ;; func knuth_mul_hash(n: i32) -> i32:
@@ -140,14 +159,17 @@
     ;; export get
     (export "get" (func $get))
 
-    ;; export set
-    (export "set" (func $set))
-
     ;; export get_by_idx as getByIdx
     (export "getByIdx" (func $get_by_idx))
 
+    ;; export set
+    (export "set" (func $set))
+
     ;; export set_by_idx as setByIdx
     (export "setByIdx" (func $set_by_idx))
+
+    ;; export displace
+    (export "displace" (func $displace))
 
     ;; export fill_with_byte as fillWithByte
     (export "fillWithByte" (func $fill_with_byte))

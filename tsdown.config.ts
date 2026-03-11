@@ -29,7 +29,9 @@ export default defineConfig({
 
             parser: {
                 exceptions: true,
-                mutable_globals: true
+                mutable_globals: true,
+
+                bulk_memory: true
             }
         })
     ]
