@@ -5,6 +5,9 @@
     "exclude": ["dist"],
 
     "compilerOptions": {
+        // Modules
+        "types": ["vite-plugin-wat2wasm/module-types"],
+
         // Emit
         "declaration": true,
         "emitDeclarationOnly": true,
