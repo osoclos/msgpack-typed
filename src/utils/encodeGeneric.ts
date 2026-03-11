@@ -89,7 +89,7 @@ export function encodeGeneric(data: any, exts: Ext<any, number> | Ext<any, numbe
         bfr[0] = code;
 
         let tmpLen = len;
-        for (let i: number = 1, nBytes: number = 0; nBytes < lenLen; i++, nBytes++) {
+        for (let i: number = lenLen; i >= 1; i--) {
             bfr[i] = tmpLen & 0xff;
             tmpLen >>>= 8;
         }

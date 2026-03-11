@@ -37,8 +37,14 @@ export const Flt = class Flt implements MpClassInterface<FltPrimitive> {
             const bfr = a;
 
             const len = bfr.byteLength - bfr.byteOffset;
+            if (len < 0) {
+                this.#data = 0.0;
+                return;
+            }
 
-            this.#data = len < 0 ? 0.0 : new (len <= 4 ? Float32Array : Float64Array)(bfr.slice(bfr.byteOffset, bfr.byteLength))[0]!;
+            const view = new DataView(bfr.buffer, 0, bfr.byteLength);
+            this.#data = view[len <= 4 ? "getFloat32" : "getFloat64"](bfr.byteOffset);
+
             return;
         }
 
@@ -115,17 +121,14 @@ export const Flt = class Flt implements MpClassInterface<FltPrimitive> {
 
         const canBe32Bit = Object.is(this.#data, Math.fround(this.#data));
 
-        const code: number =      canBe32Bit ? 0xca : 0xcb;
-        const len : number = 1 + (canBe32Bit ? 4    : 8   );
-
-        const flt = new (canBe32Bit ? Float32Array : Float64Array)(1);
-        flt[0] = this.#data;
-
-        const fltBytes = new Uint8Array(flt.buffer);
+        const code  : number =      canBe32Bit ? 0xca : 0xcb ;
+        const len            = 1 + (canBe32Bit ?    4 :    8);
 
         const bfr = new Uint8Array(len);
         bfr[0] = code;
-        bfr.set(fltBytes, 1);
+
+        const view = new DataView(bfr.buffer);
+        view[canBe32Bit ? "setFloat32" : "setFloat64"](1, this.#data);
 
         return bfr;
     }

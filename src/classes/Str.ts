@@ -146,7 +146,7 @@ export const Str = class Str implements MpClassInterface<StrPrimitive> {
         bfr[0] = code;
 
         let tmpLen = len;
-        for (let i: number = 1, nBytes: number = 0; nBytes < lenLen; i++, nBytes++) {
+        for (let i: number = lenLen; i >= 1; i--) {
             bfr[i] = tmpLen & 0xff;
             tmpLen >>>= 8;
         }
@@ -229,7 +229,10 @@ export const Str = class Str implements MpClassInterface<StrPrimitive> {
         const iLenStart = iChunkStart + 1;
 
         let len = 0;
-        for (let i: number = iLenStart, nBytes = 0; i < chunk.byteLength && nBytes < lenLen; i++, nBytes++) len |= chunk[i]! << (8 * nBytes);
+        for (let i: number = iLenStart, nBytes = 0; i < chunk.byteLength && nBytes < lenLen; i++, nBytes++) {
+            len <<= 8;
+            len |= chunk[i]!;
+        }
 
         const iDataStart = iLenStart + lenLen;
         const iDataEnd = iDataStart + len;

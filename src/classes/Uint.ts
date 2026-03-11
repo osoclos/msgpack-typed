@@ -37,7 +37,10 @@ export const Uint = class Uint implements MpClassInterface<UintPrimitive> {
             const bfr = a;
 
             this.#data = 0n;
-            for (let i: number = bfr.byteOffset, nBytes = 0n; i < bfr.byteLength && nBytes < 8n; i++, nBytes++) this.#data |= BigInt(bfr[i]!) << (8n * nBytes);
+            for (let i: number = bfr.byteOffset, nBytes = 0; i < bfr.byteLength && nBytes < 8; i++, nBytes++) {
+                this.#data <<= 8n;
+                this.#data |= BigInt(bfr[i]!);
+            }
 
             return;
         }
@@ -167,7 +170,7 @@ export const Uint = class Uint implements MpClassInterface<UintPrimitive> {
         if (len === 0) return chunk;
 
         let tmpData = this.#data;
-        for (let i: number = 1; i < chunkLen; i++) {
+        for (let i: number = len; i >= 1; i--) {
             chunk[i] = Number(tmpData & 0xffn);
             tmpData >>= 8n;
         }

@@ -42,15 +42,18 @@ export const Int = class Int implements MpClassInterface<IntPrimitive> {
 
             this.#data = 0n;
 
-            let nBytes: bigint = 0n;
-            for (let i: number = bfr.byteOffset; i < bfr.byteLength && nBytes < 8n; i++, nBytes++) this.#data |= BigInt(bfr[i]!) << (8n * nBytes);
+            let nBytes: number = 0;
+            for (let i: number = bfr.byteOffset; i < bfr.byteLength && nBytes < 8; i++, nBytes++) {
+                this.#data <<= 8n;
+                this.#data |= BigInt(bfr[i]!);
+            }
 
             const maxByteLen =
-                nBytes <= 1n
+                nBytes <= 1
                     ? 1 :
-                nBytes <= 2n
+                nBytes <= 2
                     ? 2 :
-                nBytes <= 4n
+                nBytes <= 4
                     ? 4
                     : 8;
 
@@ -212,7 +215,7 @@ export const Int = class Int implements MpClassInterface<IntPrimitive> {
         if (len === 0) return chunk;
 
         let tmpData = BigInt.asUintN(64, this.#data);
-        for (let i: number = 1; i < chunkLen; i++) {
+        for (let i: number = len; i >= 1; i--) {
             chunk[i] = Number(tmpData & 0xffn);
             tmpData >>= 8n;
         }

@@ -98,7 +98,10 @@ export function decodeGeneric<T>(chunk: Uint8Array, exts: Ext<any, number> | Ext
 
         const iLenStart = iChunkStart + 1;
 
-        for (let i: number = iLenStart, nBytes = 0; i < chunk.byteLength && nBytes < lenLen; i++, nBytes++) len |= chunk[i]! << (8 * nBytes);
+        for (let i: number = iLenStart, nBytes = 0; i < chunk.byteLength && nBytes < lenLen; i++, nBytes++) {
+            len <<= 8;
+            len |= chunk[i]!;
+        }
 
         const iType = iLenStart + lenLen;
 
