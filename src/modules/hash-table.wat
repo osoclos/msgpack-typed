@@ -3,11 +3,13 @@
     (global $N_HASH_BITS (import "options" "nHashBits") i32)
     (global $~TABLE_SIZE (mut i32) (i32.const -1))
 
-    ;; _m = new Memory(initial_size: 1)
-    (memory 1)
+    ;; _m = new Memory(initial_size: 1, maximum_size: 2)
+    (memory 1 2)
 
     (tag $InvalidHashBitCount)
     (tag $OutOfBoundsAccess)
+
+    (tag $CannotGrowMemory)
 
     (func $__init
         ;; if N_HASH_BITS < bit_sizeof(i16):
@@ -26,8 +28,13 @@
                 ;; _0 = _m.grow(size: 1)
                 (memory.grow (i32.const 1))
 
-                ;; drop _0
-                (drop)
+                ;; if (_0 == -1):
+                (i32.eq (; _0 ;) (i32.const -1))
+                (if
+                    (then
+                        (throw $CannotGrowMemory)
+                    )
+                )
             )
         )
 

@@ -9,7 +9,9 @@
     (import "hashTable" "fillWithByte" (func $hash-table|fill_with_byte (param $byte i32)))
 
     ;; _m = new Memory(initial_size: 1)
-    (memory 1)
+    (memory $_m 1)
+
+    (tag $CannotGrowMemory)
 
     ;; func encode(len: i32) -> i32:
     (func $encode (param $len i32) (result i32)
@@ -571,8 +573,13 @@
         ;; _0 = _m.grow(size: n_pages)
         (memory.grow (local.get $n_pages))
 
-        ;; drop _0
-        (drop)
+        ;; if (_0 == -1):
+        (i32.eq (; _0 ;) (i32.const -1))
+        (if
+            (then
+                (throw $CannotGrowMemory)
+            )
+        )
     )
 
     ;; export encode
@@ -580,4 +587,7 @@
 
     ;; export decode
     (export "decode" (func $decode))
+
+    ;; export _m as memory
+    (export "memory" (memory $_m))
 )

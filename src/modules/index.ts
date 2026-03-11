@@ -45,4 +45,6 @@ export interface Lz4BlockModuleImports {
 export interface Lz4BlockModuleExports {
     encode(len: number): number;
     decode(len: number): number;
+
+    memory: WebAssembly.Memory;
 }
