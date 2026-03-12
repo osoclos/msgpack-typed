@@ -34,18 +34,6 @@
 
         (local $t_0 i32)
 
-        ;; _0 = len / I8_MAX
-        (i32.div_u (local.get $len) (i32.const 0xff (; I8_MAX ;)))
-
-        ;; _0 += 16
-        (i32.add (i32.const 16))
-
-        ;; _0_max_decoded_size = _0 + len
-        (i32.add (local.get $len))
-
-        ;; grow_to_fit_len(len: _0_max_decoded_size)
-        (call $grow_to_fit_len)
-
         ;; hash-table|fill_with_byte(I8_MAX) // reset all of the values in the hash table with I8_MAX, which will set the last bit of an i32.
         (call $hash-table|fill_with_byte (i32.const 0xff (; I8_MAX ;)))
 
@@ -538,7 +526,34 @@
         (local.get $p_out)
     )
 
-    ;; func grow_to_fit_len(len: i32)
+    ;; func grow_pre_encode(len: i32):
+    (func $grow_pre_encode (param $len i32)
+        ;; _0 = len / I8_MAX
+        (i32.div_u (local.get $len) (i32.const 0xff (; I8_MAX ;)))
+
+        ;; _0 += 16
+        (i32.add (i32.const 16))
+
+        ;; _0_max_decoded_size = _0 + len
+        (i32.add (local.get $len))
+
+        ;; _0_max_total_size = _0_max_decoded_size + len
+        (i32.add (local.get $len))
+
+        ;; grow_to_fit_len(len: _0_max_decoded_size)
+        (call $grow_to_fit_len)
+    )
+
+    ;; func grow_pre_decode(len: i32):
+    (func $grow_pre_decode (param $len i32)
+        ;; _0_max_total_size = len + len
+        (i32.add (local.get $len) (local.get $len))
+
+        ;; grow_to_fit_len(len: _0_max_decoded_size)
+        (call $grow_to_fit_len)
+    )
+
+    ;; func grow_to_fit_len(len: i32):
     (func $grow_to_fit_len (param $len i32)
         (local $n_pages i32)
 
@@ -587,6 +602,12 @@
 
     ;; export decode
     (export "decode" (func $decode))
+
+    ;; export grow_pre_encode as growPreEncode
+    (export "growPreEncode" (func $grow_pre_encode))
+
+    ;; export grow_pre_decode as growPreDecode
+    (export "growPreDecode" (func $grow_pre_decode))
 
     ;; export _m as memory
     (export "memory" (memory $_m))
