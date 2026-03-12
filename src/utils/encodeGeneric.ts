@@ -2,7 +2,7 @@ import { Bool, Ext, Flt, Int, Slice, Str } from "../classes";
 import { Arr, Obj } from "../containers";
 
 import { MpClassUnion, MpPrimitiveUnion } from "../types";
-import { encodeExtension } from "./encodeExtension";
+import { encodeExtension } from "./extensions/encodeExtension";
 
 /** Encodes an arbitrary MessagePack class or primitive to a chunk buffer. */
 export function encodeGeneric(data: MpClassUnion | MpPrimitiveUnion): Uint8Array;

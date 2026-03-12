@@ -1,4 +1,4 @@
-import { toLegible } from "./toLegible";
+import { toLegible } from "../toLegible";
 
 /** Retrieves the starting index of each section of the chunk, as well as the final exclusive index, for an Ext. */
 export function deriveExtensionChunkRanges(chunk: Uint8Array): [number, number, number, number] | [number, number, number, number, number] {

@@ -1,17 +1,9 @@
-import { Ext } from "../classes";
-import { RawClass } from "../types";
-
-/** Encodes the class object an extension is responsible for and converts it to a MessagePack chunk. */
-export function encodeExtension<T extends RawClass<any, any[]>>(ext: Ext<T, number>, data: T["prototype"]): Uint8Array {
-    const res = ext.encode(data);
-
-    const bytes = Array.isArray(res) ? res[0] : res;
-    const type  = Array.isArray(res) ? res[1] : ext.codes[0]!;
-
+/** Encodes a buffer with an extension code and converts it to a MessagePack chunk. */
+export function encodeExtensionRaw(data: Uint8Array, extCode: number): Uint8Array {
     let code: number;
     let lenLen: number;
 
-    const len = bytes.byteLength;
+    const len = data.byteLength;
 
     switch (true) {
         case len === 0x01: {
@@ -82,8 +74,8 @@ export function encodeExtension<T extends RawClass<any, any[]>>(ext: Ext<T, numb
         tmpLen >>>= 8;
     }
 
-    chunk[1 + lenLen] = type;
-    chunk.set(bytes, iDataStart);
+    chunk[1 + lenLen] = extCode;
+    chunk.set(data, iDataStart);
 
     return chunk;
 }
