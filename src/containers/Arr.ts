@@ -34,6 +34,21 @@ export const Arr = {
 
     /** Encodes an array of MessagePack classes and primitives and converts it to a MessagePack chunk. */
     encode(arr: ArrPrimitive): Uint8Array {
+        const header = this.encodeHeader(arr);
+
+        const buffers: Uint8Array[] = [header];
+        for (const item of arr) buffers.push(encodeGeneric(item));
+
+        const outBfrLen = buffers.reduce((a, b) => a + b.length, 0);
+
+        const outBfr = new Uint8Array(outBfrLen);
+        for (let i: number = 0, offset: number = 0; i < buffers.length; offset += buffers[i]!.length, i++) outBfr.set(buffers[i]!, offset);
+
+        return outBfr;
+    },
+
+    /** Encodes an array of MessagePack classes and primitives and converts it to a MessagePack chunk header without its data. */
+    encodeHeader(arr: ArrPrimitive): Uint8Array {
         if (!this.isRawValid(arr)) throw new TypeError(`Invalid value was passed into \`Arr.encode\`. Did not expect ${toLegible(arr)}.`);
 
         const len = arr.length;
@@ -75,15 +90,7 @@ export const Arr = {
             tmpLen >>>= 8;
         }
 
-        const buffers: Uint8Array[] = [header];
-        for (const item of arr) buffers.push(encodeGeneric(item));
-
-        const outBfrLen = buffers.reduce((a, b) => a + b.length, 0);
-
-        const outBfr = new Uint8Array(outBfrLen);
-        for (let i: number = 0, offset: number = 0; i < buffers.length; offset += buffers[i]!.length, i++) outBfr.set(buffers[i]!, offset);
-
-        return outBfr;
+        return header;
     },
 
     /** Decodes an array MessagePack chunk, validates it and parses it to an array of MessagePack classes. */
