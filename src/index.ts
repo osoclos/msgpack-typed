@@ -3,4 +3,4 @@ export * from "./containers";
 
 export * from "./extensions";
 
-export { encodeGeneric, decodeGeneric, encodeExtension, encodeExtensionRaw, decodeExtension, decodeExtensionRaw } from "./utils";
+export { encodeGeneric, decodeGeneric, mpLz4Pack, mpLz4Unpack, encodeExtension, encodeExtensionRaw, decodeExtension, decodeExtensionRaw, deriveExtensionChunkRanges } from "./utils";
