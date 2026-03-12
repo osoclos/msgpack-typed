@@ -2,6 +2,7 @@ import { Bool, Ext, Flt, Int, Slice, Str } from "../classes";
 import { Arr, Obj } from "../containers";
 
 import { MpClassUnion, MpPrimitiveUnion } from "../types";
+import { encodeExtension } from "./encodeExtension";
 
 /** Encodes an arbitrary MessagePack class or primitive to a chunk buffer. */
 export function encodeGeneric(data: MpClassUnion | MpPrimitiveUnion): Uint8Array;
@@ -12,93 +13,8 @@ export function encodeGeneric(data: any, exts?: Ext<any, number> | Ext<any, numb
 export function encodeGeneric(data: any, exts: Ext<any, number> | Ext<any, number>[] = []): Uint8Array {
     if (!Array.isArray(exts)) exts = [exts];
 
-    for (const ext of exts) {
-        if (!ext.isObjValid(data)) continue;
-
-        const res = ext.encode(data);
-
-        const bytes = Array.isArray(res) ? res[0] : res;
-        const type  = Array.isArray(res) ? res[1] : ext.codes[0]!;
-
-        let code: number;
-        let lenLen: number;
-
-        const len = bytes.byteLength;
-
-        switch (true) {
-            case len === 0x01: {
-                code = 0xd4;
-                lenLen = 0;
-
-                break;
-            }
-
-            case len === 0x02: {
-                code = 0xd5;
-                lenLen = 0;
-
-                break;
-            }
-
-            case len === 0x04: {
-                code = 0xd6;
-                lenLen = 0;
-
-                break;
-            }
-
-            case len === 0x08: {
-                code = 0xd7;
-                lenLen = 0;
-
-                break;
-            }
-
-            case len === 0x10: {
-                code = 0xd8;
-                lenLen = 0;
-
-                break;
-            }
-
-            case len <= 0xff: {
-                code = 0xc7;
-                lenLen = 1;
-
-                break;
-            }
-
-            case len <= 0xffff: {
-                code = 0xc8;
-                lenLen = 2;
-
-                break;
-            }
-
-            default: {
-                code = 0xc9;
-                lenLen = 4;
-
-                break;
-            }
-        }
-
-        const iDataStart = 1 + lenLen + 1;
-
-        const bfr = new Uint8Array(iDataStart + len);
-        bfr[0] = code;
-
-        let tmpLen = len;
-        for (let i: number = lenLen; i >= 1; i--) {
-            bfr[i] = tmpLen & 0xff;
-            tmpLen >>>= 8;
-        }
-
-        bfr[1 + lenLen] = type;
-        bfr.set(bytes, iDataStart);
-
-        return bfr;
-    }
+    for (const ext of exts)
+        if (ext.isObjValid(data)) encodeExtension(ext, data);
 
     switch (true) {
         case typeof data === "number": {
