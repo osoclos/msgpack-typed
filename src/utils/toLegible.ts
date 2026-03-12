@@ -1,6 +1,6 @@
-export function toLegible(data: number | bigint, toHex?: false): string;
-export function toLegible(data: number | bigint, toHex: true, minLen?: number): string;
-export function toLegible(data: string, useBackticks?: boolean): string;
+export function toLegible(data: number | bigint | (number | bigint)[], toHex?: false): string;
+export function toLegible(data: number | bigint | (number | bigint)[], toHex: true, minLen?: number): string;
+export function toLegible(data: string | string[], useBackticks?: boolean): string;
 export function toLegible(data: any): string;
 export function toLegible(data: any, b?: boolean, c?: number): string {
     if (typeof data === "number" || typeof data === "bigint") {
@@ -25,6 +25,8 @@ export function toLegible(data: any, b?: boolean, c?: number): string {
         const quote = b ? "`" : "\"";
         return quote + data + quote;
     }
+
+    if (Array.isArray(data)) return `[${data.map((val) => toLegible(val, <any>b, c)).join(", ")}]`;
 
     return typeof data === "symbol" ? data.toString() : `${data}`;
 }
