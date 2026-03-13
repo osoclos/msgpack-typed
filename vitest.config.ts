@@ -7,7 +7,9 @@ export default defineConfig({
             enabled: true,
 
             provider: preview(),
-            instances: [{ browser: "chromium" }],
-        }
+            instances: [{ browser: "chromium" }]
+        },
+
+        typecheck: { tsconfig: "tsconfig.test.json" }
     }
 });
