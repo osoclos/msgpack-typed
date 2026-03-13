@@ -1,0 +1,13 @@
+import { Arr, initHashTableModule, initLz4BlockModule, initMathModule, mpLz4Unpack } from "../../src";
+
+const fIn = new Uint8Array(<ArrayBuffer>await fetch("test.dat").then((res) => res.arrayBuffer()));
+
+const math = await initMathModule();
+const hashTable = await initHashTableModule();
+
+const lz4Block = await initLz4BlockModule({ math, hashTable });
+
+const unpackedBfr = mpLz4Unpack(lz4Block, fIn);
+
+const arr = Arr.decode(unpackedBfr);
+console.log(arr);

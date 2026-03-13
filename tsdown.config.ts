@@ -23,6 +23,8 @@ export default defineConfig({
 
     unbundle: true,
 
+    watch: ["**/*.wat"],
+
     plugins: [
         watVitePlugin({
             emitWasm: true,
