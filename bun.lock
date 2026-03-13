@@ -10,7 +10,7 @@
         "tsdown": "^0.18.4",
         "typescript": "~5.9.3",
         "vite": "^8.0.0",
-        "vite-plugin-wat2wasm": "1.2.5",
+        "vite-plugin-wat2wasm": "1.2.6",
       },
     },
   },
@@ -257,7 +257,7 @@
 
     "vite": ["vite@8.0.0", "", { "dependencies": { "@oxc-project/runtime": "0.115.0", "lightningcss": "^1.32.0", "picomatch": "^4.0.3", "postcss": "^8.5.8", "rolldown": "1.0.0-rc.9", "tinyglobby": "^0.2.15" }, "optionalDependencies": { "fsevents": "~2.3.3" }, "peerDependencies": { "@types/node": "^20.19.0 || >=22.12.0", "@vitejs/devtools": "^0.0.0-alpha.31", "esbuild": "^0.27.0", "jiti": ">=1.21.0", "less": "^4.0.0", "sass": "^1.70.0", "sass-embedded": "^1.70.0", "stylus": ">=0.54.8", "sugarss": "^5.0.0", "terser": "^5.16.0", "tsx": "^4.8.1", "yaml": "^2.4.2" }, "optionalPeers": ["@types/node", "@vitejs/devtools", "esbuild", "jiti", "less", "sass", "sass-embedded", "stylus", "sugarss", "terser", "tsx", "yaml"], "bin": { "vite": "bin/vite.js" } }, "sha512-fPGaRNj9Zytaf8LEiBhY7Z6ijnFKdzU/+mL8EFBaKr7Vw1/FWcTBAMW0wLPJAGMPX38ZPVCVgLceWiEqeoqL2Q=="],
 
-    "vite-plugin-wat2wasm": ["vite-plugin-wat2wasm@1.2.5", "", { "dependencies": { "wabt": "^1.0.39" } }, "sha512-k0ATlOQZvBTtkHEE/eYGTNNago7dtn0ZbtgsHoM1bqxpV+vxdeqzTsBJ5jhpr7q+9k8lHWm3xliWDVZf9D9/Hg=="],
+    "vite-plugin-wat2wasm": ["vite-plugin-wat2wasm@1.2.6", "", { "dependencies": { "wabt": "^1.0.39" } }, "sha512-ulFQFjgO9Ezk4To7h6Ka/6kG7a+mc2Q+CwNsfNAYSWZSnPeweYZVtt63mUJm27Axi8wVMLwF/OFjiOCoULVv0g=="],
 
     "wabt": ["wabt@1.0.39", "", { "bin": { "wasm2c": "bin/wasm2c", "wasm2wat": "bin/wasm2wat", "wat2wasm": "bin/wat2wasm", "wasm-stats": "bin/wasm-stats", "wasm-strip": "bin/wasm-strip", "wasm-interp": "bin/wasm-interp", "wasm-objdump": "bin/wasm-objdump", "wasm-validate": "bin/wasm-validate", "wasm-decompile": "bin/wasm-decompile" } }, "sha512-ba+dRL/75VQQY7RkU/CgriGbkoWAfS8TDyUlJfJhJ8KhtXgMl5dhNvoPNUcQ9IWRhW8u41glMSuZeTvsYq2rRg=="],
 
