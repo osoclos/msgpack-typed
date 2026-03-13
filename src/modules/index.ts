@@ -8,7 +8,9 @@ export function initMathModule(): Promise<MathModuleExports> {
 }
 
 export function initHashTableModule(imports: HashTableModuleImports = {}): Promise<HashTableModuleExports> {
-    imports.nHashBits ??= 12;
+    imports.options ??= {};
+    imports.options.nHashBits ??= 12;
+
     return __initHashTableModule<HashTableModuleExports, Required<HashTableModuleImports>>(<Required<HashTableModuleImports>>imports);
 }
 
@@ -24,7 +26,7 @@ export interface MathModuleExports {
     maxUnsigned(a: number, b: number): number;
 }
 
-export interface HashTableModuleImports { nHashBits?: number; }
+export interface HashTableModuleImports { options?: { nHashBits?: number; } }
 export interface HashTableModuleExports {
     get(key: number): number;
     getByIdx(i: number): number;
