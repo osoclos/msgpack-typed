@@ -12,8 +12,8 @@
     (tag $CannotGrowMemory)
 
     (func $__init
-        ;; if N_HASH_BITS < bit_sizeof(i16):
-        (i32.lt_u (global.get $N_HASH_BITS) (i32.const 16) (; bit_sizeof(i16) ;))
+        ;; if N_HASH_BITS >= bit_sizeof(i16):
+        (i32.ge_u (global.get $N_HASH_BITS) (i32.const 16) (; bit_sizeof(i16) ;))
         (if
             (then
                 ;; throw InvalidHashBitCount
