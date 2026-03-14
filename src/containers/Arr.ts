@@ -96,7 +96,6 @@ export const Arr = {
     /** Decodes an array MessagePack chunk, validates it and parses it to an array of MessagePack classes. */
     decode(chunk: Uint8Array): ArrClassed {
         const ranges = this.deriveChunkRanges(chunk);
-        console.log(ranges)
 
         const hasLenStartIdx = ranges.length === 4;
 
@@ -188,7 +187,7 @@ export const Arr = {
             let isInvalid: boolean = true;
             for (const Cls of [Uint, Int, Flt, Str, Bool, Slice, Arr, Obj]) {
                 if (!Cls.isChunkValid(chunk)) continue;
-                // console.log(dataIndices)
+
                 iDataEnd = <number>Cls.deriveChunkRanges(chunk).slice(-1)[0]!;
 
                 isInvalid = false;
