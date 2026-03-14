@@ -26,7 +26,7 @@ export function mpLz4Unpack(lz4Block: Lz4BlockModuleExports, chunk: Uint8Array):
     } else {
         extChunk = chunk;
 
-        const [, len] = ExtUtils.deriveChunkRanges(extChunk);
+        const len = ExtUtils.deriveChunkRanges(extChunk).slice(-1)[0]!;
         dataBlocks.push(chunk.slice(len));
     }
 
