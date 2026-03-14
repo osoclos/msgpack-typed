@@ -9,7 +9,5 @@ const lz4Block = await initLz4BlockModule({ math, hashTable, debug: { log: conso
 
 const unpackedBfr = mpLz4Unpack(lz4Block, fIn);
 
-console.log([...unpackedBfr].map((byte) => byte.toString(16).padStart(2, "0")));
-
 const arr = Arr.decode(unpackedBfr);
 console.log(arr);
