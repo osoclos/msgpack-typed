@@ -115,7 +115,7 @@ export const Arr = {
     /** Checks whether a chunk header code corresponds to an array of MessagePack classes. */
     isCodeValid(code: number): boolean {
         return (
-            (code & 0x90) === 0x90 ||
+            (code & 0xf0) === 0x90 ||
 
             code === 0xdc ||
             code === 0xdd
@@ -142,7 +142,7 @@ export const Arr = {
         let len: number;
         let iDataStart: number;
 
-        if ((code & 0x90) === 0x90) {
+        if ((code & 0xf0) === 0x90) {
             len = code & 0x0f;
             iDataStart = iChunkStart + 1;
         } else {

@@ -124,7 +124,7 @@ export const Obj = {
     /** Checks whether a chunk header code corresponds to a map of MessagePack classes. */
     isCodeValid(code: number): boolean {
         return (
-            (code & 0x80) === 0x80 ||
+            (code & 0xf0) === 0x80 ||
 
             code === 0xde ||
             code === 0xdf
@@ -151,7 +151,7 @@ export const Obj = {
         let len: number;
         let iDataStart: number;
 
-        if ((code & 0x80) === 0x80) {
+        if ((code & 0xf0) === 0x80) {
             len = code & 0x0f;
             iDataStart = iChunkStart + 1;
         } else {

@@ -178,7 +178,7 @@ export const Str = class Str implements MpClassInterface<StrPrimitive> {
     /** Checks whether a chunk header code is valid for a Str. */
     static isCodeValid(code: number): boolean {
         return (
-            (code & 0xa0) === 0xa0 ||
+            (code & 0xe0) === 0xa0 ||
 
             code === 0xd9 ||
             code === 0xda ||
@@ -201,7 +201,7 @@ export const Str = class Str implements MpClassInterface<StrPrimitive> {
         const code = chunk[iChunkStart];
         if (code === undefined) throw new Error("Unable to retrieve header code from `chunk`. Is the chunk empty/truncated or `chunk.byteOffset` exceeded its length?");
 
-        if ((code & 0xa0) === 0xa0) {
+        if ((code & 0xe0) === 0xa0) {
             const len = code & 0x1f;
 
             const iDataStart = iChunkStart + 1;
