@@ -225,8 +225,10 @@ export const ExtUtils = {
 
         const iLenStart = iChunkStart + 1;
 
-        const nBytes = chunk.byteLength < lenLen ? chunk.byteLength : lenLen;
-        for (let i: number = iLenStart; i < nBytes; i++) {
+        const chunkLenLen = chunk.byteLength < lenLen ? chunk.byteLength : lenLen;
+
+        len = 0;
+        for (let i: number = iLenStart, nBytes: number = 0; nBytes < chunkLenLen; i++, nBytes++) {
             len <<= 8;
             len |= chunk[i]!;
         }

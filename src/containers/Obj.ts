@@ -174,10 +174,10 @@ export const Obj = {
             const iLenStart = iChunkStart + 1;
             metaRanges.push(iLenStart);
 
-            const nBytes = chunk.byteLength < lenLen ? chunk.byteLength : lenLen;
+            const chunkLenLen = chunk.byteLength < lenLen ? chunk.byteLength : lenLen;
 
             len = 0;
-            for (let i: number = iLenStart; i < nBytes; i++) {
+            for (let i: number = iLenStart, nBytes: number = 0; nBytes < chunkLenLen; i++, nBytes++) {
                 len <<= 8;
                 len |= chunk[i]!;
             }
