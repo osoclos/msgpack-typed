@@ -1,4 +1,4 @@
-import { Arr, initHashTableModule, initLz4BlockModule, initMathModule, mpLz4Unpack } from "../../src";
+import { Arr, initHashTableModule, initLz4BlockModule, initMathModule, Lz4BlockExt, mpLz4Unpack } from "../../src";
 
 const fIn = new Uint8Array(<ArrayBuffer>await fetch("test.dat").then((res) => res.arrayBuffer()));
 
@@ -9,5 +9,5 @@ const lz4Block = await initLz4BlockModule({ math, hashTable, debug: { log: conso
 
 const unpackedBfr = mpLz4Unpack(lz4Block, fIn);
 
-const arr = Arr.decode(unpackedBfr);
-console.log(arr);
+const arr = Arr.decode(unpackedBfr, new Lz4BlockExt(lz4Block));
+console.log(Arr.raw(arr));
