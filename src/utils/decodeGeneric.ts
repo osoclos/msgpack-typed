@@ -2,7 +2,8 @@ import { Bool, Ext, Flt, Int, Slice, Str, Uint } from "../classes";
 import { Arr, ArrClassed, Obj, ObjClassed } from "../containers";
 
 import { MpClassUnion } from "../types";
-import { decodeExtensionRaw } from "./extensions";
+
+import { ExtUtils } from "./ExtUtils";
 
 import { toLegible } from "./toLegible";
 
@@ -18,7 +19,7 @@ export function decodeGeneric<T>(chunk: Uint8Array, exts: Ext<any, number> | Ext
 
     if (!Array.isArray(exts)) exts = [exts];
 
-    const [data, extCode] = decodeExtensionRaw(chunk);
+    const [data, extCode] = ExtUtils.decodeRaw(chunk);
     for (const ext of exts)
         if (ext.isCodeValid(extCode)) return ext.decode(data, extCode);
 

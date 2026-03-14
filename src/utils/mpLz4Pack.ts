@@ -3,7 +3,7 @@ import { Arr } from "../containers";
 
 import { Lz4BlockModuleExports } from "../modules";
 
-import { encodeExtensionRaw } from "./extensions";
+import { ExtUtils } from "./ExtUtils";
 
 /** Compresses a buffer using the LZ4 block algorithm. Only compatible with this port of MessagePack and the MessagePack C# port. */
 export function mpLz4Pack(lz4Block: Lz4BlockModuleExports, data: Uint8Array, maxBlockSize: number = 8192 /* 2 ^ 13 */): Uint8Array {
@@ -38,7 +38,7 @@ export function mpLz4Pack(lz4Block: Lz4BlockModuleExports, data: Uint8Array, max
     const extData = new Uint8Array(extDataLen);
     for (let iData: number = 0, iBfr: number = 0; iBfr < extBuffers.length; iData += extBuffers[iBfr]!.byteLength, iBfr++) extData.set(extBuffers[iBfr]!, iData);
 
-    const extChunk = encodeExtensionRaw(extData, extCode);
+    const extChunk = ExtUtils.encodeRaw(extData, extCode);
 
     if (isSingleBlock) {
         const [, block] = origLengthsAndBlocks[0]!;

@@ -2,7 +2,8 @@ import { Bool, Ext, Flt, Int, Slice, Str } from "../classes";
 import { Arr, Obj } from "../containers";
 
 import { MpClassUnion, MpPrimitiveUnion } from "../types";
-import { encodeExtension } from "./extensions/encodeExtension";
+
+import { ExtUtils } from "./ExtUtils";
 
 /** Encodes an arbitrary MessagePack class or primitive to a chunk buffer. */
 export function encodeGeneric(data: MpClassUnion | MpPrimitiveUnion): Uint8Array;
@@ -14,7 +15,7 @@ export function encodeGeneric(data: any, exts: Ext<any, number> | Ext<any, numbe
     if (!Array.isArray(exts)) exts = [exts];
 
     for (const ext of exts)
-        if (ext.isObjValid(data)) encodeExtension(ext, data);
+        if (ext.isObjValid(data)) ExtUtils.encode(ext, data);
 
     switch (true) {
         case typeof data === "number": {

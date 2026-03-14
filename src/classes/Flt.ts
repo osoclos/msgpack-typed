@@ -161,7 +161,7 @@ export const Flt = class Flt implements MpClassInterface<FltPrimitive> {
         const code = chunk[0];
         if (code === undefined) return false;
 
-        return this.isCodeValid?.(code) ?? false;
+        return this.isCodeValid(code);
     }
 
     /** Retrieves the starting index of each section of the chunk, as well as the final exclusive index, for a Flt. */

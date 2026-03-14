@@ -3,7 +3,7 @@ import { Arr } from "../containers";
 
 import { Lz4BlockModuleExports } from "../modules";
 
-import { decodeExtensionRaw, deriveExtensionChunkRanges } from "./extensions";
+import { ExtUtils } from "./ExtUtils";
 
 import { toLegible } from "./toLegible";
 
@@ -26,11 +26,11 @@ export function mpLz4Unpack(lz4Block: Lz4BlockModuleExports, chunk: Uint8Array):
     } else {
         extChunk = chunk;
 
-        const [, len] = deriveExtensionChunkRanges(extChunk);
+        const [, len] = ExtUtils.deriveChunkRanges(extChunk);
         dataBlocks.push(chunk.slice(len));
     }
 
-    const [extData, extCode] = decodeExtensionRaw(extChunk);
+    const [extData, extCode] = ExtUtils.decodeRaw(extChunk);
     if (extCode !== (isMultiBlock ? 0x62 : 0x63)) throw new Error("Chunk passed into LZ4 unpacker is not packed with LZ4.");
 
     const origLengths: bigint[] = [];

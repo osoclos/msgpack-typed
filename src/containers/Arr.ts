@@ -1,7 +1,7 @@
 import { Bool, Flt, Int, Slice, Str, Uint } from "../classes";
 import { MpClassUnion, MpPrimitiveUnion } from "../types";
 
-import { decodeGeneric, encodeGeneric, toLegible } from "../utils";
+import { decodeGeneric, encodeGeneric, ExtUtils, toLegible } from "../utils";
 
 import { Obj, ObjClassed, ObjPrimitive, ObjRaw } from "./Obj";
 
@@ -127,7 +127,7 @@ export const Arr = {
         const code = chunk[0];
         if (code === undefined) return false;
 
-        return this.isCodeValid?.(code) ?? false;
+        return this.isCodeValid(code);
     },
 
     /** Retrieves the starting index of each section of the chunk, as well as the final exclusive index, for an array of MessagePack classes. */
@@ -184,8 +184,18 @@ export const Arr = {
 
             chunk = chunk.subarray(iDataEnd);
 
+            let isInvalid: boolean = true;
             for (const Cls of [Uint, Int, Flt, Str, Bool, Slice, Arr, Obj]) {
-                if (Cls.isChunkValid(chunk)) iDataEnd = <number>Cls.deriveChunkRanges(chunk).slice(-1)[0]!;
+                if (Cls.isChunkValid(chunk)) {
+                    iDataEnd = <number>Cls.deriveChunkRanges(chunk).slice(-1)[0]!;
+
+                    isInvalid = false;
+                    break;
+                }
+            }
+
+            if (isInvalid) {
+                if (ExtUtils.isChunkValid(chunk)) iDataEnd = ExtUtils.deriveChunkRanges(chunk).slice(-1)[0]!;
                 else throw new TypeError("Invalid data was passed as a MessagePack chunk.");
             }
         }

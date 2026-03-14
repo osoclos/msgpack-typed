@@ -81,7 +81,7 @@ export abstract class Ext<T extends RawClass<any, any[]>, C extends number> {
         const code = chunk[0];
         if (code === undefined) return false;
 
-        return this.isCodeValid?.(code) ?? false;
+        return this.isCodeValid(code);
     }
 
     /** Checks whether this custom class is supported by this extension. */
