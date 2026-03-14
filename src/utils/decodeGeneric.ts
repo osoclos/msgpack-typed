@@ -15,7 +15,7 @@ export function decodeGeneric<T>(chunk: Uint8Array, exts?: Ext<any, number> | Ex
 
 export function decodeGeneric<T>(chunk: Uint8Array, exts: Ext<any, number> | Ext<any, number>[] = []): T {
     for (const Cls of [Uint, Int, Flt, Str, Bool, Slice, Arr, Obj])
-        if (Cls.isChunkValid(chunk)) return <T>Cls.decode(chunk);
+        if (Cls.isChunkValid(chunk)) return <T>(Cls === Arr || Cls === Obj ? (<any>Cls.decode)(chunk, exts) : (<any>Cls.decode)(chunk));
 
          if (chunk[0] === 0xc0) return <T>null;
     else if (ExtUtils.isChunkValid(chunk)) {

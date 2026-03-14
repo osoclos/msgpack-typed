@@ -1,5 +1,5 @@
-import { Bool, Flt, Int, Slice, Str, Uint } from "../classes";
-import { MpClassUnion, MpPrimitiveUnion } from "../types";
+import { Bool, Ext, Flt, Int, Slice, Str, Uint } from "../classes";
+import { MpClassUnion, MpPrimitiveUnion, RawClass } from "../types";
 
 import { decodeGeneric, encodeGeneric, ExtUtils, toLegible } from "../utils";
 
@@ -93,19 +93,7 @@ export const Arr = {
         return header;
     },
 
-    /** Decodes an array MessagePack chunk, validates it and parses it to an array of MessagePack classes. */
-    decode(chunk: Uint8Array): ArrClassed {
-        const ranges = this.deriveChunkRanges(chunk);
-
-        const hasLenStartIdx = ranges.length === 4;
-
-        const arr: ArrClassed = [];
-
-        const dataIndices = <number[]>ranges[<typeof hasLenStartIdx extends true ? 2 : 1>(1 + +hasLenStartIdx)];
-        for (const i of dataIndices) arr.push(decodeGeneric(chunk.subarray(i)));
-
-        return arr;
-    },
+    decode,
 
     /** Checks whether a value is valid for an array of MessagePack classes and primitives. */
     isRawValid(data: any): data is ArrPrimitive {
@@ -211,3 +199,22 @@ export type ArrPrimitive = (MpClassUnion | MpPrimitiveUnion)[];
 
 export type ArrClassed = (MpClassUnion | ArrClassed | ObjClassed | null)[];
 export type ArrRaw = (Exclude<MpPrimitiveUnion, ArrPrimitive | ObjPrimitive> | ArrRaw | ObjRaw)[];
+
+/** Decodes an array MessagePack chunk, validates it and parses it to an array of MessagePack classes. */
+function decode<T extends ArrClassed>(chunk: Uint8Array): T;
+
+/** Decodes an array MessagePack chunk, validates it and parses it to to its value or object, with an option to add extensions to the encoder. */
+function decode<T extends (ArrClassed[number] | RawClass<any, any[]>)[]>(chunk: Uint8Array, exts?: Ext<RawClass<any, any[]>, number> | Ext<RawClass<any, any[]>, number>[]): T;
+
+function decode(chunk: Uint8Array, exts?: Ext<any, number> | Ext<any, number>[]): ArrClassed {
+    const ranges = Arr.deriveChunkRanges(chunk);
+
+    const hasLenStartIdx = ranges.length === 4;
+
+    const arr: ArrClassed = [];
+
+    const dataIndices = <number[]>ranges[<typeof hasLenStartIdx extends true ? 2 : 1>(1 + +hasLenStartIdx)];
+    for (const i of dataIndices) arr.push(decodeGeneric(chunk.subarray(i), exts));
+
+    return arr;
+}

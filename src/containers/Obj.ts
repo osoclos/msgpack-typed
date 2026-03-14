@@ -1,5 +1,5 @@
-import { Bool, Flt, Int, Slice, Str, Uint } from "../classes";
-import { MpClassUnion, MpPrimitiveUnion } from "../types";
+import { Bool, Ext, Flt, Int, Slice, Str, Uint } from "../classes";
+import { MpClassUnion, MpPrimitiveUnion, RawClass } from "../types";
 
 import { decodeGeneric, encodeGeneric, ExtUtils, toLegible } from "../utils";
 
@@ -102,19 +102,7 @@ export const Obj = {
         return header;
     },
 
-    /** Decodes a map MessagePack chunk, validates it and parses it to a map of MessagePack classes. */
-    decode(chunk: Uint8Array): ObjClassed {
-        const ranges = this.deriveChunkRanges(chunk);
-
-        const hasLenStartIdx = ranges.length === 4;
-
-        const obj: ObjClassed = new Map();
-
-        const dataIndices = <[number, number][]>ranges[<typeof hasLenStartIdx extends true ? 2 : 1>(1 + +hasLenStartIdx)];
-        for (const [iKey, iItem] of dataIndices) obj.set(decodeGeneric(chunk.subarray(iKey)), decodeGeneric(chunk.subarray(iItem)));
-
-        return obj;
-    },
+    decode,
 
     /** Checks whether a value is valid for a map of MessagePack classes and primitives. */
     isRawValid(data: any): data is ObjPrimitive {
@@ -226,3 +214,22 @@ export type ObjPrimitive = Map<MpClassUnion | MpPrimitiveUnion, MpClassUnion | M
 
 export type ObjClassed = Map<MpClassUnion | ArrClassed | ObjClassed | null, MpClassUnion | ArrClassed | ObjClassed | null>;
 export type ObjRaw = Map<Exclude<MpPrimitiveUnion, ArrPrimitive | ObjPrimitive> | ArrRaw | ObjRaw, Exclude<MpPrimitiveUnion, ArrPrimitive | ObjPrimitive> | ArrRaw | ObjRaw>;
+
+/** Decodes an array MessagePack chunk, validates it and parses it to an array of MessagePack classes. */
+function decode<T extends ObjClassed>(chunk: Uint8Array): T;
+
+/** Decodes an array MessagePack chunk, validates it and parses it to to its value or object, with an option to add extensions to the encoder. */
+function decode<T extends ObjClassed | Map<RawClass<any, any[]>, RawClass<any, any[]>>>(chunk: Uint8Array, exts?: Ext<RawClass<any, any[]>, number> | Ext<RawClass<any, any[]>, number>[]): T;
+
+function decode(chunk: Uint8Array, exts?: Ext<any, number> | Ext<any, number>[]): ObjClassed {
+    const ranges = Obj.deriveChunkRanges(chunk);
+
+    const hasLenStartIdx = ranges.length === 4;
+
+    const obj: ObjClassed = new Map();
+
+    const dataIndices = <[number, number][]>ranges[<typeof hasLenStartIdx extends true ? 2 : 1>(1 + +hasLenStartIdx)];
+    for (const [iKey, iItem] of dataIndices) obj.set(decodeGeneric(chunk.subarray(iKey), exts), decodeGeneric(chunk.subarray(iItem), exts));
+
+    return obj;
+}
