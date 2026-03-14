@@ -37,7 +37,7 @@ export function mpLz4Unpack(lz4Block: Lz4BlockModuleExports, chunk: Uint8Array):
     for (let i: number = 0; i < extData.byteLength;) {
         const uintChunk = extData.subarray(i);
 
-        const [, len] = Uint.deriveChunkRanges(uintChunk);
+        const len = Uint.deriveChunkRanges(uintChunk).slice(-1)[0]!;
 
         const uint = Uint.decode(uintChunk);
         origLengths.push(BigInt(uint.raw()));
