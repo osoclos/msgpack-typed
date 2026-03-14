@@ -103,8 +103,8 @@ export const Obj = {
     },
 
     /** Decodes a map MessagePack chunk, validates it and parses it to a map of MessagePack classes. */
-    decode(chunk: Uint8Array, startOffset?: number): ObjClassed {
-        const ranges = this.deriveChunkRanges(chunk, startOffset);
+    decode(chunk: Uint8Array): ObjClassed {
+        const ranges = this.deriveChunkRanges(chunk);
 
         const hasLenStartIdx = ranges.length === 4;
 
@@ -140,10 +140,10 @@ export const Obj = {
     },
 
     /** Retrieves the starting index of each section of the chunk, as well as the final exclusive index, for a map of MessagePack classes. */
-    deriveChunkRanges(chunk: Uint8Array, startOffset: number = 0): [number, [number, number][], number] | [number, number, [number, number][], number] {
-        const iChunkStart = 0;
+    deriveChunkRanges(chunk: Uint8Array): [number, [number, number][], number] | [number, number, [number, number][], number] {
+        const iChunkStart = chunk.byteOffset;
 
-        const code = chunk[iChunkStart];
+        const code = chunk[0];
         if (code === undefined) throw new Error("Unable to retrieve header code from `chunk`. Is the chunk empty/truncated or `chunk.byteOffset` exceeded its length?");
 
         const metaRanges: number[] = [iChunkStart];
@@ -153,7 +153,7 @@ export const Obj = {
 
         if ((code & 0xf0) === 0x80) {
             len = code & 0x0f;
-            iDataStart = iChunkStart + 1;
+            iDataStart = 1;
         } else {
             let lenLen: number;
 
@@ -171,7 +171,7 @@ export const Obj = {
                 default: throw new TypeError(`Invalid chunk header for \`Obj\`. Did not expect ${toLegible(code, true)}.`);
             }
 
-            const iLenStart = iChunkStart + 1;
+            const iLenStart = 1;
             metaRanges.push(iLenStart);
 
             const chunkLenLen = chunk.byteLength < lenLen ? chunk.byteLength : lenLen;
@@ -192,7 +192,7 @@ export const Obj = {
             const indices: [number, number] = <[number, number]><unknown>[];
 
             for (let j: number = 0; j < 2; j++) {
-                indices.push(iDataEnd + (chunk.byteOffset - startOffset));
+                indices.push(iDataEnd + chunk.byteOffset - iChunkStart);
 
                 chunk = chunk.subarray(iDataEnd);
 
@@ -200,7 +200,7 @@ export const Obj = {
                 for (const Cls of [Uint, Int, Flt, Str, Bool, Slice, Arr, Obj]) {
                     if (!Cls.isChunkValid(chunk)) continue;
 
-                    iDataEnd = <number>(Cls === Arr || Cls === Obj ? Cls.deriveChunkRanges(chunk, chunk.byteOffset) : Cls.deriveChunkRanges(chunk)).slice(-1)[0]!;
+                    iDataEnd = <number>Cls.deriveChunkRanges(chunk).slice(-1)[0]!;
 
                     isInvalid = false;
                     break;
@@ -216,7 +216,7 @@ export const Obj = {
             dataIndices.push(indices);
         }
 
-        return <any>[...metaRanges, dataIndices, iDataEnd + chunk.byteOffset];
+        return <any>[...metaRanges, dataIndices, iDataEnd + chunk.byteOffset - iChunkStart];
     },
 
     [Symbol.toStringTag]: "Obj"
