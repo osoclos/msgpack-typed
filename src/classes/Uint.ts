@@ -186,7 +186,7 @@ export const Uint = class Uint implements MpClassInterface<UintPrimitive> {
 
         const nRanges = ranges.length;
         if (nRanges === 2) {
-            const code = ranges[0];
+            const code = chunk[ranges[0]]!;
             return new Uint(code);
         }
 

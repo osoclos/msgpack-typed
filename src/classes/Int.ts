@@ -229,7 +229,7 @@ export const Int = class Int implements MpClassInterface<IntPrimitive> {
 
         const nRanges = ranges.length;
         if (nRanges === 2) {
-            const code = ranges[0];
+            const code = chunk[ranges[0]]!;
             return new Int(code - 0x0100);
         }
         const [, iDataStart, iDataEnd] = ranges;

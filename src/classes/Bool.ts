@@ -115,7 +115,7 @@ export const Bool = class Bool implements MpClassInterface<BoolPrimitive> {
     static decode(chunk: Uint8Array): Bool {
         const ranges = this.deriveChunkRanges(chunk);
 
-        const code = ranges[0];
+        const code = chunk[ranges[0]]!;
         return new Bool(code === 0xc3);
     }
 

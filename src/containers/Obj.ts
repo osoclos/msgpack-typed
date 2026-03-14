@@ -103,8 +103,8 @@ export const Obj = {
     },
 
     /** Decodes a map MessagePack chunk, validates it and parses it to a map of MessagePack classes. */
-    decode(chunk: Uint8Array): ObjClassed {
-        const ranges = this.deriveChunkRanges(chunk);
+    decode(chunk: Uint8Array, startOffset?: number): ObjClassed {
+        const ranges = this.deriveChunkRanges(chunk, startOffset);
 
         const hasLenStartIdx = ranges.length === 4;
 
@@ -140,7 +140,7 @@ export const Obj = {
     },
 
     /** Retrieves the starting index of each section of the chunk, as well as the final exclusive index, for a map of MessagePack classes. */
-    deriveChunkRanges(chunk: Uint8Array): [number, [number, number][], number] | [number, number, [number, number][], number] {
+    deriveChunkRanges(chunk: Uint8Array, startOffset: number = 0): [number, [number, number][], number] | [number, number, [number, number][], number] {
         const iChunkStart = 0;
 
         const code = chunk[iChunkStart];
@@ -192,22 +192,23 @@ export const Obj = {
             const indices: [number, number] = <[number, number]><unknown>[];
 
             for (let j: number = 0; j < 2; j++) {
-                indices.push(iDataEnd);
+                indices.push(iDataEnd + (chunk.byteOffset - startOffset));
 
                 chunk = chunk.subarray(iDataEnd);
 
                 let isInvalid: boolean = true;
                 for (const Cls of [Uint, Int, Flt, Str, Bool, Slice, Arr, Obj]) {
-                    if (Cls.isChunkValid(chunk)) {
-                        iDataEnd = <number>Cls.deriveChunkRanges(chunk).slice(-1)[0]!;
+                    if (!Cls.isChunkValid(chunk)) continue;
 
-                        isInvalid = false;
-                        break;
-                    }
+                    iDataEnd = <number>(Cls === Arr || Cls === Obj ? Cls.deriveChunkRanges(chunk, chunk.byteOffset) : Cls.deriveChunkRanges(chunk)).slice(-1)[0]!;
+
+                    isInvalid = false;
+                    break;
                 }
 
                 if (isInvalid) {
-                    if (ExtUtils.isChunkValid(chunk)) iDataEnd = ExtUtils.deriveChunkRanges(chunk).slice(-1)[0]!;
+                         if (chunk[0] === 0xc0) iDataEnd = 1;
+                    else if (ExtUtils.isChunkValid(chunk)) iDataEnd = ExtUtils.deriveChunkRanges(chunk).slice(-1)[0]!;
                     else throw new TypeError("Invalid data was passed as a MessagePack chunk.");
                 }
             }
@@ -215,8 +216,10 @@ export const Obj = {
             dataIndices.push(indices);
         }
 
-        return <any>[...metaRanges, dataIndices, iDataEnd];
-    }
+        return <any>[...metaRanges, dataIndices, iDataEnd + chunk.byteOffset];
+    },
+
+    [Symbol.toStringTag]: "Obj"
 };
 
 export type ObjPrimitive = Map<MpClassUnion | MpPrimitiveUnion, MpClassUnion | MpPrimitiveUnion>;
