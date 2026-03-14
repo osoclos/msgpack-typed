@@ -57,7 +57,7 @@ export function mpLz4Pack(lz4Block: Lz4BlockModuleExports, data: Uint8Array, max
     const blockBuffers: Uint8Array[] = [];
     for (const [, block] of origLengthsAndBlocks) {
         const slice = new Slice(block);
-        extBuffers.push(slice.encode());
+        blockBuffers.push(slice.encode());
     }
 
     const blockBufferLen = blockBuffers.reduce((len, bfr) => len + bfr.byteLength, 0);
