@@ -21,24 +21,3 @@ export interface MpClassModule<T> {
 
     deriveChunkRanges(chunk: Uint8Array): number[];
 }
-
-const NoThisOverrideSym: unique symbol = Symbol();
-interface RequireThisOverrideClass {
-    [NoThisOverrideSym]: true;
-    prototype: { [NoThisOverrideSym]: true; };
-}
-
-export const MpClassImpl = {
-    [NoThisOverrideSym]: true,
-
-    isChunkValid(chunk: Uint8Array): boolean {
-        if (this[NoThisOverrideSym]) throw new TypeError("`this` argument of `MpClassImpl.isChunkValid` must be overiden!");
-
-        const code = chunk[0];
-        if (code === undefined) return false;
-
-        return this.isCodeValid?.(code) ?? false;
-    },
-
-    prototype: { [NoThisOverrideSym]: true }
-} satisfies Partial<MpClassModule<unknown> & { prototype: Partial<MpClassInterface<unknown>> }> & RequireThisOverrideClass;

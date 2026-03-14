@@ -1,7 +1,7 @@
-import { Ext } from "../classes";
-import { ArrClassed, ObjClassed } from "../containers";
+import { Bool, Ext, Flt, Int, Slice, Str, Uint } from "../classes";
+import { Arr, ArrClassed, Obj, ObjClassed } from "../containers";
 
-import { MP_CLASS_CONTAINER_UNION_LIST, MpClassUnion } from "../types";
+import { MpClassUnion } from "../types";
 import { decodeExtensionRaw } from "./extensions";
 
 import { toLegible } from "./toLegible";
@@ -13,7 +13,7 @@ export function decodeGeneric<T extends MpClassUnion | ArrClassed | ObjClassed>(
 export function decodeGeneric<T>(chunk: Uint8Array, exts?: Ext<any, number> | Ext<any, number>[]): T;
 
 export function decodeGeneric<T>(chunk: Uint8Array, exts: Ext<any, number> | Ext<any, number>[] = []): T {
-    for (const Cls of MP_CLASS_CONTAINER_UNION_LIST)
+    for (const Cls of [Uint, Int, Flt, Str, Bool, Slice, Arr, Obj])
         if (Cls.isChunkValid(chunk)) return <T>Cls.decode(chunk);
 
     if (!Array.isArray(exts)) exts = [exts];

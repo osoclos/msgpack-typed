@@ -1,4 +1,4 @@
-import { MpClassImpl, MpClassInterface, MpClassModule } from "../types";
+import { MpClassInterface, MpClassModule } from "../types";
 import { toLegible } from "../utils";
 
 export const Bool = class Bool implements MpClassInterface<BoolPrimitive> {
@@ -133,7 +133,12 @@ export const Bool = class Bool implements MpClassInterface<BoolPrimitive> {
     }
 
     /** Checks whether a chunk is valid for a Bool. */
-    static isChunkValid = MpClassImpl.isChunkValid.bind(Bool);
+    static isChunkValid(chunk: Uint8Array): boolean {
+        const code = chunk[0];
+        if (code === undefined) return false;
+
+        return this.isCodeValid?.(code) ?? false;
+    }
 
     /** Retrieves the starting index of each section of the chunk, as well as the final exclusive index, for a Bool. */
     static deriveChunkRanges(chunk: Uint8Array): [number, number] {

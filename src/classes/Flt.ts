@@ -1,4 +1,4 @@
-import { MpClassImpl, MpClassInterface, MpClassModule } from "../types";
+import { MpClassInterface, MpClassModule } from "../types";
 import { toLegible } from "../utils";
 
 export const Flt = class Flt implements MpClassInterface<FltPrimitive> {
@@ -157,7 +157,12 @@ export const Flt = class Flt implements MpClassInterface<FltPrimitive> {
     }
 
     /** Checks whether a chunk is valid for a Flt. */
-    static isChunkValid = MpClassImpl.isChunkValid.bind(Flt);
+    static isChunkValid(chunk: Uint8Array): boolean {
+        const code = chunk[0];
+        if (code === undefined) return false;
+
+        return this.isCodeValid?.(code) ?? false;
+    }
 
     /** Retrieves the starting index of each section of the chunk, as well as the final exclusive index, for a Flt. */
     static deriveChunkRanges(chunk: Uint8Array): [number, number, number] {

@@ -1,4 +1,4 @@
-import { MpClassImpl, MpClassInterface, MpClassModule } from "../types";
+import { MpClassInterface, MpClassModule } from "../types";
 import { toLegible } from "../utils";
 
 export const Slice = class Slice implements MpClassInterface<SlicePrimitive> {
@@ -167,7 +167,12 @@ export const Slice = class Slice implements MpClassInterface<SlicePrimitive> {
     }
 
     /** Checks whether a chunk is valid for a Slice. */
-    static isChunkValid = MpClassImpl.isChunkValid.bind(Slice);
+    static isChunkValid(chunk: Uint8Array): boolean {
+        const code = chunk[0];
+        if (code === undefined) return false;
+
+        return this.isCodeValid?.(code) ?? false;
+    }
 
     /** Retrieves the starting index of each section of the chunk, as well as the final exclusive index, for a Slice. */
     static deriveChunkRanges(chunk: Uint8Array): [number, number, number, number] {

@@ -77,6 +77,13 @@ export abstract class Ext<T extends RawClass<any, any[]>, C extends number> {
         return this.#codes.includes(<C>code);
     }
 
+    isChunkValid(chunk: Uint8Array): boolean {
+        const code = chunk[0];
+        if (code === undefined) return false;
+
+        return this.isCodeValid?.(code) ?? false;
+    }
+
     /** Checks whether this custom class is supported by this extension. */
     isObjValid(obj: any): obj is T["prototype"] {
         for (const Cls of this.#classes)

@@ -1,4 +1,4 @@
-import { MpClassImpl, MpClassInterface, MpClassModule } from "../types";
+import { MpClassInterface, MpClassModule } from "../types";
 import { toLegible } from "../utils";
 
 export const Uint = class Uint implements MpClassInterface<UintPrimitive> {
@@ -214,7 +214,12 @@ export const Uint = class Uint implements MpClassInterface<UintPrimitive> {
     }
 
     /** Checks whether a chunk is valid for an Uint. */
-    static isChunkValid = MpClassImpl.isChunkValid.bind(Uint);
+    static isChunkValid(chunk: Uint8Array): boolean {
+        const code = chunk[0];
+        if (code === undefined) return false;
+
+        return this.isCodeValid?.(code) ?? false;
+    }
 
     /** Retrieves the starting index of each section of the chunk, as well as the final exclusive index, for an Uint. */
     static deriveChunkRanges(chunk: Uint8Array): [number, number] | [number, number, number] {
