@@ -104,6 +104,20 @@ export const Obj = {
 
     decode,
 
+    /** Decodes an array MessagePack chunk, and converts it to an array of MessagePack chunks within the array. */
+    decodeHeader(chunk: Uint8Array): [Uint8Array, Uint8Array][] {
+        const ranges = Obj.deriveChunkRanges(chunk);
+
+        const hasLenStartIdx = ranges.length === 4;
+
+        const obj: [Uint8Array, Uint8Array][] = [];
+
+        const dataIndices = <[number, number][]>ranges[<typeof hasLenStartIdx extends true ? 2 : 1>(1 + +hasLenStartIdx)];
+        for (const [iKey, iItem] of dataIndices) obj.push([chunk.subarray(iKey), chunk.subarray(iItem)]);
+
+        return obj;
+    },
+
     /** Checks whether a value is valid for a map of MessagePack classes and primitives. */
     isRawValid(data: any): data is ObjPrimitive {
         return data instanceof Map;
@@ -183,6 +197,10 @@ export const Obj = {
                 indices.push(iDataEnd + chunk.byteOffset - iChunkStart);
 
                 chunk = chunk.subarray(iDataEnd);
+                if (chunk[0] === 0xc0) {
+                    iDataEnd = 1;
+                    continue;
+                }
 
                 let isInvalid: boolean = true;
                 for (const Cls of [Uint, Int, Flt, Str, Bool, Slice, Arr, Obj]) {
@@ -195,8 +213,7 @@ export const Obj = {
                 }
 
                 if (isInvalid) {
-                         if (chunk[0] === 0xc0) iDataEnd = 1;
-                    else if (ExtUtils.isChunkValid(chunk)) iDataEnd = ExtUtils.deriveChunkRanges(chunk).slice(-1)[0]!;
+                    if (ExtUtils.isChunkValid(chunk)) iDataEnd = ExtUtils.deriveChunkRanges(chunk).slice(-1)[0]!;
                     else throw new TypeError("Invalid data was passed as a MessagePack chunk.");
                 }
             }
@@ -222,14 +239,10 @@ function decode<T extends ObjClassed>(chunk: Uint8Array): T;
 function decode<T extends ObjClassed | Map<RawClass<any, any[]>, RawClass<any, any[]>>>(chunk: Uint8Array, exts?: Ext<RawClass<any, any[]>, number> | Ext<RawClass<any, any[]>, number>[]): T;
 
 function decode(chunk: Uint8Array, exts?: Ext<any, number> | Ext<any, number>[]): ObjClassed {
-    const ranges = Obj.deriveChunkRanges(chunk);
+    const subChunks = Obj.decodeHeader(chunk);
 
-    const hasLenStartIdx = ranges.length === 4;
-
-    const obj: ObjClassed = new Map();
-
-    const dataIndices = <[number, number][]>ranges[<typeof hasLenStartIdx extends true ? 2 : 1>(1 + +hasLenStartIdx)];
-    for (const [iKey, iItem] of dataIndices) obj.set(decodeGeneric(chunk.subarray(iKey), exts), decodeGeneric(chunk.subarray(iItem), exts));
+    const obj = new Map();
+    for (const [keyChunk, itemChunk] of subChunks) obj.set(decodeGeneric(keyChunk, exts), decodeGeneric(itemChunk, exts));
 
     return obj;
 }
