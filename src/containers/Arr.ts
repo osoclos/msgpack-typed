@@ -221,7 +221,7 @@ export type ArrRaw = (Exclude<MpPrimitiveUnion, ArrPrimitive | ObjPrimitive> | A
 function decode<T extends ArrClassed>(chunk: Uint8Array): T;
 
 /** Decodes an array MessagePack chunk, validates it and parses it to to its value or object, with an option to add extensions to the encoder. */
-function decode<T extends (ArrClassed[number] | RawClass<any, any[]>)[]>(chunk: Uint8Array, exts?: Ext<RawClass<any, any[]>, number> | Ext<RawClass<any, any[]>, number>[]): T;
+function decode<T extends ArrClassed>(chunk: Uint8Array, exts?: Ext<RawClass<any, any[]>, number> | Ext<RawClass<any, any[]>, number>[]): T;
 
 function decode(chunk: Uint8Array, exts?: Ext<any, number> | Ext<any, number>[]): ArrClassed {
     const subChunks = Arr.decodeHeader(chunk);
