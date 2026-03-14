@@ -1,4 +1,4 @@
-export * from "./extensions";
+export * from "./ExtUtils";
 
 export * from "./encodeGeneric";
 export * from "./decodeGeneric";
