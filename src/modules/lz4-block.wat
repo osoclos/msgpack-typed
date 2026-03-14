@@ -8,6 +8,9 @@
     ;; import hash-table.fillWithByte as hash-table|fill_with_byte
     (import "hashTable" "fillWithByte" (func $hash-table|fill_with_byte (param $byte i32)))
 
+    ;; import debug.log as debug|log
+    (import "debug" "log" (func $debug|log (param $n i32)))
+
     ;; _m = new Memory(initial_size: 1)
     (memory $_m 1)
 
@@ -496,8 +499,8 @@
                         ;; _m.copy(dest: p_out, start: p_match, len: offset)
                         (memory.copy (local.get $p_out) (local.get $p_match) (local.get $offset))
 
-                        ;; p_in += offset
-                        (local.set $p_in (i32.add (local.get $p_in) (local.get $offset)))
+                        ;; p_out += offset
+                        (local.set $p_out (i32.add (local.get $p_out) (local.get $offset)))
 
                         ;; p_match += offset
                         (local.set $p_match (i32.add (local.get $p_match) (local.get $offset)))
