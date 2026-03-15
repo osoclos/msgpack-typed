@@ -1,13 +1,43 @@
-import { Arr, initHashTableModule, initLz4BlockModule, initMathModule, Lz4BlockExt, mpLz4Unpack } from "../../src";
+import { Arr, ArrClassed, decodeGeneric, encodeGeneric, Lz4BlockExt, mpLz4Unpack } from "../../src";
 
-const fIn = new Uint8Array(<ArrayBuffer>await fetch("test.dat").then((res) => res.arrayBuffer()));
+const lz4BlockExt = await Lz4BlockExt.create();
 
-const math = await initMathModule();
-const hashTable = await initHashTableModule();
+const fIn = new Uint8Array(<ArrayBuffer>await fetch("in.dat").then((res) => res.arrayBuffer()));
 
-const lz4Block = await initLz4BlockModule({ math, hashTable, debug: { log: console.log } });
+console.log("[1/5] - unpacking using LZ4 block algorithm...");
 
-const unpackedBfr = mpLz4Unpack(lz4Block, fIn);
+const unpackedBfr = mpLz4Unpack(lz4BlockExt.lz4Block, fIn);
+console.log("[1/5] - unpacking complete!", unpackedBfr);
 
-const arr = Arr.decode(unpackedBfr, new Lz4BlockExt(lz4Block));
-console.log(Arr.raw(arr));
+console.log("[2/5] - decoding unpacked buffer...");
+
+const decodedData = decodeGeneric<ArrClassed>(unpackedBfr, lz4BlockExt);
+console.log("[2/5] - decoding complete!", decodedData);
+
+console.log("[3/5] - turning into raw data...");
+
+const rawData = Arr.raw(decodedData);
+console.log("[3/5] - turned decoded data into raw data!", rawData);
+
+console.log("[4/5] - repacking decoded data...");
+
+const packedBfr = encodeGeneric(decodedData, lz4BlockExt);
+console.log("[4/5] - repacked decoded data!", packedBfr);
+
+const EXPORT_PACKED_BFR: boolean = false;
+if (EXPORT_PACKED_BFR) {
+    const url = URL.createObjectURL(new Blob([<Uint8Array<ArrayBuffer>>packedBfr]));
+
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "out.dat";
+
+    link.click();
+}
+
+console.log("[5/5] - re-unpacking repacked buffer...");
+
+const unpackedDataFromRepackedBfr = decodeGeneric(packedBfr, lz4BlockExt);
+console.log("[5/5] - successfully unpacked repacked buffer!", unpackedDataFromRepackedBfr);
+
+console.log("Tests complete!");

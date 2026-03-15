@@ -31,12 +31,12 @@ export interface HashTableModuleExports {
     get(key: number): number;
     getByIdx(i: number): number;
 
-    set(key: number, val: number): void;
-    setByIdx(key: number, val: number): void;
+    set(key: number, item: number): void;
+    setByIdx(i: number, item: number): void;
 
-    displace(key: number, val: number): number;
+    displace(key: number, newItem: number): number;
 
-    fillWithByte(byte: number): void;
+    fillMemory(byte: number): void;
 }
 
 export interface Lz4BlockModuleImports {
