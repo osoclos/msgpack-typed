@@ -182,7 +182,7 @@ export const Arr = {
 
         let iDataEnd = iDataStart;
         for (let i: number = 0; i < len; i++) {
-            dataIndices.push(iDataEnd + (chunk.byteOffset - iChunkStart));
+            dataIndices.push(iDataEnd + chunk.byteOffset - iChunkStart);
 
             chunk = chunk.subarray(iDataEnd);
             if (chunk[0] === 0xc0) {
