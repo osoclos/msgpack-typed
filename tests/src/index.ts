@@ -24,20 +24,9 @@ console.log("[4/5] - repacking decoded data...");
 const packedBfr = encodeGeneric(decodedData, lz4BlockExt);
 console.log("[4/5] - repacked decoded data!", packedBfr);
 
-const EXPORT_PACKED_BFR: boolean = false;
-if (EXPORT_PACKED_BFR) {
-    const url = URL.createObjectURL(new Blob([<Uint8Array<ArrayBuffer>>packedBfr]));
-
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "out.dat";
-
-    link.click();
-}
-
 console.log("[5/5] - re-unpacking repacked buffer...");
 
-const unpackedDataFromRepackedBfr = decodeGeneric(packedBfr, lz4BlockExt);
-console.log("[5/5] - successfully unpacked repacked buffer!", unpackedDataFromRepackedBfr);
+const decodedDataFromPackedBfr = decodeGeneric<ArrClassed>(packedBfr, lz4BlockExt);
+console.log("[5/5] - successfully unpacked repacked buffer!", decodedDataFromPackedBfr);
 
 console.log("Tests complete!");

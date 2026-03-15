@@ -45,7 +45,7 @@ export function mpLz4Unpack(lz4Block: Lz4BlockModuleExports, chunk: Uint8Array):
         i += len;
     }
 
-    if (origLengths.length < dataBlocks.length) {
+    if (origLengths.length !== dataBlocks.length) {
         console.warn(`Expected \`${toLegible(origLengths.length)}\` data blocks, but received ${toLegible(dataBlocks.length)}. Data may be truncated.`);
         dataBlocks.splice(origLengths.length);
     }
