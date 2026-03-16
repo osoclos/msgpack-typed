@@ -25,16 +25,12 @@ export default defineConfig({
 
     plugins: [
         watVitePlugin({
-            emitWasm: true,
-
             parser: {
                 exceptions: true,
                 mutable_globals: true,
 
                 bulk_memory: true
-            },
-
-            target: "browser"
+            }
         })
     ]
 });
