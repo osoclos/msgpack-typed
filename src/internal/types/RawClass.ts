@@ -1,0 +1,4 @@
+export type RawClass<T, A extends unknown[] = any[]> = {
+    new (...args: A): T;
+    prototype: Pick<T, keyof T>;
+};
