@@ -113,7 +113,7 @@ export const Int = class Int<N extends boolean> implements MpClassInterface<IntP
             switch (true) {
                 // negative fixint
                 case this.#data >= -0x20 && this.#data < 0x00: {
-                    code = <number>this.#data >>> 0;
+                    code = <number>this.#data + 0x100;
                     len = 0;
 
                     break;
@@ -152,7 +152,7 @@ export const Int = class Int<N extends boolean> implements MpClassInterface<IntP
             switch (true) {
                 // negative fixint
                 case this.#data >= -0x20n && this.#data < 0x00n: {
-                    code = Number(this.#data) >>> 0;
+                    code = Number(<bigint>this.#data) + 0x100;
                     len = 0;
 
                     break;
