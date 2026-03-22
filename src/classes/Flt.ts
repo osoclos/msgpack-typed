@@ -14,7 +14,7 @@ export const Flt = class Flt<N extends boolean> implements MpClassInterface<FltP
     /** Wraps `null` and makes it usable for MessagePack parsing, which can be promoted to a float. */
     constructor(data: null, isOptional: true);
 
-    /** Interprets bytes in a buffer as a big-endian float and makes it usable for MessagePack parsing, with an option to specify if it can be nullable. If the buffer is empty and marked as nullable, it will be assumed to be `null`. */
+    /** Interprets bytes in a buffer as a float and makes it usable for MessagePack parsing, with an option to specify if it can be nullable. If the buffer is empty and marked as nullable, it will be assumed to be `null`. */
     constructor(bfr: Uint8Array, isOptional?: N);
     constructor(a: unknown = null, isOptional: N = <N>false) {
         this.#isOptional = isOptional;
@@ -44,7 +44,7 @@ export const Flt = class Flt<N extends boolean> implements MpClassInterface<FltP
     /** Wraps a native `number` and makes it usable for MessagePack parsing without allowing it to downgrade to `null`. */
     static required(data: FltPrimitive): Flt<false>;
 
-    /** Interprets bytes in a buffer as a big-endian float and makes it usable for MessagePack parsing without allowing it to downgrade to `null`, defaulting to 0.0 if the buffer is empty. */
+    /** Interprets bytes in a buffer as a float and makes it usable for MessagePack parsing without allowing it to downgrade to `null`, defaulting to 0.0 if the buffer is empty. */
     static required(bfr: Uint8Array): Flt<false>;
     static required(a?: unknown): Flt<false> {
         return <any>new Flt(<any>a, false);
@@ -53,7 +53,7 @@ export const Flt = class Flt<N extends boolean> implements MpClassInterface<FltP
     /** Wraps a native `number`, or `null` and makes it usable for MessagePack parsing. If no argument is provided, it will default to `null`. */
     static optional(data: FltPrimitive | null): Flt<true>;
 
-    /** Interprets bytes in a buffer as a big-endian float and makes it usable for MessagePack parsing. If the buffer is empty, it will be assumed to be `null`. */
+    /** Interprets bytes in a buffer as a float and makes it usable for MessagePack parsing. If the buffer is empty, it will be assumed to be `null`. */
     static optional(bfr: Uint8Array): Flt<true>;
     static optional(a?: unknown): Flt<true> {
         return <any>new Flt(<any>a, true);
