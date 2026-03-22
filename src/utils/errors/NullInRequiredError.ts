@@ -1,6 +1,6 @@
 export class NullInRequiredError extends TypeError {
     constructor() {
-        super("`null` was set in a wrapper which expects a required, non-nullable value. If this is intentional, make sure to allow nullable values in the wrapper.");
+        super("Tried to store null as a value in a non-nullable wrapper. If this is intentional, make sure to mark the wrapper as nullable.");
         this.name = NullInRequiredError.name;
     }
 }
