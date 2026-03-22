@@ -260,9 +260,9 @@ export const Uint = class Uint<N extends boolean> implements MpClassInterface<Ui
     /* Computes the index of the chunk header code, the starting index of the data containing the raw value (will not appear if the chunk is in the positive `fixint` format family), as well as the final exclusive index of the chunk. */
     static deriveIndices(chunk: Uint8Array): [number, number] | [number, number, number] {
         const iCode: number = 0;
+        const code = chunk[iCode]!;
 
-        const code = chunk[iCode];
-        if (code === undefined) throw new MissingHeaderCodeError();
+        if (!this.isChunkValid(chunk)) throw new InvalidHeaderCodeError(code);
 
         // positive fixint
         if (code <= 0x7f) {
@@ -279,8 +279,6 @@ export const Uint = class Uint<N extends boolean> implements MpClassInterface<Ui
          *     case 0xcf: len = 8
          */
         const len = 0b1 << (code - 0xcc);
-
-        if (code < 0xcc || code > 0xcf) throw new InvalidHeaderCodeError(code);
 
         const iDataStart: number = 1;
         const iDataEnd           = iDataStart + len;

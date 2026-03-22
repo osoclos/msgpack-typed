@@ -146,17 +146,15 @@ export const Flt = class Flt<N extends boolean> implements MpClassInterface<FltP
     /* Computes the index of the chunk header code, the starting index of the data containing the raw value, as well as the final exclusive index of the chunk. */
     static deriveIndices(chunk: Uint8Array): [number, number, number] {
         const iCode: number = 0;
+        const code = chunk[iCode]!;
 
-        const code = chunk[iCode];
-        if (code === undefined) throw new MissingHeaderCodeError();
+        if (!this.isChunkValid(chunk)) throw new InvalidHeaderCodeError(code);
 
         /* match code:
          *     case 0xca: len = 4
          *     case 0xcb: len = 8
          */
         const len = 0b100 << (code - 0xca);
-
-        if (code < 0xca || code > 0xcb) throw new InvalidHeaderCodeError(code);
 
         const iDataStart: number = 1;
         const iDataEnd           = iDataStart + len;
