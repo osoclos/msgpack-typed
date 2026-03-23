@@ -2,11 +2,10 @@ export interface MpClassInterface<T, N extends boolean> {
     get data(): MpResult<T, N>;
     set data(data: MpResult<T, N>);
 
-    get default(): T;
-
     get isOptional(): N;
 
     encode(): Uint8Array;
+    reset(): void;
 
     isValid(data: unknown): data is MpResult<T, N>;
 }

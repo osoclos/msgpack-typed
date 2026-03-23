@@ -70,11 +70,6 @@ export const Flt = class Flt<N extends boolean> implements MpClassInterface<FltP
         else throw new InvalidDataTypeError(data);
     }
 
-    /* The default value of the wrapper. */
-    get default(): FltPrimitive {
-        return 0.0;
-    }
-
     /* Whether this wrapper accepts `null` as a valid value. */
     get isOptional(): N {
         return this.#isOptional;
@@ -115,6 +110,11 @@ export const Flt = class Flt<N extends boolean> implements MpClassInterface<FltP
         if (iDataEnd > chunk.byteLength) warnTruncatedChunk();
 
         return new Flt(chunk.slice(iDataStart, iDataEnd));
+    }
+
+    /* Resets the value of the wrapper to `0.0`, the non-nullable default value. If the wrapper is nullable, it will be instead resetted to `null`. */
+    reset() {
+        this.#data = this.#isOptional ? <any>null : 0.0;
     }
 
     /* Checks whether a value can be stored inside this wrapper. */

@@ -82,11 +82,6 @@ export const Uint = class Uint<N extends boolean> implements MpClassInterface<Ui
         else throw new InvalidDataTypeError(data);
     }
 
-    /* The default value of the wrapper. */
-    get default(): UintPrimitive {
-        return 0;
-    }
-
     /* Whether this wrapper accepts `null` as a valid value. */
     get isOptional(): N {
         return this.#isOptional;
@@ -222,6 +217,11 @@ export const Uint = class Uint<N extends boolean> implements MpClassInterface<Ui
         if (iDataEnd > chunk.byteLength) warnTruncatedChunk();
 
         return new Uint(chunk.slice(iDataStart, iDataEnd));
+    }
+
+    /* Resets the value of the wrapper to `0`, the non-nullable default value. If the wrapper is nullable, it will be instead resetted to `null`. */
+    reset() {
+        this.#data = this.#isOptional ? <any>null : 0;
     }
 
     /* Checks whether a value can be stored inside this wrapper. */

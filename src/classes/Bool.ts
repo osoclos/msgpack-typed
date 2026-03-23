@@ -69,11 +69,6 @@ export const Bool = class Bool<N extends boolean> implements MpClassInterface<Bo
         else throw new InvalidDataTypeError(data);
     }
 
-    /* The default value of the wrapper. */
-    get default(): BoolPrimitive {
-        return false;
-    }
-
     /* Whether this wrapper accepts `null` as a valid value. */
     get isOptional(): N {
         return this.#isOptional;
@@ -106,6 +101,11 @@ export const Bool = class Bool<N extends boolean> implements MpClassInterface<Bo
     /* Checks whether a value can be stored inside this wrapper. */
     isValid(data: unknown): data is MpResult<BoolPrimitive, N>  {
         return Bool.isValid(data) || (this.isOptional && data === null);
+    }
+
+    /* Resets the value of the wrapper to `false`, the non-nullable default value. If the wrapper is nullable, it will be resetted to `null`. */
+    reset() {
+        this.#data = this.#isOptional ? <any>null : false;
     }
 
     /* Checks whether a value can be stored inside an instance of this wrapper. */
