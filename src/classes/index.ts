@@ -7,3 +7,5 @@ export * from "./Bool";
 
 export * from "./Str";
 export * from "./Bfr";
+
+export * from "./Ext";
