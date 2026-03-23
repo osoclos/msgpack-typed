@@ -20,7 +20,12 @@ export const Bool = class Bool<N extends boolean> implements MpClassInterface<Bo
         this.#isOptional = isOptional;
 
         if (!(a instanceof Uint8Array)) {
-            const data = a ?? (isOptional ? null : false);
+            const data =
+                arguments.length === 0
+                    ? isOptional
+                        ? null
+                        : false
+                    : a;
 
             if (!this.isValid(data)) throw new InvalidDataTypeError(data);
             this.#data = data;

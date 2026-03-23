@@ -20,7 +20,12 @@ export const Flt = class Flt<N extends boolean> implements MpClassInterface<FltP
         this.#isOptional = isOptional;
 
         if (!(a instanceof Uint8Array)) {
-            const data = a ?? (isOptional ? null : 0.0);
+            const data =
+                arguments.length === 0
+                    ? isOptional
+                        ? null
+                        : 0.0
+                    : a;
 
             if (!this.isValid(data)) throw new InvalidDataTypeError(data);
             this.#data = data;
