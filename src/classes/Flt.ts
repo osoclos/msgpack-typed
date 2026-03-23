@@ -16,11 +16,11 @@ export const Flt = class Flt<N extends boolean> implements MpClassInterface<FltP
 
     /** Interprets bytes in a buffer as a float and makes it usable for MessagePack parsing, with an option to specify if it can be nullable. If the buffer is empty and marked as nullable, it will be assumed to be `null`. */
     constructor(bfr: Uint8Array, isOptional?: N);
-    constructor(a: unknown = null, isOptional: N = <N>false) {
+    constructor(a?: unknown, isOptional: N = <N>false) {
         this.#isOptional = isOptional;
 
         if (!(a instanceof Uint8Array)) {
-            const data = a;
+            const data = a ?? (isOptional ? null : 0.0);
 
             if (!this.isValid(data)) throw new InvalidDataTypeError(data);
             this.#data = data;
