@@ -196,11 +196,11 @@ export const Uint = class Uint<N extends boolean> implements MpClassInterface<Ui
         // unsigned int
 
         if (isNum)
-            for (let i: number = 1, nBytes: number = len - 1; nBytes >= 0; i++, nBytes--)
-                chunk[i] = (<number>this.#data >>> (nBytes * 8)) & 0xff;
+            for (let i: number = 1, iByte: number = len - 1; iByte >= 0; i++, iByte--)
+                chunk[i] = (<number>this.#data >>> (iByte * 8)) & 0xff;
         else
-            for (let i: number = 1, nBytes = BigInt(len - 1); nBytes >= 0n; i++, nBytes--)
-                chunk[i] = Number((<bigint>this.#data >> (nBytes * 8n)) & 0xffn);
+            for (let i: number = 1, iByte = BigInt(len - 1); iByte >= 0n; i++, iByte--)
+                chunk[i] = Number((<bigint>this.#data >> (iByte * 8n)) & 0xffn);
 
         return chunk;
     }

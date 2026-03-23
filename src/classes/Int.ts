@@ -200,13 +200,13 @@ export const Int = class Int<N extends boolean> implements MpClassInterface<IntP
         // negative int
 
         if (isNum)
-            for (let i: number = 1, nBytes: number = len - 1; nBytes >= 0; i++, nBytes--)
-                chunk[i] = (<number>this.#data >>> (nBytes * 8)) & 0xff;
+            for (let i: number = 1, iByte: number = len - 1; iByte >= 0; i++, iByte--)
+                chunk[i] = (<number>this.#data >>> (iByte * 8)) & 0xff;
         else {
             const bytes = BigInt.asUintN(64, <bigint>this.#data);
 
-            for (let i: number = 1, nBytes = BigInt(len - 1); nBytes >= 0n; i++, nBytes--)
-                chunk[i] = Number((bytes >> (nBytes * 8n)) & 0xffn);
+            for (let i: number = 1, iByte = BigInt(len - 1); iByte >= 0n; i++, iByte--)
+                chunk[i] = Number((bytes >> (iByte * 8n)) & 0xffn);
         }
 
         return chunk;

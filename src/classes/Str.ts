@@ -134,8 +134,8 @@ export const Str = class Str<N extends boolean> implements MpClassInterface<StrP
         const chunk = new Uint8Array(chunkLen);
         chunk[0] = code;
 
-        for (let i: number = 1, nBytes: number = lenLen - 1; nBytes >= 0; i++, nBytes--)
-            chunk[i] = (len >>> (nBytes * 8)) & 0xff;
+        for (let i: number = 1, iByte: number = lenLen - 1; iByte >= 0; i++, iByte--)
+            chunk[i] = (len >>> (iByte * 8)) & 0xff;
 
         chunk.set(bytes, iDataStart);
 
@@ -227,7 +227,7 @@ export const Str = class Str<N extends boolean> implements MpClassInterface<StrP
         const iLenStart = iCode + 1;
 
         let len: number = 0;
-        for (let i: number = iLenStart, nBytes: number = 0; nBytes < maxLenLen; i++, nBytes++) {
+        for (let i: number = iLenStart, iByte: number = 0; iByte < maxLenLen; i++, iByte++) {
             len <<= 8;
             len |= chunk[i]!;
         }
