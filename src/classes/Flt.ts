@@ -85,7 +85,7 @@ export const Flt = class Flt<N extends boolean> implements MpClassInterface<FltP
     }
 
     /* Transforms the raw value stored in the wrapper and converts it into a parsable MessagePack chunk. */
-    encode(): Uint8Array {
+    encode() {
         if (this.#data === null) return new Uint8Array([NIL_CODE]);
 
         const canBe32Bit = Object.is(this.#data, Math.fround(this.#data));

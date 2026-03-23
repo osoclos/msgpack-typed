@@ -86,7 +86,7 @@ export const Str = class Str<N extends boolean> implements MpClassInterface<StrP
     }
 
     /* Transforms the raw value stored in the wrapper and converts it into a parsable MessagePack chunk. */
-    encode(): Uint8Array {
+    encode() {
         if (this.#data === null) return new Uint8Array([NIL_CODE]);
 
         const bytes = Str.#encoder.encode(this.#data);

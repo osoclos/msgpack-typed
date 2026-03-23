@@ -82,7 +82,7 @@ export const Bfr = class Bfr<N extends boolean> implements MpClassInterface<BfrP
     }
 
     /* Transforms the raw value stored in the wrapper and converts it into a parsable MessagePack chunk. */
-    encode(): Uint8Array {
+    encode() {
         if (this.#data === null) return new Uint8Array([NIL_CODE]);
 
         const bytes = this.#data;

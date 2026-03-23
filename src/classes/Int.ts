@@ -101,7 +101,7 @@ export const Int = class Int<N extends boolean> implements MpClassInterface<IntP
     }
 
     /* Transforms the raw value stored in the wrapper and converts it into a parsable MessagePack chunk. */
-    encode(): Uint8Array {
+    encode() {
         if (this.#data === null) return new Uint8Array([NIL_CODE]);
 
         const isNum = typeof this.#data === "number";

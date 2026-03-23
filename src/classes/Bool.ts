@@ -84,7 +84,7 @@ export const Bool = class Bool<N extends boolean> implements MpClassInterface<Bo
     }
 
     /* Transforms the raw value stored in the wrapper and converts it into a parsable MessagePack chunk. */
-    encode(): Uint8Array {
+    encode() {
         return new Uint8Array([this.#data === null ? NIL_CODE : 0xc2 + +this.#data /* this.#data ? 0xc3 : 0xc2 */]);
     }
 
