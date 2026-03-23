@@ -44,7 +44,7 @@ export const Flt = class Flt<N extends boolean> implements MpClassInterface<FltP
     /** Wraps a native `number` and makes it usable for MessagePack parsing without allowing it to downgrade to `null`. */
     static required(data: FltPrimitive): Flt<false>;
 
-    /** Interprets bytes in a buffer as a float and makes it usable for MessagePack parsing without allowing it to downgrade to `null`, defaulting to 0.0 if the buffer is empty. */
+    /** Interprets bytes in a buffer as a float and makes it usable for MessagePack parsing without allowing it to downgrade to `null`, defaulting to `0.0` if the buffer is empty. */
     static required(bfr: Uint8Array): Flt<false>;
     static required(a?: unknown): Flt<false> {
         return <any>new Flt(<any>a, false);
@@ -156,8 +156,8 @@ export const Flt = class Flt<N extends boolean> implements MpClassInterface<FltP
          */
         const len = 0b100 << (code - 0xca);
 
-        const iDataStart: number = 1;
-        const iDataEnd           = iDataStart + len;
+        const iDataStart = iCode + 1;
+        const iDataEnd   = iDataStart + len;
 
         return [iCode, iDataStart, iDataEnd];
     }

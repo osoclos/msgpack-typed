@@ -56,7 +56,7 @@ export const Uint = class Uint<N extends boolean> implements MpClassInterface<Ui
     /** Wraps a native `number` or `bigint` and makes it usable for MessagePack parsing without allowing it to downgrade to `null`. */
     static required(data: UintPrimitive): Uint<false>;
 
-    /** Interprets bytes in a buffer as a big-endian unsigned integer and makes it usable for MessagePack parsing without allowing it to downgrade to `null`, defaulting to 0 if the buffer is empty. */
+    /** Interprets bytes in a buffer as a big-endian unsigned integer and makes it usable for MessagePack parsing without allowing it to downgrade to `null`, defaulting to `0` if the buffer is empty. */
     static required(bfr: Uint8Array): Uint<false>;
     static required(a?: unknown): Uint<false> {
         return <any>new Uint(<any>a, false);
@@ -266,7 +266,7 @@ export const Uint = class Uint<N extends boolean> implements MpClassInterface<Ui
 
         // positive fixint
         if (code <= 0x7f) {
-            const iChunkEnd: number = 1;
+            const iChunkEnd = iCode + 1;
             return [iCode, iChunkEnd];
         }
 
@@ -280,8 +280,8 @@ export const Uint = class Uint<N extends boolean> implements MpClassInterface<Ui
          */
         const len = 0b1 << (code - 0xcc);
 
-        const iDataStart: number = 1;
-        const iDataEnd           = iDataStart + len;
+        const iDataStart = iCode + 1;
+        const iDataEnd   = iDataStart + len;
 
         return [iCode, iDataStart, iDataEnd];
     }

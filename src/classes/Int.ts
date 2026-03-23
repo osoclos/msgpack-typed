@@ -60,7 +60,7 @@ export const Int = class Int<N extends boolean> implements MpClassInterface<IntP
     /** Wraps a native `number` or `bigint` and makes it usable for MessagePack parsing without allowing it to downgrade to `null`. */
     static required(data: IntPrimitive): Int<false>;
 
-    /** Interprets bytes in a buffer as a big-endian signed integer and makes it usable for MessagePack parsing without allowing it to downgrade to `null`, defaulting to 0 if the buffer is empty. */
+    /** Interprets bytes in a buffer as a big-endian signed integer and makes it usable for MessagePack parsing without allowing it to downgrade to `null`, defaulting to `0` if the buffer is empty. */
     static required(bfr: Uint8Array): Int<false>;
     static required(a?: unknown): Int<false> {
         return <any>new Int(<any>a, false);
@@ -273,7 +273,7 @@ export const Int = class Int<N extends boolean> implements MpClassInterface<IntP
 
         // negative fixint
         if (code >= 0xe0) {
-            const iChunkEnd: number = 1;
+            const iChunkEnd = iCode + 1;
             return [iCode, iChunkEnd];
         }
 
@@ -287,8 +287,8 @@ export const Int = class Int<N extends boolean> implements MpClassInterface<IntP
          */
         const len = 0b1 << (code - 0xd0);
 
-        const iDataStart: number = 1;
-        const iDataEnd           = iDataStart + len;
+        const iDataStart = iCode + 1;
+        const iDataEnd   = iDataStart + len;
 
         return [iCode, iDataStart, iDataEnd];
     }

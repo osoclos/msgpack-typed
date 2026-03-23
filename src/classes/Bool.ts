@@ -43,7 +43,7 @@ export const Bool = class Bool<N extends boolean> implements MpClassInterface<Bo
     /** Wraps a native `boolean` and makes it usable for MessagePack parsing without allowing it to downgrade to `null`. */
     static required(data: BoolPrimitive): Bool<false>;
 
-    /** Interprets bytes in a buffer as a boolean and makes it usable for MessagePack parsing without allowing it to downgrade to `null`, defaulting to false if the buffer is empty. */
+    /** Interprets bytes in a buffer as a boolean and makes it usable for MessagePack parsing without allowing it to downgrade to `null`, defaulting to `false` if the buffer is empty. */
     static required(bfr: Uint8Array): Bool<false>;
     static required(a?: unknown): Bool<false> {
         return <any>new Bool(<any>a, false);
@@ -98,14 +98,14 @@ export const Bool = class Bool<N extends boolean> implements MpClassInterface<Bo
         return new Bool(chunk[indices[0]]! === 0xc3);
     }
 
-    /* Checks whether a value can be stored inside this wrapper. */
-    isValid(data: unknown): data is MpResult<BoolPrimitive, N>  {
-        return Bool.isValid(data) || (this.isOptional && data === null);
-    }
-
     /* Resets the value of the wrapper to `false`, the non-nullable default value. If the wrapper is nullable, it will be resetted to `null`. */
     reset() {
         this.#data = this.#isOptional ? <any>null : false;
+    }
+
+    /* Checks whether a value can be stored inside this wrapper. */
+    isValid(data: unknown): data is MpResult<BoolPrimitive, N>  {
+        return Bool.isValid(data) || (this.isOptional && data === null);
     }
 
     /* Checks whether a value can be stored inside an instance of this wrapper. */
@@ -136,7 +136,7 @@ export const Bool = class Bool<N extends boolean> implements MpClassInterface<Bo
 
         if (!this.isChunkValid(chunk)) throw new InvalidHeaderCodeError(code);
 
-        const iChunkEnd: number = 1;
+        const iChunkEnd = iCode + 1;
 
         return [iCode, iChunkEnd];
     }
