@@ -12,11 +12,11 @@ export abstract class Ext<T extends RawClass<unknown>, C extends number, S exten
     protected constructor(codes: C | C[], classes: T | T[]);
 
     /** Enables parsing of values that satisfy the given encoding predicate with a specified extension code(s) and makes it usable for MessagePack parsing. Useful if you want more precise control of what data can be parsed through this extension. */
-    protected constructor(codes: C | C[], predicate :   (data: unknown) => data is T);
+    protected constructor(codes: C | C[], predicate :   (data: unknown) => data is T["prototype"]);
 
     /** Enables parsing of values that satisfy the given encoding and decoding predicates with a specified extension code(s) and makes it usable for MessagePack parsing. Useful if you want more precise control of what data can be parsed through this extension and how the data can be decoded through said extension. */
-    protected constructor(codes: C | C[], predicates: [((data: unknown) => data is T), ((chunk: Uint8Array) => boolean) | null]);
-    protected constructor(codes: C | C[], b: T | T[] | ((data: unknown) => data is T) | [((data: unknown) => data is T), ((chunk: Uint8Array) => boolean) | null]) {
+    protected constructor(codes: C | C[], predicates: [((data: unknown) => data is T["prototype"]), ((chunk: Uint8Array) => boolean) | null]);
+    protected constructor(codes: C | C[], b: T | T[] | ((data: unknown) => data is T["prototype"]) | [((data: unknown) => data is T["prototype"]), ((chunk: Uint8Array) => boolean) | null]) {
         this.#codes = Array.isArray(codes) ? [...codes] : [codes];
 
         const isArr = Array.isArray(b);
