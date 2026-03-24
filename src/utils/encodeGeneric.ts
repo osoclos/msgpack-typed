@@ -22,7 +22,7 @@ export function encodeGeneric(data: Exclude<unknown, undefined | symbol>, exts: 
         else if (Cls.isValid(data)) return new (<any>Cls)(data).encode();
 
     for (const Container of MP_CONTAINER_LIST)
-        if (Container.isValid(data)) return Container.encode(data);
+        if (Container.isValid(data)) return (<any>Container.encode)(data);
 
     throw new NonEncodableChunkError(data);
 }
