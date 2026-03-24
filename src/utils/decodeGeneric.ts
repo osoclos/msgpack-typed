@@ -1,7 +1,7 @@
 import { Ext } from "../classes";
 
 import { RawClass } from "../internal";
-import { MP_CLASS_LIST, MpClassUnion } from "../types";
+import { MP_CLASS_LIST, MP_CONTAINER_LIST, MpClassUnion } from "../types";
 
 import { NonDecodableChunkError } from "./errors";
 
@@ -17,6 +17,9 @@ export function decodeGeneric<T extends MpClassUnion | RawClass<unknown>>(chunk:
 
     for (const Cls of MP_CLASS_LIST)
         if (Cls.isChunkValid(chunk)) return Cls.decode(chunk);
+
+    for (const Container of MP_CONTAINER_LIST)
+        if (Container.isChunkValid(chunk)) return Container.decode(chunk);
 
     throw new NonDecodableChunkError();
 }

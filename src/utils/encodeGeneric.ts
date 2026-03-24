@@ -1,7 +1,7 @@
 import { Ext } from "../classes";
 
 import { NIL_CODE, RawClass } from "../internal";
-import { MP_CLASS_LIST } from "../types";
+import { MP_CLASS_LIST, MP_CONTAINER_LIST } from "../types";
 
 import { NonEncodableChunkError } from "./errors";
 
@@ -20,6 +20,9 @@ export function encodeGeneric(data: Exclude<unknown, undefined | symbol>, exts: 
     for (const Cls of MP_CLASS_LIST)
         if (data instanceof Cls) return data.encode();
         else if (Cls.isValid(data)) return new (<any>Cls)(data).encode();
+
+    for (const Container of MP_CONTAINER_LIST)
+        if (Container.isValid(data)) return Container.encode(data);
 
     throw new NonEncodableChunkError(data);
 }
