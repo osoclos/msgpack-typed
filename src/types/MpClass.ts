@@ -22,7 +22,7 @@ export interface MpClassModule<T, N extends boolean> {
     optional(data: T | null ): MpClassInterface<T | null, true>;
     optional(bfr: Uint8Array): MpClassInterface<T | null, true>;
 
-    decode(chunk: Uint8Array): MpClassInterface<T, false>;
+    decode(chunk: Uint8Array): MpClassInterface<NonNullable<T>, false>;
 
     isValid(data: unknown): data is NonNullable<T>;
 
