@@ -1,7 +1,7 @@
 import { Ext } from "../classes";
 import { NIL_CODE, RawClass } from "../internal";
 
-import { InvalidDataTypeError, InvalidExtensionCodeError, InvalidHeaderCodeError, MissingHeaderCodeError, NoDecodableChunkError, warnTruncatedChunk } from "./errors";
+import { InvalidDataTypeError, InvalidExtensionCodeError, InvalidHeaderCodeError, MissingHeaderCodeError, NonDecodableChunkError, warnTruncatedChunk } from "./errors";
 
 export const ExtUtils = {
     encodeWith<T extends RawClass<unknown>>(ext: Ext<T, number, boolean>, data: T["prototype"]) {
@@ -95,7 +95,7 @@ export const ExtUtils = {
 
     decodeWith<T extends RawClass<unknown>, S extends boolean>(ext: Ext<T, number, S>, chunk: Uint8Array): T["prototype"] {
         const decodableRes = ext.isDecodable(chunk);
-        if (!decodableRes) throw new NoDecodableChunkError();
+        if (!decodableRes) throw new NonDecodableChunkError();
 
         let subChunk: Uint8Array;
         if (Array.isArray(decodableRes)) {
