@@ -5,7 +5,9 @@ import { MP_CLASS_LIST, MP_CONTAINER_LIST, MpContainer, MpPrimitiveUnion } from 
 
 import { decodeGeneric, encodeGeneric, ExtUtils, InvalidDataTypeError, InvalidHeaderCodeError, MissingHeaderCodeError } from "../utils";
 
+/** An object to parse arrays, representing the `fixarray` and `array` format families in the MessagePack specification. */
 export const Arr = {
+    /** Parses any wrappers in the array, retrieves their raw values and correspondingly replaces them in-place. Any non-wrapper items inside the array are ignored and left as-is. */
     parse<T>(arr: T[]): ToParsed<T>[] {
         const parsed: ToParsed<T>[] = [];
 
@@ -38,6 +40,7 @@ export const Arr = {
         return parsed;
     },
 
+    /** Serialises any data stored inside wrappers in the array and implicitly converts any other items into a wrapper-appropriate for its type before converting it into a parsable MessagePack chunk. */
     encode(arr: unknown[], exts: Ext<RawClass<unknown>, number, boolean> | Ext<RawClass<unknown>, number, boolean>[] = []) {
         const header = this.encodeHeader(arr);
 
@@ -52,6 +55,7 @@ export const Arr = {
         return chunk;
     },
 
+    /** Produces the metadata header of `fixarray` and `array` format families from a native array. Useful if you want more precise control over the generation of MessagePack chunks in an array. */
     encodeHeader(arr: unknown[]) {
         if (!this.isValid(arr)) throw new InvalidDataTypeError(arr);
 
@@ -97,6 +101,8 @@ export const Arr = {
     },
 
     decode,
+
+    /** Converts a MessagePack chunk assumed to be in the `fixarray`/`array` format family and parses it into an array of sub-buffers. Useful if you want more precise control over the parsing of MessagePack chunks in an array. */
     decodeHeader(chunk: Uint8Array): Uint8Array[] {
         const indices = Arr.deriveIndices(chunk);
 
@@ -110,10 +116,12 @@ export const Arr = {
         return arr;
     },
 
+    /** Checks whether a value can be used on `Arr`. */
     isValid(data: unknown): data is unknown[] {
         return Array.isArray(data);
     },
 
+    /** Checks whether a chunk header code is supported by `Arr`. */
     isCodeValid(code: number): boolean {
         return (
             // fixarr
@@ -125,6 +133,7 @@ export const Arr = {
         );
     },
 
+    /** Checks whether a chunk is supported by `Arr`. */
     isChunkValid(chunk: Uint8Array): boolean {
         const code = chunk[0];
         if (code === undefined) throw new MissingHeaderCodeError();
@@ -132,6 +141,7 @@ export const Arr = {
         return this.isCodeValid(code);
     },
 
+    /** Computes the index of the chunk header code, the starting index of the data containing the length (will not appear if the chunk in the positive `fixarray` format family), the starting indices of the data containing nested chunks, as well as the final exclusive index of the chunk. */
     deriveIndices(chunk: Uint8Array): [number, number[], number] | [number, number, number[], number] {
         const iCode: number = 0;
         const code = chunk[iCode]!;
@@ -208,9 +218,12 @@ export const Arr = {
     }
 } satisfies MpContainer<unknown[], Exclude<unknown, unknown[]>, Uint8Array[]>;
 
-function decode<T extends MpPrimitiveUnion>(chunk: Uint8Array): T[];
-function decode<T extends MpPrimitiveUnion | RawClass<unknown>>(chunk: Uint8Array, exts: Ext<Extract<T, RawClass<unknown>>, number, boolean> | Ext<Extract<T, RawClass<unknown>>, number, boolean>[]): (Extract<T, MpPrimitiveUnion> | Extract<T, RawClass<unknown>>["prototype"])[];
-function decode<T extends MpPrimitiveUnion | RawClass<unknown>>(chunk: Uint8Array, exts: Ext<Extract<T, RawClass<unknown>>, number, boolean> | Ext<Extract<T, RawClass<unknown>>, number, boolean>[] = []): (Extract<T, MpPrimitiveUnion> | Extract<T, RawClass<unknown>>["prototype"])[] {
+/** Converts a MessagePack chunk assumed to be in the `fixarray`/`array` format family and parses it into an array of wrappers, `null`s and nested arrays and maps. */
+function decode<T extends MpPrimitiveUnion | null>(chunk: Uint8Array): T[];
+
+/** Converts a MessagePack chunk assumed to be in the `fixarray`/`array` format family and parses it into an array of wrappers into `null`s and nested arrays and maps, as well as specifiable extensions to decode custom extension chunks. */
+function decode<T extends MpPrimitiveUnion | RawClass<unknown> | null>(chunk: Uint8Array, exts: Ext<Extract<T, RawClass<unknown>>, number, boolean> | Ext<Extract<T, RawClass<unknown>>, number, boolean>[]): (Extract<T, MpPrimitiveUnion | null> | Extract<T, RawClass<unknown>>["prototype"])[];
+function decode<T extends MpPrimitiveUnion | RawClass<unknown> | null>(chunk: Uint8Array, exts: Ext<Extract<T, RawClass<unknown>>, number, boolean> | Ext<Extract<T, RawClass<unknown>>, number, boolean>[] = []): (Extract<T, MpPrimitiveUnion | null> | Extract<T, RawClass<unknown>>["prototype"])[] {
     const subChunks = Arr.decodeHeader(chunk);
-    return subChunks.map<T>((chunk) => <T>decodeGeneric(chunk, exts));
+    return <any>subChunks.map<T>((chunk) => <T>decodeGeneric(chunk, exts));
 }

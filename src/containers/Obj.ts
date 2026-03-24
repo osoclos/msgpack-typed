@@ -5,9 +5,11 @@ import { MP_CLASS_LIST, MP_CONTAINER_LIST, MpContainer, MpPrimitiveUnion } from 
 
 import { decodeGeneric, encodeGeneric, ExtUtils, InvalidDataTypeError, InvalidHeaderCodeError, MissingHeaderCodeError } from "../utils";
 
+/** An object to parse maps and records, representing the `fixmap` and `map` format families in the MessagePack specification. */
 export const Obj = {
     parse,
 
+    /** Serialises any data stored inside wrappers in the map/record and implicitly converts any other items into a wrapper-appropriate for its type before converting it into a parsable MessagePack chunk. */
     encode(obj: Map<unknown, unknown> | Record<Exclude<keyof any, symbol>, unknown>, exts: Ext<RawClass<unknown>, number, boolean> | Ext<RawClass<unknown>, number, boolean>[] = []): Uint8Array {
         const header = Obj.encodeHeader(obj);
 
@@ -22,6 +24,7 @@ export const Obj = {
         return chunk;
     },
 
+    /** Produces the metadata header of `fixmap` and `map` format families from a native map/record. Useful if you want more precise control over the generation of MessagePack chunks in an array. */
     encodeHeader(obj: Map<unknown, unknown> | Record<Exclude<keyof any, symbol>, unknown>): Uint8Array {
         if (!this.isValid(obj)) throw new InvalidDataTypeError(obj);
 
@@ -67,6 +70,8 @@ export const Obj = {
     },
 
     decode,
+
+    /** Converts a MessagePack chunk assumed to be in the `fixmap`/`map` format family and parses it into an array of sub-buffers. Useful if you want more precise control over the parsing of MessagePack chunks in an array. */
     decodeHeader(chunk: Uint8Array): [Uint8Array, Uint8Array][] {
         const indices = Obj.deriveIndices(chunk);
 
@@ -80,10 +85,12 @@ export const Obj = {
         return obj;
     },
 
+    /** Checks whether a value can be used on `Obj`. */
     isValid(data: unknown): data is Map<unknown, unknown> | Record<Exclude<keyof any, symbol>, unknown> {
         return data instanceof Map || (data !== null && typeof data === "object");
     },
 
+    /** Checks whether a chunk header code is supported by `Obj`. */
     isCodeValid(code: number): boolean {
         return (
             // fixmap
@@ -95,6 +102,7 @@ export const Obj = {
         );
     },
 
+    /** Checks whether a chunk is supported by `Obj`. */
     isChunkValid(chunk: Uint8Array): boolean {
         const code = chunk[0];
         if (code === undefined) throw new MissingHeaderCodeError();
@@ -102,6 +110,7 @@ export const Obj = {
         return this.isCodeValid(code);
     },
 
+    /** Computes the index of the chunk header code, the starting index of the data containing the length (will not appear if the chunk in the positive `fixmap` format family), the starting indices of the data containing nested chunks, as well as the final exclusive index of the chunk. */
     deriveIndices(chunk: Uint8Array): [number, [number, number][], number] | [number, number, [number, number][], number] {
         const iCode: number = 0;
         const code = chunk[iCode]!;
@@ -185,7 +194,9 @@ export const Obj = {
     }
 } satisfies MpContainer<Map<unknown, unknown> | Record<Exclude<keyof any, symbol>, unknown>, unknown, [Uint8Array, Uint8Array][]>;
 
+/** Parses any wrappers in the map, retrieves their raw values and correspondingly replaces them in-place. Any non-wrapper items inside the array are ignored and left as-is. */
 function parse<K, V>(obj: Map<K, V>): Map<ToParsed<K>, ToParsed<V>>;
+/** Parses any wrappers in the record, retrieves their raw values and correspondingly replaces them in-place. Any non-wrapper items inside the array are ignored and left as-is. */
 function parse<K extends Exclude<keyof any, symbol>, V>(obj: Record<K, V>): Record<ToParsed<K>, ToParsed<V>>;
 function parse<K, V>(obj: Map<K, V> | Record<Extract<K, Exclude<keyof any, symbol>>, V>): Map<ToParsed<K>, ToParsed<V>> | Record<ToParsed<Extract<K, Exclude<keyof any, symbol>>>, ToParsed<V>> {
     const parsed = new Map<ToParsed<K>, ToParsed<V>>();
@@ -223,7 +234,10 @@ function parse<K, V>(obj: Map<K, V> | Record<Extract<K, Exclude<keyof any, symbo
     return obj instanceof Map ? parsed : Object.fromEntries(parsed.entries());
 }
 
+/** Converts a MessagePack chunk assumed to be in the `fixarray`/`array` format family and parses it into a map of wrappers, `null`s and nested arrays and maps. */
 function decode<K extends MpPrimitiveUnion, V extends MpPrimitiveUnion>(chunk: Uint8Array): Map<K, V>;
+
+/** Converts a MessagePack chunk assumed to be in the `fixarray`/`array` format family and parses it into a map of wrappers, `null`s and nested arrays and maps, as well as specifiable extensions to decode custom extension chunks. */
 function decode<K extends MpPrimitiveUnion | RawClass<unknown>, V extends MpPrimitiveUnion | RawClass<unknown>>(chunk: Uint8Array, exts: Ext<Extract<K | V, RawClass<unknown>>, number, boolean> | Ext<Extract<K | V, RawClass<unknown>>, number, boolean>[]): Map<Extract<K, MpPrimitiveUnion> | Extract<K, RawClass<unknown>>["prototype"], Extract<V, MpPrimitiveUnion> | Extract<V, RawClass<unknown>>["prototype"]>;
 function decode<K extends MpPrimitiveUnion | RawClass<unknown>, V extends MpPrimitiveUnion | RawClass<unknown>>(chunk: Uint8Array, exts: Ext<Extract<K | V, RawClass<unknown>>, number, boolean> | Ext<Extract<K | V, RawClass<unknown>>, number, boolean>[] = []): Map<Extract<K, MpPrimitiveUnion> | Extract<K, RawClass<unknown>>["prototype"], Extract<V, MpPrimitiveUnion> | Extract<V, RawClass<unknown>>["prototype"]> {
     const subChunks = Obj.decodeHeader(chunk);
