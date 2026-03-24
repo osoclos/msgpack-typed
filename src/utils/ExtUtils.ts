@@ -3,7 +3,9 @@ import { NIL_CODE, RawClass } from "../internal";
 
 import { InvalidDataTypeError, InvalidExtensionCodeError, InvalidHeaderCodeError, MissingHeaderCodeError, NonDecodableChunkError, warnTruncatedChunk } from "./errors";
 
+/** An object to handle any extension-related features and helper functions to ease extension development and usage. */
 export const ExtUtils = {
+    /** Serialises data and converts it into a parsable MessagePack chunk using a specified extension that supports it. */
     encodeWith<T extends RawClass<unknown>>(ext: Ext<T, number, boolean>, data: T["prototype"]) {
         if (!ext.isEncodable(data)) throw new InvalidDataTypeError(data);
 
@@ -11,6 +13,7 @@ export const ExtUtils = {
         return this.encodeRaw(extData, extCode);
     },
 
+    /** Converts a buffer containing data into a parsable MessagePack chunk given an extension code. Useful if you already have custom data in byte form. */
     encodeRaw(data: Uint8Array, extCode: number) {
         let code: number;
         let lenLen: number;
@@ -93,6 +96,7 @@ export const ExtUtils = {
         return chunk;
     },
 
+    /** Converts a MessagePack chunk assumed to be in the `fixext`/`ext` format family and creates a class object using a specified extension that supports it. */
     decodeWith<T extends RawClass<unknown>, S extends boolean>(ext: Ext<T, number, S>, chunk: Uint8Array): T["prototype"] {
         const decodableRes = ext.isDecodable(chunk);
         if (!decodableRes) throw new NonDecodableChunkError();
@@ -111,6 +115,7 @@ export const ExtUtils = {
         return ext.decode(data, extCode);
     },
 
+    /** Converts a MessagePack chunk assumed to be in the `fixext`/`ext` format family and parses it as a pair of an extension code and the data buffer that came with the chunk. */
     decodeRaw(chunk: Uint8Array): [Uint8Array, number] {
         const code = chunk[0];
         if (code === undefined || code === NIL_CODE) throw new MissingHeaderCodeError();
@@ -130,6 +135,7 @@ export const ExtUtils = {
         return [chunk.subarray(iDataStart, iDataEnd), extCode];
     },
 
+    /** Checks whether a chunk header code is supported by `Ext`. */
     isCodeValid(code: number): boolean {
         return (
             // fixext
@@ -146,6 +152,7 @@ export const ExtUtils = {
         );
     },
 
+    /** Checks whether a chunk is supported by `Ext`. */
     isChunkValid(chunk: Uint8Array): boolean {
         const code = chunk[0];
         if (code === undefined) throw new MissingHeaderCodeError();
@@ -153,6 +160,7 @@ export const ExtUtils = {
         return this.isCodeValid(code);
     },
 
+    /** Computes the index of the chunk header code, the starting index of the data containing the length (will not appear if the chunk in the positive `fixext` format family), the index of the extension header code, the starting index of the data containing the raw value, as well as the final exclusive index of the chunk. */
     deriveIndices(chunk: Uint8Array): [number, number, number, number] | [number, number, number, number, number] {
         const iCode: number = 0;
         const code = chunk[iCode]!;
