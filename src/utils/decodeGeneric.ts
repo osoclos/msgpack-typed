@@ -19,7 +19,7 @@ export function decodeGeneric<T extends MpClassUnion | RawClass<unknown>>(chunk:
         if (Cls.isChunkValid(chunk)) return Cls.decode(chunk);
 
     for (const Container of MP_CONTAINER_LIST)
-        if (Container.isChunkValid(chunk)) return Container.decode(chunk);
+        if (Container.isChunkValid(chunk)) return (<any>Container.decode)(chunk);
 
     throw new NonDecodableChunkError();
 }
