@@ -10,7 +10,7 @@ export const Obj = {
     parse,
 
     /** Serialises any data stored inside wrappers in the map/record and implicitly converts any other items into a wrapper-appropriate for its type before converting it into a parsable MessagePack chunk. */
-    encode(obj: ObjPrimitive, exts: Ext<RawClass<unknown>, number, boolean> | Ext<RawClass<unknown>, number, boolean>[] = [], doCompression: boolean = false): Uint8Array {
+    encode(obj: ObjPrimitive, exts: Ext<RawClass<unknown>, number, boolean> | Ext<RawClass<unknown>, number, boolean>[] = []): Uint8Array {
         const header = Obj.encodeHeader(obj);
 
         const buffers: Uint8Array[] = [header];
