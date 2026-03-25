@@ -125,7 +125,7 @@ export const Obj = {
         // fixmap
         if ((code & 0xf0) === 0x80) {
             len = code & 0x0f;
-            iDataStart = 1;
+            iDataStart = iCode + 1;
         } else {
             // map
 
@@ -133,9 +133,8 @@ export const Obj = {
              *     case 0xde: lenLen = 2
              *     case 0xdf: lenLen = 4
              */
-            const lenLen = 0b1 << (code - 0xde);
+            const lenLen = 0b10 << (code - 0xde);
             const maxLenLen = chunk.byteLength < lenLen ? chunk.byteLength : lenLen;
-
 
             const iLenStart = iCode + 1;
             headerIndices.push(iLenStart);
@@ -153,7 +152,7 @@ export const Obj = {
 
         let iDataEnd = iDataStart;
 
-        iterateToEnd: for (let i: number = 0, offset: number = 0; i < len; i++, iDataEnd += offset) {
+        iterateToEnd: for (let i: number = 0, offset: number = iDataEnd; i < len; i++, iDataEnd += offset) {
             const subIndices: [number, number] = <[number, number]><unknown>[];
 
             for (let j: number = 0; j < 2; j++) {

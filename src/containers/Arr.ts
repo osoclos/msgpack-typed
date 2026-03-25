@@ -156,7 +156,7 @@ export const Arr = {
         // fixarr
         if ((code & 0xf0) === 0x90) {
             len = code & 0x0f;
-            iDataStart = 1;
+            iDataStart = iCode + 1;
         } else {
             // arr
 
@@ -164,7 +164,7 @@ export const Arr = {
              *     case 0xdc: lenLen = 2
              *     case 0xdd: lenLen = 4
              */
-            const lenLen = 0b1 << (code - 0xdc);
+            const lenLen = 0b10 << (code - 0xdc);
             const maxLenLen = chunk.byteLength < lenLen ? chunk.byteLength : lenLen;
 
             const iLenStart = iCode + 1;
@@ -183,7 +183,7 @@ export const Arr = {
 
         let iDataEnd = iDataStart;
 
-        iterateToEnd: for (let i: number = 0, offset: number = 0; i < len; i++, iDataEnd += offset) {
+        iterateToEnd: for (let i: number = 0, offset = iDataEnd; i < len; i++, iDataEnd += offset) {
             dataIndices.push(iDataEnd);
 
             chunk = chunk.subarray(offset);
