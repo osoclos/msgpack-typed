@@ -104,19 +104,19 @@ export const Lz4Block = {
         const dataBlocks: Uint8Array[] = [];
 
         if (isMultiBlock) {
-            const ranges = Arr.deriveIndices(chunk);
+            const indices = Arr.deriveIndices(chunk);
 
-            const hasLenStartIdx = ranges.length === 4;
+            const hasLenStartIdx = indices.length === 4;
+            const dataIndices = <number[]>indices[<typeof hasLenStartIdx extends true ? 2 : 1>(1 + +hasLenStartIdx)];
 
-            const dataIndices = <number[]>ranges[<typeof hasLenStartIdx extends true ? 2 : 1>(1 + +hasLenStartIdx)];
+            extChunk = chunk.subarray(dataIndices.shift()!);
 
-            extChunk = chunk.subarray(dataIndices.shift());
             for (const i of dataIndices) dataBlocks.push(Bfr.decode(chunk.subarray(i)).data);
         } else {
             extChunk = chunk;
 
-            const len = ExtUtils.deriveIndices(extChunk).slice(-1)[0]!;
-            dataBlocks.push(chunk.slice(len));
+            const iDataStart = ExtUtils.deriveIndices(extChunk).slice(-1)[0]!;
+            dataBlocks.push(chunk.slice(iDataStart));
         }
 
         const [extData, extCode] = ExtUtils.decodeRaw(extChunk);
@@ -170,17 +170,21 @@ export const Lz4Block = {
         let extChunk: Uint8Array;
 
         if (isMultiBlock) {
-            const ranges = Arr.deriveIndices(chunk);
+            const indices = Arr.deriveIndices(chunk);
 
-            const hasLenStartIdx = ranges.length === 4;
-            const dataIndices = <number[]>ranges[<typeof hasLenStartIdx extends true ? 2 : 1>(1 + +hasLenStartIdx)];
+            const hasLenStartIdx = indices.length === 4;
+            const dataIndices = <number[]>indices[<typeof hasLenStartIdx extends true ? 2 : 1>(1 + +hasLenStartIdx)];
 
             extChunk = chunk.subarray(dataIndices.shift());
+
+            if (!ExtUtils.isChunkValid(extChunk)) return false;
 
             for (const i of dataIndices)
                 if (!Bfr.isChunkValid(chunk.subarray(i))) return false;
         } else {
             extChunk = chunk;
+
+            if (!ExtUtils.isChunkValid(extChunk)) return false;
 
             const iDataStart = ExtUtils.deriveIndices(extChunk).slice(-1)[0]!;
             if (!Bfr.isChunkValid(chunk.subarray(iDataStart))) return false;
