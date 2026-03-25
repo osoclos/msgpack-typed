@@ -5,7 +5,7 @@ import watVitePlugin from "vite-plugin-wat2wasm";
 
 export default defineConfig({
     root: __dirname,
-    resolve: { alias: { "@": path.resolve(__dirname, "../dist") }},
+    resolve: { alias: { "@": path.join(__dirname, "../dist") }},
 
     plugins: [
         watVitePlugin({
