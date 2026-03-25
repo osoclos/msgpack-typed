@@ -152,10 +152,10 @@ export const Obj = {
 
         let iDataEnd = iDataStart;
 
-        for (let i: number = 0; i < len; i++) {
+        for (let i: number = 0, offset: number = iDataEnd; i < len; i++) {
             const subIndices: [number, number] = <[number, number]><unknown>[];
 
-            getEachSubIndex: for (let j: number = 0, offset: number = iDataEnd; j < 2; j++, iDataEnd += offset) {
+            getEachSubIndex: for (let j: number = 0; j < 2; j++, iDataEnd += offset) {
                 subIndices.push(iDataEnd);
 
                 chunk = chunk.subarray(offset);
