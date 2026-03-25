@@ -11,7 +11,7 @@ export const Arr = {
     parse<T>(arr: T[]): ToParsed<T>[] {
         const parsed: ToParsed<T>[] = [];
 
-        iterateToEnd: for (let item of arr) {
+        parseEachItem: for (let item of arr) {
             if (
                 item instanceof Uint ||
                 item instanceof Int  ||
@@ -24,13 +24,13 @@ export const Arr = {
                 item instanceof Bfr
             ) {
                 parsed.push(<ToParsed<T>>item.data);
-                continue iterateToEnd;
+                continue parseEachItem;
             }
 
             for (const Container of MP_CONTAINER_LIST) {
                 if (Container.isValid(item)) {
                     parsed.push((<any>Container.parse)(item));
-                    continue iterateToEnd;
+                    continue parseEachItem;
                 }
             }
 
@@ -183,7 +183,7 @@ export const Arr = {
 
         let iDataEnd = iDataStart;
 
-        iterateToEnd: for (let i: number = 0, offset = iDataEnd; i < len; i++, iDataEnd += offset) {
+        getEachSubIndex: for (let i: number = 0, offset = iDataEnd; i < len; i++, iDataEnd += offset) {
             dataIndices.push(iDataEnd);
 
             chunk = chunk.subarray(offset);
@@ -195,20 +195,20 @@ export const Arr = {
 
             if (code === NIL_CODE) {
                 offset = 1;
-                continue iterateToEnd;
+                continue getEachSubIndex;
             }
 
             for (const Cls of MP_CLASS_LIST) {
                 if (Cls.isChunkValid(chunk)) {
                     offset = Cls.deriveIndices(chunk).slice(-1)[0]!;
-                    continue iterateToEnd;
+                    continue getEachSubIndex;
                 }
             }
 
             for (const Container of MP_CONTAINER_LIST) {
                 if (Container.isChunkValid(chunk)) {
                     offset = <number>Container.deriveIndices(chunk).slice(-1)[0]!;
-                    continue iterateToEnd;
+                    continue getEachSubIndex;
                 }
             }
 

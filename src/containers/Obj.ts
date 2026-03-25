@@ -87,7 +87,7 @@ export const Obj = {
 
     /** Checks whether a value can be used on `Obj`. */
     isValid(data: unknown): data is ObjPrimitive {
-        return data instanceof Map || (data !== null && typeof data === "object");
+        return data instanceof Map || (data !== null && typeof data === "object" && !Array.isArray(data));
     },
 
     /** Checks whether a chunk header code is supported by `Obj`. */
@@ -152,10 +152,10 @@ export const Obj = {
 
         let iDataEnd = iDataStart;
 
-        iterateToEnd: for (let i: number = 0, offset: number = iDataEnd; i < len; i++, iDataEnd += offset) {
+        for (let i: number = 0; i < len; i++) {
             const subIndices: [number, number] = <[number, number]><unknown>[];
 
-            for (let j: number = 0; j < 2; j++) {
+            getEachSubIndex: for (let j: number = 0, offset: number = iDataEnd; j < 2; j++, iDataEnd += offset) {
                 subIndices.push(iDataEnd);
 
                 chunk = chunk.subarray(offset);
@@ -167,20 +167,20 @@ export const Obj = {
 
                 if (code === NIL_CODE) {
                     offset = 1;
-                    continue iterateToEnd;
+                    continue getEachSubIndex;
                 }
 
                 for (const Cls of MP_CLASS_LIST) {
                     if (Cls.isChunkValid(chunk)) {
                         offset = Cls.deriveIndices(chunk).slice(-1)[0]!;
-                        continue iterateToEnd;
+                        continue getEachSubIndex;
                     }
                 }
 
                 for (const Container of MP_CONTAINER_LIST) {
                     if (Container.isChunkValid(chunk)) {
                         offset = <number>Container.deriveIndices(chunk).slice(-1)[0]!;
-                        continue iterateToEnd;
+                        continue getEachSubIndex;
                     }
                 }
 
@@ -207,7 +207,7 @@ function parse<K, V>(obj: Map<K, V> | Record<Extract<K, Exclude<keyof any, symbo
     for (const pair of obj instanceof Map ? obj : Object.entries(obj)) {
         const parsedPair: [ToParsed<K>, ToParsed<V>] = <[ToParsed<K>, ToParsed<V>]><unknown>[];
 
-        iterateToEnd: for (const item of pair) {
+        parseEachPair: for (const item of pair) {
             if (
                 item instanceof Uint ||
                 item instanceof Int  ||
@@ -220,18 +220,18 @@ function parse<K, V>(obj: Map<K, V> | Record<Extract<K, Exclude<keyof any, symbo
                 item instanceof Bfr
             ) {
                 parsedPair.push(<ToParsed<K | V>>item.data);
-                continue iterateToEnd;
+                continue parseEachPair;
             }
 
             for (const Container of MP_CONTAINER_LIST) {
                 if (Container.isValid(item)) {
                     parsedPair.push((<any>Container.parse)(item));
-                    continue iterateToEnd;
+                    continue parseEachPair;
                 }
             }
-
-            parsed.set(<ToParsed<K>>parsedPair[0], <ToParsed<V>>parsedPair[1]);
         }
+
+        parsed.set(<ToParsed<K>>parsedPair[0], <ToParsed<V>>parsedPair[1]);
     }
 
     return obj instanceof Map ? parsed : Object.fromEntries(parsed.entries());
