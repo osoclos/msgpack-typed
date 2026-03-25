@@ -2,6 +2,10 @@
 
 A MessagePack encoder and decoder implementation focused on type preservation and interoperability with other codecs
 
+> [!WARNING]
+>
+> This port has not been battle-tested (to the point of full confidence) and bugs may still appear. Do not use this in production code unless necessary.
+
 ## Features
 
 The list of features part of this port of MessagePack includes:
