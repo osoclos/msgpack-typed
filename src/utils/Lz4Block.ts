@@ -1,4 +1,4 @@
-import { Bfr, Uint } from "../classes";
+import { Bfr, Int, Uint } from "../classes";
 import { Arr } from "../containers";
 
 import { HashTableModuleImports, initHashTableModule, initLz4BlockModule, initMathModule, Lz4BlockModuleExports } from "../modules";
@@ -135,22 +135,26 @@ export const Lz4Block = {
 
         if (isMultiBlock) {
             for (let i: number = 0; i < extData.byteLength;) {
-                const uintChunk = extData.subarray(i);
+                const lenChunk = extData.subarray(i);
 
-                const len = Uint.deriveIndices(uintChunk).slice(-1)[0]!;
+                const Num = Uint.isChunkValid(lenChunk) ? Uint : Int;
 
-                const uint = Uint.decode(uintChunk);
-                origLengths.push(BigInt(uint.data));
+                const len = Num.deriveIndices(lenChunk).slice(-1)[0]!;
+
+                const num = Num.decode(lenChunk);
+                origLengths.push(BigInt(num.data));
 
                 i += len;
             }
         } else {
-            const uintChunk = extData;
+            const lenChunk = extData;
 
-            const uint = Uint.decode(uintChunk);
-            origLengths.push(BigInt(uint.data));
+            const Num = Uint.isChunkValid(lenChunk) ? Uint : Int;
 
-            const iBlockStart = Uint.deriveIndices(extData).slice(-1)[0]!;
+            const num = Num.decode(lenChunk);
+            origLengths.push(BigInt(num.data));
+
+            const iBlockStart = Num.deriveIndices(extData).slice(-1)[0]!;
             const bfrChunk = extData.subarray(iBlockStart);
 
             dataBlocks.push(bfrChunk);
