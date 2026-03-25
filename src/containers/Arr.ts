@@ -1,7 +1,7 @@
 import { Bfr, Bool, Ext, Flt, Int, Str, Uint } from "../classes";
 
 import { RawClass, ToParsed  } from "../internal";
-import { MP_CLASS_LIST, MP_CONTAINER_LIST, MpContainer, MpPrimitiveUnion } from "../types";
+import { MP_CLASS_LIST, MP_CONTAINER_LIST, MpContainer, MpClassUnion } from "../types";
 
 import { decodeGeneric, encodeGeneric, ExtUtils, InvalidDataTypeError, InvalidHeaderCodeError, MissingHeaderCodeError } from "../utils";
 
@@ -41,7 +41,7 @@ export const Arr = {
     },
 
     /** Serialises any data stored inside wrappers in the array and implicitly converts any other items into a wrapper-appropriate for its type before converting it into a parsable MessagePack chunk. */
-    encode(arr: unknown[], exts: Ext<RawClass<unknown>, number, boolean> | Ext<RawClass<unknown>, number, boolean>[] = [], doCompression: boolean = false) {
+    encode(arr: ArrPrimitive, exts: Ext<RawClass<unknown>, number, boolean> | Ext<RawClass<unknown>, number, boolean>[] = [], doCompression: boolean = false) {
         const header = this.encodeHeader(arr);
 
         const buffers: Uint8Array[] = [header];
@@ -56,7 +56,7 @@ export const Arr = {
     },
 
     /** Produces the metadata header of `fixarray` and `array` format families from a native array. Useful if you want more precise control over the generation of MessagePack chunks in an array. */
-    encodeHeader(arr: unknown[]) {
+    encodeHeader(arr: ArrPrimitive) {
         if (!this.isValid(arr)) throw new InvalidDataTypeError(arr);
 
         const len = arr.length;
@@ -117,7 +117,7 @@ export const Arr = {
     },
 
     /** Checks whether a value can be used on `Arr`. */
-    isValid(data: unknown): data is unknown[] {
+    isValid(data: unknown): data is ArrPrimitive {
         return Array.isArray(data);
     },
 
@@ -216,14 +216,16 @@ export const Arr = {
 
         return [...headerIndices, dataIndices, iDataEnd];
     }
-} satisfies MpContainer<unknown[], Exclude<unknown, unknown[]>, Uint8Array[]>;
+} satisfies MpContainer<ArrPrimitive, unknown, Uint8Array[]>;
+
+export type ArrPrimitive = unknown[];
 
 /** Converts a MessagePack chunk assumed to be in the `fixarray`/`array` format family and parses it into an array of wrappers, `null`s and nested arrays and maps. */
-function decode<T extends MpPrimitiveUnion | null>(chunk: Uint8Array): T[];
+function decode<T extends MpClassUnion | null>(chunk: Uint8Array): T[];
 
 /** Converts a MessagePack chunk assumed to be in the `fixarray`/`array` format family and parses it into an array of wrappers into `null`s and nested arrays and maps, as well as specifiable extensions to decode custom extension chunks. */
-function decode<T extends MpPrimitiveUnion | RawClass<unknown> | null>(chunk: Uint8Array, exts: Ext<Extract<T, RawClass<unknown>>, number, boolean> | Ext<Extract<T, RawClass<unknown>>, number, boolean>[], doDecompression?: boolean): (Extract<T, MpPrimitiveUnion | null> | Extract<T, RawClass<unknown>>["prototype"])[];
-function decode<T extends MpPrimitiveUnion | RawClass<unknown> | null>(chunk: Uint8Array, exts: Ext<Extract<T, RawClass<unknown>>, number, boolean> | Ext<Extract<T, RawClass<unknown>>, number, boolean>[] = [], doDecompression: boolean = false): (Extract<T, MpPrimitiveUnion | null> | Extract<T, RawClass<unknown>>["prototype"])[] {
+function decode<T extends MpClassUnion | RawClass<unknown> | null>(chunk: Uint8Array, exts: Ext<Extract<T, RawClass<unknown>>, number, boolean> | Ext<Extract<T, RawClass<unknown>>, number, boolean>[], doDecompression?: boolean): (Extract<T, MpClassUnion | null> | Extract<T, RawClass<unknown>>["prototype"])[];
+function decode<T extends MpClassUnion | RawClass<unknown> | null>(chunk: Uint8Array, exts: Ext<Extract<T, RawClass<unknown>>, number, boolean> | Ext<Extract<T, RawClass<unknown>>, number, boolean>[] = [], doDecompression: boolean = false): (Extract<T, MpClassUnion | null> | Extract<T, RawClass<unknown>>["prototype"])[] {
     const subChunks = Arr.decodeHeader(chunk);
     return <any>subChunks.map<T>((chunk) => <T>decodeGeneric(chunk, exts, doDecompression));
 }
