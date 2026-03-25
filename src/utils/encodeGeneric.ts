@@ -8,6 +8,7 @@ import { NonEncodableChunkError } from "./errors";
 import { ExtUtils } from "./ExtUtils";
 import { Lz4Block } from "./Lz4Block";
 
+/** Encodes any data, either made with wrappers or a primitive, in which case it implicitly converts any other items into a wrapper-appropriate for its type, before converting it into a parsable MessagePack chunk. You can also specify extensions to encode custom classes with and compress the buffer after encoding. */
 export function encodeGeneric(data: Exclude<unknown, undefined | symbol>, exts: Ext<RawClass<unknown>, number, boolean> | Ext<RawClass<unknown>, number, boolean>[] = [], doCompression: boolean = false): Uint8Array {
     const encodedBfr = __encodeGeneric(data, exts);
     return doCompression ? Lz4Block.pack(encodedBfr) : encodedBfr;

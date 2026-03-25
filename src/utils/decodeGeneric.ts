@@ -9,7 +9,10 @@ import { MissingHeaderCodeError, NonDecodableChunkError } from "./errors";
 import { ExtUtils } from "./ExtUtils";
 import { Lz4Block } from "./Lz4Block";
 
+/** Decodes any valid MessagePack chunks and creates the appropriate wrapper for said chunk. */
 export function decodeGeneric<T extends MpClassUnion | ArrPrimitive | ObjPrimitive | null>(chunk: Uint8Array): Exclude<T, ArrPrimitive | ObjPrimitive | null>["prototype"] | Extract<T, ArrPrimitive | ObjPrimitive | null>;
+
+/** Decodes any valid MessagePack chunks and creates the appropriate wrapper for said chunk. You can also specify extensions to decode extension chunks into custom classes with and enable decompression if it encounters a packed chunk. */
 export function decodeGeneric<T extends MpClassUnion | ArrPrimitive | ObjPrimitive | null | RawClass<unknown>>(chunk: Uint8Array, exts: Ext<Extract<T, RawClass<unknown>>, number, boolean> | Ext<Extract<T, RawClass<unknown>>, number, boolean>[], doDecompression?: boolean): Exclude<T, ArrPrimitive | ObjPrimitive | null>["prototype"] | Extract<T, ArrPrimitive | ObjPrimitive | null>;
 export function decodeGeneric<T extends MpClassUnion | ArrPrimitive | ObjPrimitive | null | RawClass<unknown>>(chunk: Uint8Array, exts: Ext<Extract<T, RawClass<unknown>>, number, boolean> | Ext<Extract<T, RawClass<unknown>>, number, boolean>[] = [], doDecompression: boolean = false): Exclude<T, ArrPrimitive | ObjPrimitive | null>["prototype"] | Extract<T, ArrPrimitive | ObjPrimitive | null> {
     if (!Array.isArray(exts)) exts = [exts];

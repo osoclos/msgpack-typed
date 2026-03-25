@@ -9,13 +9,17 @@ import { ExtUtils } from "./ExtUtils";
 
 let lz4Block: Lz4BlockModuleExports = <Lz4BlockModuleExports><unknown>null;
 
+/** An object to enable compression and decompression of MessagePack buffers. Used by this port and the most popular C# port of MessagePack. */
 export const Lz4Block = {
+    /** The maximum size for each uncompressed block of data when it is compressed */
     maxBlockSize: 32768, // 2 ^ 15
 
+    /** Checks whether the LZ4 block modules have been initialized. */
     get hasInitialized(): boolean {
         return lz4Block !== null
     },
 
+    /** Initializes the modules used for the LZ4 block compression/decompression algorithms. */
     async initModules(nHashBits?: number): Promise<void> {
         if (this.hasInitialized) warnModuleReinitialization
 
@@ -25,6 +29,7 @@ export const Lz4Block = {
         lz4Block = await initLz4BlockModule({ math, hashTable });
     },
 
+    /** Compresses data using the LZ4 block algorithm and converts it into a parsable MessagePack chunk. */
     pack(data: Uint8Array): Uint8Array {
         const origLengthsAndBlocks: [number, Uint8Array][] = [];
         for (let i: number = 0, len = this.maxBlockSize; i < data.byteLength; i += len) {
@@ -97,6 +102,7 @@ export const Lz4Block = {
         return chunk;
     },
 
+    /** Decompresses a MessagePack chunk assumed to be packed using the LZ4 block algorithm. */
     unpack(chunk: Uint8Array): Uint8Array {
         const isMultiBlock = Arr.isChunkValid(chunk);
 
@@ -164,6 +170,7 @@ export const Lz4Block = {
         return bfr;
     },
 
+    /** Checks whether a MessagePack chunk can be decompressed using the LZ4 block algorithm. */
     isUnpackable(chunk: Uint8Array): boolean {
         const isMultiBlock = Arr.isChunkValid(chunk);
 
