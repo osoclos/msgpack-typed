@@ -38,7 +38,7 @@ export function formatNumber(data: number | bigint, b: NumberBase | NumberFormat
                 : 4;
 
     const segments: string[] = Array(Math.ceil(str.length / periodLen));
-    for (let iCharStart: number = str.length - periodLen, iCharEnd: number = str.length, iSegment: number = segments.length - 1; iSegment >= 0; iCharStart = iCharStart < periodLen ? 0 : iCharStart - periodLen, iCharEnd -= periodLen, iSegment--)
+    for (let iCharStart: number = periodLen > str.length ? 0 : str.length - periodLen, iCharEnd: number = str.length, iSegment: number = segments.length - 1; iSegment >= 0; iCharStart = iCharStart < periodLen ? 0 : iCharStart - periodLen, iCharEnd -= periodLen, iSegment--)
         segments[iSegment] = str.slice(iCharStart, iCharEnd);
 
     const separator = typeof b === "object" && "separator" in b ? b.separator : "_";
