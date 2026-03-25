@@ -207,7 +207,7 @@ function parse<K, V>(obj: Map<K, V> | Record<Extract<K, Exclude<keyof any, symbo
     for (const pair of obj instanceof Map ? obj : Object.entries(obj)) {
         const parsedPair: [ToParsed<K>, ToParsed<V>] = <[ToParsed<K>, ToParsed<V>]><unknown>[];
 
-        for (const item of pair) {
+        iterateToEnd: for (const item of pair) {
             if (
                 item instanceof Uint ||
                 item instanceof Int  ||
@@ -220,13 +220,13 @@ function parse<K, V>(obj: Map<K, V> | Record<Extract<K, Exclude<keyof any, symbo
                 item instanceof Bfr
             ) {
                 parsedPair.push(<ToParsed<K | V>>item.data);
-                continue;
+                continue iterateToEnd;
             }
 
             for (const Container of MP_CONTAINER_LIST) {
                 if (Container.isValid(item)) {
                     parsedPair.push((<any>Container.parse)(item));
-                    continue;
+                    continue iterateToEnd;
                 }
             }
 

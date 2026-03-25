@@ -1,7 +1,7 @@
 import { Ext } from "../classes";
 import { ArrPrimitive, ObjPrimitive } from "../containers";
 
-import { formatNumber, NIL_CODE, RawClass } from "../internal";
+import { NIL_CODE, RawClass } from "../internal";
 import { MP_CLASS_LIST, MP_CONTAINER_LIST, MpClassUnion } from "../types";
 
 import { MissingHeaderCodeError, NonDecodableChunkError } from "./errors";

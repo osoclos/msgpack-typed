@@ -11,7 +11,7 @@ export const Arr = {
     parse<T>(arr: T[]): ToParsed<T>[] {
         const parsed: ToParsed<T>[] = [];
 
-        for (let item of arr) {
+        iterateToEnd: for (let item of arr) {
             if (
                 item instanceof Uint ||
                 item instanceof Int  ||
@@ -24,13 +24,13 @@ export const Arr = {
                 item instanceof Bfr
             ) {
                 parsed.push(<ToParsed<T>>item.data);
-                continue;
+                continue iterateToEnd;
             }
 
             for (const Container of MP_CONTAINER_LIST) {
                 if (Container.isValid(item)) {
                     parsed.push((<any>Container.parse)(item));
-                    continue;
+                    continue iterateToEnd;
                 }
             }
 
