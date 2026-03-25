@@ -55,7 +55,25 @@ export const Lz4Block = {
             extBuffers.push(uint.encode());
         }
 
-        const extCode = isSingleBlock ? 0x63 : 0x62;
+        const extCode = 0x62 + +isSingleBlock /* isSingleBlock ? 0x63 : 0x62 */;
+
+        if (isSingleBlock) {
+            const [, block] = origLengthsAndBlocks[0]!;
+
+            const preCompressionBfr = extBuffers[0]!;
+
+            const iBlockStart = preCompressionBfr.byteLength;
+            const extDataLen = iBlockStart + block.byteLength;
+
+            const extData = new Uint8Array(extDataLen);
+
+            extData.set(preCompressionBfr, 0);
+            extData.set(block, iBlockStart);
+
+            const chunk = ExtUtils.encodeRaw(extData, extCode);
+
+            return chunk;
+        }
 
         const extDataLen = extBuffers.reduce((len, bfr) => len + bfr.byteLength, 0);
 
@@ -63,20 +81,6 @@ export const Lz4Block = {
         for (let iData: number = 0, iBfr: number = 0; iBfr < extBuffers.length; iData += extBuffers[iBfr]!.byteLength, iBfr++) extData.set(extBuffers[iBfr]!, iData);
 
         const extChunk = ExtUtils.encodeRaw(extData, extCode);
-
-        if (isSingleBlock) {
-            const [, block] = origLengthsAndBlocks[0]!;
-
-            const iBlockStart = extChunk.byteLength;
-
-            const chunkLen = iBlockStart + block.byteLength;
-            const chunk = new Uint8Array(chunkLen);
-
-            chunk.set(extChunk, 0);
-            chunk.set(block   , iBlockStart);
-
-            return chunk;
-        }
 
         const blockBuffers: Uint8Array[] = [];
         for (const [, block] of origLengthsAndBlocks) {
@@ -118,26 +122,34 @@ export const Lz4Block = {
             extChunk = chunk.subarray(dataIndices.shift()!);
 
             for (const i of dataIndices) dataBlocks.push(Bfr.decode(chunk.subarray(i)).data);
-        } else {
-            extChunk = chunk;
-
-            const iDataStart = ExtUtils.deriveIndices(extChunk).slice(-1)[0]!;
-            dataBlocks.push(chunk.slice(iDataStart));
-        }
+        } else extChunk = chunk;
 
         const [extData, extCode] = ExtUtils.decodeRaw(extChunk);
         if (extCode !== 0x63 - +isMultiBlock /* isMultiBlock ? 0x62 : 0x63 */) throw new InvalidExtensionCodeError(extCode);
 
         const origLengths: bigint[] = [];
-        for (let i: number = 0; i < extData.byteLength;) {
-            const uintChunk = extData.subarray(i);
 
-            const len = Uint.deriveIndices(uintChunk).slice(-1)[0]!;
+        if (isMultiBlock) {
+            for (let i: number = 0; i < extData.byteLength;) {
+                const uintChunk = extData.subarray(i);
+
+                const len = Uint.deriveIndices(uintChunk).slice(-1)[0]!;
+
+                const uint = Uint.decode(uintChunk);
+                origLengths.push(BigInt(uint.data));
+
+                i += len;
+            }
+        } else {
+            const uintChunk = extData;
 
             const uint = Uint.decode(uintChunk);
             origLengths.push(BigInt(uint.data));
 
-            i += len;
+            const iBlockStart = Uint.deriveIndices(extData).slice(-1)[0]!;
+            const bfrChunk = extData.subarray(iBlockStart);
+
+            dataBlocks.push(bfrChunk);
         }
 
         if (origLengths.length !== dataBlocks.length) {
@@ -190,15 +202,11 @@ export const Lz4Block = {
                 if (!Bfr.isChunkValid(chunk.subarray(i))) return false;
         } else {
             extChunk = chunk;
-
             if (!ExtUtils.isChunkValid(extChunk)) return false;
-
-            const iDataStart = ExtUtils.deriveIndices(extChunk).slice(-1)[0]!;
-            if (!Bfr.isChunkValid(chunk.subarray(iDataStart))) return false;
         }
 
         const [, extCode] = ExtUtils.decodeRaw(extChunk);
 
         return extCode === 0x63 - +isMultiBlock /* isMultiBlock ? 0x62 : 0x63 */;
     }
-}
+};
