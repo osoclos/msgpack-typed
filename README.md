@@ -9,7 +9,7 @@ The list of features part of this port of MessagePack includes:
 - Generic encoding and decoding of any valid MessagePack chunks
 - Type preservation (with separate numeric types)
 
-- LZ4 block compression/decompression
+- LZ4 block compression/decompression (same as the [Official MessagePack C# port](https://github.com/MessagePack-CSharp/MessagePack-CSharp))
 
 - Creation of modular and powerful extensions.
 
