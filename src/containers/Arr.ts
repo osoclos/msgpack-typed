@@ -41,11 +41,11 @@ export const Arr = {
     },
 
     /** Serialises any data stored inside wrappers in the array and implicitly converts any other items into a wrapper-appropriate for its type before converting it into a parsable MessagePack chunk. */
-    encode(arr: unknown[], exts: Ext<RawClass<unknown>, number, boolean> | Ext<RawClass<unknown>, number, boolean>[] = []) {
+    encode(arr: unknown[], exts: Ext<RawClass<unknown>, number, boolean> | Ext<RawClass<unknown>, number, boolean>[] = [], doCompression: boolean = false) {
         const header = this.encodeHeader(arr);
 
         const buffers: Uint8Array[] = [header];
-        for (const item of arr) buffers.push(encodeGeneric(item, exts));
+        for (const item of arr) buffers.push(encodeGeneric(item, exts, doCompression));
 
         const chunkLen = buffers.reduce((a, b) => a + b.length, 0);
 
@@ -222,8 +222,8 @@ export const Arr = {
 function decode<T extends MpPrimitiveUnion | null>(chunk: Uint8Array): T[];
 
 /** Converts a MessagePack chunk assumed to be in the `fixarray`/`array` format family and parses it into an array of wrappers into `null`s and nested arrays and maps, as well as specifiable extensions to decode custom extension chunks. */
-function decode<T extends MpPrimitiveUnion | RawClass<unknown> | null>(chunk: Uint8Array, exts: Ext<Extract<T, RawClass<unknown>>, number, boolean> | Ext<Extract<T, RawClass<unknown>>, number, boolean>[]): (Extract<T, MpPrimitiveUnion | null> | Extract<T, RawClass<unknown>>["prototype"])[];
-function decode<T extends MpPrimitiveUnion | RawClass<unknown> | null>(chunk: Uint8Array, exts: Ext<Extract<T, RawClass<unknown>>, number, boolean> | Ext<Extract<T, RawClass<unknown>>, number, boolean>[] = []): (Extract<T, MpPrimitiveUnion | null> | Extract<T, RawClass<unknown>>["prototype"])[] {
+function decode<T extends MpPrimitiveUnion | RawClass<unknown> | null>(chunk: Uint8Array, exts: Ext<Extract<T, RawClass<unknown>>, number, boolean> | Ext<Extract<T, RawClass<unknown>>, number, boolean>[], doDecompression?: boolean): (Extract<T, MpPrimitiveUnion | null> | Extract<T, RawClass<unknown>>["prototype"])[];
+function decode<T extends MpPrimitiveUnion | RawClass<unknown> | null>(chunk: Uint8Array, exts: Ext<Extract<T, RawClass<unknown>>, number, boolean> | Ext<Extract<T, RawClass<unknown>>, number, boolean>[] = [], doDecompression: boolean = false): (Extract<T, MpPrimitiveUnion | null> | Extract<T, RawClass<unknown>>["prototype"])[] {
     const subChunks = Arr.decodeHeader(chunk);
-    return <any>subChunks.map<T>((chunk) => <T>decodeGeneric(chunk, exts));
+    return <any>subChunks.map<T>((chunk) => <T>decodeGeneric(chunk, exts, doDecompression));
 }

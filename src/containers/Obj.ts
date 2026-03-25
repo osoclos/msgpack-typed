@@ -10,11 +10,11 @@ export const Obj = {
     parse,
 
     /** Serialises any data stored inside wrappers in the map/record and implicitly converts any other items into a wrapper-appropriate for its type before converting it into a parsable MessagePack chunk. */
-    encode(obj: Map<unknown, unknown> | Record<Exclude<keyof any, symbol>, unknown>, exts: Ext<RawClass<unknown>, number, boolean> | Ext<RawClass<unknown>, number, boolean>[] = []): Uint8Array {
+    encode(obj: Map<unknown, unknown> | Record<Exclude<keyof any, symbol>, unknown>, exts: Ext<RawClass<unknown>, number, boolean> | Ext<RawClass<unknown>, number, boolean>[] = [], doCompression: boolean = false): Uint8Array {
         const header = Obj.encodeHeader(obj);
 
         const buffers: Uint8Array[] = [header];
-            for (const [key, item] of obj instanceof Map ? obj : Object.entries(obj)) buffers.push(encodeGeneric(key, exts), encodeGeneric(item, exts));
+            for (const [key, item] of obj instanceof Map ? obj : Object.entries(obj)) buffers.push(encodeGeneric(key, exts, doCompression), encodeGeneric(item, exts, doCompression));
 
         const chunkLen = buffers.reduce((a, b) => a + b.length, 0);
 
@@ -238,12 +238,12 @@ function parse<K, V>(obj: Map<K, V> | Record<Extract<K, Exclude<keyof any, symbo
 function decode<K extends MpPrimitiveUnion, V extends MpPrimitiveUnion>(chunk: Uint8Array): Map<K, V>;
 
 /** Converts a MessagePack chunk assumed to be in the `fixarray`/`array` format family and parses it into a map of wrappers, `null`s and nested arrays and maps, as well as specifiable extensions to decode custom extension chunks. */
-function decode<K extends MpPrimitiveUnion | RawClass<unknown>, V extends MpPrimitiveUnion | RawClass<unknown>>(chunk: Uint8Array, exts: Ext<Extract<K | V, RawClass<unknown>>, number, boolean> | Ext<Extract<K | V, RawClass<unknown>>, number, boolean>[]): Map<Extract<K, MpPrimitiveUnion> | Extract<K, RawClass<unknown>>["prototype"], Extract<V, MpPrimitiveUnion> | Extract<V, RawClass<unknown>>["prototype"]>;
-function decode<K extends MpPrimitiveUnion | RawClass<unknown>, V extends MpPrimitiveUnion | RawClass<unknown>>(chunk: Uint8Array, exts: Ext<Extract<K | V, RawClass<unknown>>, number, boolean> | Ext<Extract<K | V, RawClass<unknown>>, number, boolean>[] = []): Map<Extract<K, MpPrimitiveUnion> | Extract<K, RawClass<unknown>>["prototype"], Extract<V, MpPrimitiveUnion> | Extract<V, RawClass<unknown>>["prototype"]> {
+function decode<K extends MpPrimitiveUnion | RawClass<unknown>, V extends MpPrimitiveUnion | RawClass<unknown>>(chunk: Uint8Array, exts: Ext<Extract<K | V, RawClass<unknown>>, number, boolean> | Ext<Extract<K | V, RawClass<unknown>>, number, boolean>[], doDecompression?: boolean): Map<Extract<K, MpPrimitiveUnion> | Extract<K, RawClass<unknown>>["prototype"], Extract<V, MpPrimitiveUnion> | Extract<V, RawClass<unknown>>["prototype"]>;
+function decode<K extends MpPrimitiveUnion | RawClass<unknown>, V extends MpPrimitiveUnion | RawClass<unknown>>(chunk: Uint8Array, exts: Ext<Extract<K | V, RawClass<unknown>>, number, boolean> | Ext<Extract<K | V, RawClass<unknown>>, number, boolean>[] = [], doDecompression: boolean = false): Map<Extract<K, MpPrimitiveUnion> | Extract<K, RawClass<unknown>>["prototype"], Extract<V, MpPrimitiveUnion> | Extract<V, RawClass<unknown>>["prototype"]> {
     const subChunks = Obj.decodeHeader(chunk);
 
     const obj = new Map();
-    for (const [keyChunk, itemChunk] of subChunks) obj.set(decodeGeneric(keyChunk, exts), decodeGeneric(itemChunk, exts));
+    for (const [keyChunk, itemChunk] of subChunks) obj.set(decodeGeneric(keyChunk, exts, doDecompression), decodeGeneric(itemChunk, exts, doDecompression));
 
     return obj;
 }

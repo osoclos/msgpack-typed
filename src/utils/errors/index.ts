@@ -10,3 +10,5 @@ export * from "./NullInRequiredError";
 
 export * from "./MissingHeaderCodeError";
 export * from "./warnTruncatedChunk";
+
+export * from "./lz4";
