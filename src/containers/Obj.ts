@@ -1,9 +1,9 @@
 import { Bfr, Bool, Ext, Flt, Int, Str, Uint } from "../classes";
 
-import { RawClass, ToParsed } from "../internal";
+import { NIL_CODE, RawClass, ToParsed } from "../internal";
 import { MP_CLASS_LIST, MP_CONTAINER_LIST, MpContainer, MpClassUnion } from "../types";
 
-import { decodeGeneric, encodeGeneric, ExtUtils, InvalidDataTypeError, InvalidHeaderCodeError, MissingHeaderCodeError } from "../utils";
+import { decodeGeneric, encodeGeneric, ExtUtils, InvalidDataTypeError, InvalidHeaderCodeError, MissingHeaderCodeError, TruncationCannotProceedError } from "../utils";
 
 /** An object to parse maps and records, representing the `fixmap` and `map` format families in the MessagePack specification. */
 export const Obj = {
@@ -161,9 +161,11 @@ export const Obj = {
                 chunk = chunk.subarray(offset);
 
                 const iCode: number = 0;
-                const code = chunk[iCode]!;
+                const code = chunk[iCode];
 
-                if (code === 0xc0) {
+                if (code === undefined) throw new TruncationCannotProceedError();
+
+                if (code === NIL_CODE) {
                     offset = 1;
                     continue iterateToEnd;
                 }

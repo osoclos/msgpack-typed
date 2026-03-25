@@ -9,6 +9,8 @@ export * from "./NonDecodableChunkError";
 export * from "./NullInRequiredError";
 
 export * from "./MissingHeaderCodeError";
+
+export * from "./TruncationCannotProceedError";
 export * from "./warnTruncatedChunk";
 
 export * from "./lz4";

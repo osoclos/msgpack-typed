@@ -28,7 +28,7 @@ function __encodeGeneric(data: Exclude<unknown, undefined | symbol>, exts: Ext<R
         else if (Cls.isValid(data)) return new (<any>Cls)(data).encode();
 
     for (const Container of MP_CONTAINER_LIST)
-        if (Container.isValid(data)) return (<any>Container.encode)(data);
+        if (Container.isValid(data)) return (<any>Container.encode)(data, exts);
 
     throw new NonEncodableChunkError(data);
 }
