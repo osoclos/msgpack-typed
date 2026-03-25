@@ -3,7 +3,7 @@ import { Arr } from "../containers";
 
 import { HashTableModuleImports, initHashTableModule, initLz4BlockModule, initMathModule, Lz4BlockModuleExports } from "../modules";
 
-import { InvalidExtensionCodeError, warnMismatchedBlockCount, warnMismatchedLengthRedundancyCheck, warnModuleReinitialization } from "./errors";
+import { InvalidExtensionCodeError, NoModuleInitializationError, warnMismatchedBlockCount, warnMismatchedLengthRedundancyCheck, warnModuleReinitialization } from "./errors";
 
 import { ExtUtils } from "./ExtUtils";
 
@@ -31,6 +31,8 @@ export const Lz4Block = {
 
     /** Compresses data using the LZ4 block algorithm and converts it into a parsable MessagePack chunk. */
     pack(data: Uint8Array): Uint8Array {
+        if (!this.hasInitialized) throw new NoModuleInitializationError();
+
         const origLengthsAndBlocks: [number, Uint8Array][] = [];
         for (let i: number = 0, len = this.maxBlockSize; i < data.byteLength; i += len) {
             len = Math.min(len, data.byteLength - i);
@@ -108,6 +110,8 @@ export const Lz4Block = {
 
     /** Decompresses a MessagePack chunk assumed to be packed using the LZ4 block algorithm. */
     unpack(chunk: Uint8Array): Uint8Array {
+        if (!this.hasInitialized) throw new NoModuleInitializationError();
+
         const isMultiBlock = Arr.isChunkValid(chunk);
 
         let extChunk: Uint8Array;
