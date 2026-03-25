@@ -3,9 +3,9 @@ export * from "./Int";
 
 export * from "./Flt";
 
-export * from "./Str";
 export * from "./Bool";
 
-export * from "./Slice";
+export * from "./Str";
+export * from "./Bfr";
 
 export * from "./Ext";

@@ -1,12 +1,13 @@
 import { Ext } from "../classes";
 
+/** An extension to support timestamps in MessagePack. */
 export class TimestampExt extends Ext<DateConstructor, -1> {
     /** Creates an extension to allow Date objects to be parsed as MessagePack chunks. */
     constructor() {
         super(-1, Date);
     }
 
-    override encode(date: Date): Uint8Array {
+    override encode(date: Date): [Uint8Array, -1] {
         const epochMs = date.getTime();
         const epochSecs = (epochMs / 1000) >>> 0;
 
@@ -19,7 +20,7 @@ export class TimestampExt extends Ext<DateConstructor, -1> {
                 tmpEpochSecs >>>= 8;
             }
 
-            return bfr;
+            return [bfr, -1];
         }
 
         let tmpEpochNs = ((epochMs % 1000) * 1_000_000) & 0xffff_ffff;
@@ -45,7 +46,7 @@ export class TimestampExt extends Ext<DateConstructor, -1> {
             tmpEpochSecs >>>= 8;
         }
 
-        return bfr;
+        return [bfr, -1];
     }
 
     override decode<D extends Date>(bfr: Uint8Array, _code: -1): D {

@@ -1,96 +1,80 @@
-import { RawClass } from "../types";
-import { ExtUtils, toLegible } from "../utils";
+import { RawClass } from "../internal";
+import { ExtUtils } from "../utils";
 
-export abstract class Ext<T extends RawClass<any, any[]>, C extends number> {
+/** A parser for custom classes, representing the `fixext` and `ext` format families in the MessagePack specification. */
+export abstract class Ext<T extends RawClass<unknown>, C extends number, S extends boolean = false> {
     #codes: C[];
-    #classes: T[];
 
-    /** Creates an extension that adds support for a single custom class for MessagePack parsing given a single extension code. Requires overriding or extension.
-     *
-     * @abstract
-     *
-     */
-    constructor(code: C, Cls: T);
+    #isEncodable: (data: unknown) => data is T["prototype"];
+    #isDecodable: (chunk: Uint8Array) => boolean | [number, number];
 
-    /** Creates an extension that adds support for a single custom class for MessagePack parsing given multiple extension codes. Requires overriding or extension.
-     *
-     * @abstract
-     *
-     */
-    constructor(codes: C[], Cls: T);
+    /** Enable parsing of any custom class(es) with specified extension code(s) and makes it usable for MessagePack parsing. */
+    protected constructor(codes: C | C[], classes: T | T[]);
 
-    /** Creates an extension that adds support for custom classes for MessagePack parsing given a single extension code. Requires overriding or extension.
-     *
-     * @abstract
-     *
-     */
-    constructor(code: C, classes: T[]);
+    /** Enables parsing of values that satisfy the given encoding predicate with a specified extension code(s) and makes it usable for MessagePack parsing. Useful if you want more precise control of what data can be parsed through this extension. */
+    protected constructor(codes: C | C[], predicate :   (data: unknown) => data is T["prototype"]);
 
-    /** Creates an extension that adds support for custom classes for MessagePack parsing given multiple extension codes. Requires overriding or extension.
-     *
-     * @abstract
-     *
-     */
-    constructor(codes: C[], classes: T[]);
+    /** Enables parsing of values that satisfy the given encoding and decoding predicates with a specified extension code(s) and makes it usable for MessagePack parsing. Useful if you want more precise control of what data can be parsed through this extension and how the data can be decoded through said extension. */
+    protected constructor(codes: C | C[], predicates: [((data: unknown) => data is T["prototype"]), ((chunk: Uint8Array) => boolean | [number, number]) | null]);
+    protected constructor(codes: C | C[], b: T | T[] | ((data: unknown) => data is T["prototype"]) | [((data: unknown) => data is T["prototype"]), ((chunk: Uint8Array) => boolean | [number, number]) | null]) {
+        this.#codes = Array.isArray(codes) ? [...codes] : [codes];
 
-    constructor(a: C | C[], b: T | T[]) {
-        const codes = Array.isArray(a) ? [...a] : [a];
-        if (codes.length === 0) throw new Error("No codes were provided for usage when creating the extension. Did you add any one-byte code into the extension?");
+        const isArr = Array.isArray(b);
 
-        this.#codes = [];
+        if (!Ext.#isClass(b) || (isArr && b.length === 2 && !(<any[]><unknown>b).some((func) => Ext.#isClass(func) || null))) {
+            if (isArr) {
+                [this.#isEncodable, this.#isDecodable] = <any>b;
+                this.#isDecodable ??= this.#isExtChunkSupported;
 
-        for (const code of codes) {
-            if (Number.isInteger(code)) {
-                this.#codes.push(<C>((code >>> 0) & 0xff));
-                continue;
+                return;
             }
 
-            console.warn(`Invalid code was passed into \`Ext\`. Did not expect ${toLegible(code)}. Skipping code...`);
+            this.#isEncodable = <any>b;
+            this.#isDecodable = this.#isExtChunkSupported;
+
+            return;
         }
 
-        const classes = Array.isArray(b) ? [...b] : [b];
-        if (classes.length === 0) throw new Error("No classes were provided for usage when creating the extension. Did you add any classes into the extension?");
+        if (!isArr) b = [b];
 
-        this.#classes = classes;
+        this.#isEncodable = (data: unknown): data is T["prototype"] => (<any[]><unknown>b).some((Cls) => data instanceof Cls);
+        this.#isDecodable = this.#isExtChunkSupported;
     }
 
-    get codes(): C[] {
-        return [...this.#codes];
+    /** Serialises data passed into the extension and converts it into a data buffer that will be later appended with additional header data to transform it into a MessagePack chunk. */
+    abstract encode(data: T["prototype"]): [Uint8Array, C];
+
+    /** Converts a data buffer stored in a MessagePack chunk assumed to be compatible with the extension and creates a class object supported by the extension. */
+    abstract decode(chunk: Uint8Array, code: true extends S ? C | null : C): T["prototype"];
+
+    /** Checks whether a value can be encoded by this extension. */
+    isEncodable(data: unknown): data is T["prototype"] {
+        return this.#isEncodable(data);
     }
 
-    /** Encodes the class extension and converts it to a MessagePack chunk. Requires overriding or extension.
-     *
-     * @abstract
-     *
-     */
-    abstract encode(data: T["prototype"]): Uint8Array | [Uint8Array, C];
+    /** Checks whether a chunk can be decoded by this extension. */
+    isDecodable(chunk: Uint8Array): boolean | [number, number] {
+        return this.#isDecodable(chunk);
+    }
 
-    /** Decodes a class extension MessagePack chunk, validates it and parses it as this custom class. Requires overriding or extension.
-     *
-     * @abstract
-     *
-     */
-    abstract decode<D extends T["prototype"]>(bfr: Uint8Array, code: C): D;
-
-    /** Checks whether the extension support this code. */
+    /** Checks whether a extension header code is supported by this extension. */
     isCodeValid(code: number): code is C {
         return this.#codes.includes(<C>code);
     }
 
-    isChunkValid(chunk: Uint8Array): boolean {
-        const code = chunk[0];
-        if (code === undefined) return false;
+    /** Determines whether to treat the given chunk as raw buffer data and skip extension header decoding. Useful if you are dealing with raw buffer data instead of extension chunk data. */
+    skipHeaderDecoding(_chunk: Uint8Array): S {
+        return <S>false;
+    }
+
+    #isExtChunkSupported(chunk: Uint8Array): boolean {
+        if (!ExtUtils.isChunkValid(chunk)) return false;
 
         const [, extCode] = ExtUtils.decodeRaw(chunk);
-
         return this.isCodeValid(extCode);
     }
 
-    /** Checks whether this custom class is supported by this extension. */
-    isObjValid(obj: any): obj is T["prototype"] {
-        for (const Cls of this.#classes)
-            if (obj instanceof Cls) return true;
-
-        return false;
+    static #isClass<T>(func: unknown): func is RawClass<T> {
+        return typeof func === "function" && ((func.prototype !== undefined && func.prototype !== null && Object.getOwnPropertyNames(func.prototype).length > 1) || Function.prototype.toString.call(func).startsWith("class"));
     }
 }

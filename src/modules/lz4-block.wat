@@ -8,9 +8,6 @@
     ;; import hash-table.fillMemory as hash-table_fill_memory
     (import "hashTable" "fillMemory" (func $hash-table_fill_memory (param $byte i32)))
 
-    ;; import debug.log as debug_log
-    (import "debug" "log" (func $debug_log (param $n i32)))
-
     ;; _m = new Memory(initial_size = 1)
     (memory $_m 1)
 

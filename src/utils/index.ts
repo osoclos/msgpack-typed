@@ -1,9 +1,10 @@
+export * from "./errors";
+
 export * from "./ExtUtils";
+export * from "./Lz4Block";
 
 export * from "./encodeGeneric";
 export * from "./decodeGeneric";
 
-export * from "./mpLz4Pack"  ;
-export * from "./mpLz4Unpack";
-
-export * from "./toLegible";
+export * from "./makeRequired";
+export * from "./makeOptional";

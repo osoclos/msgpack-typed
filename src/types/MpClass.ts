@@ -1,23 +1,35 @@
-export interface MpClassInterface<T> {
-    raw(): T;
-    raw(data: T): void;
+export interface MpClassInterface<T, N extends boolean> {
+    get data(): MpResult<T, N>;
+    set data(data: MpResult<T, N>);
+
+    get isOptional(): N;
 
     encode(): Uint8Array;
+    reset(): void;
+
+    isValid(data: unknown): data is MpResult<T, N>;
 }
 
-export interface MpClassModule<T> {
-    new (data?: T): MpClassInterface<T>;
-    new (bfr: Uint8Array): MpClassInterface<T>;
+export interface MpClassModule<T, N extends boolean> {
+    new (data?: T   , isOptional?: N   ): MpClassInterface<MpResult<T, N>, N>;
+    new (data : null, isOptional : true): MpClassInterface<T | null, true>;
 
-    nullable(data?: T | null): MpClassInterface<T | null>;
-    nullable(bfr: Uint8Array): MpClassInterface<T | null>;
+    new (bfr: Uint8Array, isOptional?: N): MpClassInterface<MpResult<T, N>, N>;
 
-    decode(chunk: Uint8Array): MpClassInterface<T>;
+    required(data: T        ): MpClassInterface<NonNullable<T>, false>;
+    required(bfr: Uint8Array): MpClassInterface<NonNullable<T>, false>;
 
-    isRawValid(data: any): data is T;
+    optional(data: T | null ): MpClassInterface<T | null, true>;
+    optional(bfr: Uint8Array): MpClassInterface<T | null, true>;
+
+    decode(chunk: Uint8Array): MpClassInterface<NonNullable<T>, false>;
+
+    isValid(data: unknown): data is NonNullable<T>;
 
     isCodeValid(code: number): boolean;
     isChunkValid(chunk: Uint8Array): boolean;
 
-    deriveChunkRanges(chunk: Uint8Array): number[];
+    deriveIndices(chunk: Uint8Array): number[];
 }
+
+export type MpResult<T, N extends boolean> = true extends N ? T | null : NonNullable<T>;

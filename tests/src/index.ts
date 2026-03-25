@@ -1,32 +1,27 @@
-import { Arr, ArrClassed, decodeGeneric, encodeGeneric, Lz4BlockExt, mpLz4Unpack } from "../../src";
+import { Arr, ArrPrimitive, decodeGeneric, encodeGeneric, Lz4Block } from "../../dist";
 
-const lz4BlockExt = await Lz4BlockExt.create();
+Lz4Block.initModules();
 
 const fIn = new Uint8Array(<ArrayBuffer>await fetch("in.dat").then((res) => res.arrayBuffer()));
 
-console.log("[1/5] - unpacking using LZ4 block algorithm...");
+console.log("[1/4] - decoding unpacked buffer...");
 
-const unpackedBfr = mpLz4Unpack(lz4BlockExt.lz4Block, fIn);
-console.log("[1/5] - unpacking complete!", unpackedBfr);
+const decodedData = decodeGeneric<ArrPrimitive>(fIn, [], true);
+console.log("[1/4] - decoding complete!", decodedData);
 
-console.log("[2/5] - decoding unpacked buffer...");
+console.log("[2/4] - turning into raw data...");
 
-const decodedData = decodeGeneric<ArrClassed>(unpackedBfr, lz4BlockExt);
-console.log("[2/5] - decoding complete!", decodedData);
+const rawData = Arr.parse(decodedData);
+console.log("[2/4] - turned decoded data into raw data!", rawData);
 
-console.log("[3/5] - turning into raw data...");
+console.log("[3/4] - repacking decoded data...");
 
-const rawData = Arr.raw(decodedData);
-console.log("[3/5] - turned decoded data into raw data!", rawData);
+const packedBfr = encodeGeneric(decodedData, [], true);
+console.log("[3/4] - repacked decoded data!", packedBfr);
 
-console.log("[4/5] - repacking decoded data...");
+console.log("[4/4] - re-unpacking repacked buffer...");
 
-const packedBfr = encodeGeneric(decodedData, lz4BlockExt);
-console.log("[4/5] - repacked decoded data!", packedBfr);
-
-console.log("[5/5] - re-unpacking repacked buffer...");
-
-const decodedDataFromPackedBfr = decodeGeneric<ArrClassed>(packedBfr, lz4BlockExt);
-console.log("[5/5] - successfully unpacked repacked buffer!", decodedDataFromPackedBfr);
+const decodedDataFromPackedBfr = decodeGeneric(packedBfr, [], true);
+console.log("[4/4] - successfully unpacked repacked buffer!", decodedDataFromPackedBfr);
 
 console.log("Tests complete!");

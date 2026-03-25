@@ -3,6 +3,6 @@ export * from "./containers";
 
 export * from "./extensions";
 
-export * from "./modules";
+export * from "./types";
 
-export { encodeGeneric, decodeGeneric, mpLz4Pack, mpLz4Unpack, ExtUtils } from "./utils";
+export * from "./utils";

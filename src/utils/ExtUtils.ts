@@ -1,27 +1,27 @@
 import { Ext } from "../classes";
-import { RawClass } from "../types";
+import { NIL_CODE, RawClass } from "../internal";
 
-import { toLegible } from "./toLegible";
+import { InvalidDataTypeError, InvalidExtensionCodeError, InvalidHeaderCodeError, MissingHeaderCodeError, NonDecodableChunkError, warnTruncatedChunk } from "./errors";
 
+/** An object to handle any extension-related features and helper functions to ease extension development and usage. */
 export const ExtUtils = {
-    /** Encodes a class object that an extension is responsible for and converts it to a MessagePack chunk. */
-    encode<T extends RawClass<any, any[]>>(ext: Ext<T, number>, data: T["prototype"]): Uint8Array {
-        const res = ext.encode(data);
+    /** Serialises data and converts it into a parsable MessagePack chunk using a specified extension that supports it. */
+    encodeWith<T extends RawClass<unknown>>(ext: Ext<T, number, boolean>, data: T["prototype"]) {
+        if (!ext.isEncodable(data)) throw new InvalidDataTypeError(data);
 
-        const bytes = Array.isArray(res) ? res[0] : res;
-        const extCode  = Array.isArray(res) ? res[1] : ext.codes[0]!;
-
-        return this.encodeRaw(bytes, extCode);
+        const [extData, extCode] = ext.encode(data);
+        return this.encodeRaw(extData, extCode);
     },
 
-    /** Encodes a buffer with an extension code and converts it to a MessagePack chunk. */
-    encodeRaw(data: Uint8Array, extCode: number): Uint8Array {
+    /** Converts a buffer containing data into a parsable MessagePack chunk given an extension code. Useful if you already have custom data in byte form. */
+    encodeRaw(data: Uint8Array, extCode: number) {
         let code: number;
         let lenLen: number;
 
         const len = data.byteLength;
 
         switch (true) {
+            // fixext
             case len === 0x01: {
                 code = 0xd4;
                 lenLen = 0;
@@ -57,6 +57,7 @@ export const ExtUtils = {
                 break;
             }
 
+            // ext
             case len <= 0xff: {
                 code = 0xc7;
                 lenLen = 1;
@@ -81,14 +82,13 @@ export const ExtUtils = {
 
         const iDataStart = 1 + lenLen + 1;
 
-        const chunk = new Uint8Array(iDataStart + len);
+        const chunkLen = iDataStart + len;
+
+        const chunk = new Uint8Array(chunkLen);
         chunk[0] = code;
 
-        let tmpLen = len;
-        for (let i: number = lenLen; i >= 1; i--) {
-            chunk[i] = tmpLen & 0xff;
-            tmpLen >>>= 8;
-        }
+        for (let i: number = 1, iByte: number = lenLen - 1; iByte >= 0; i++, iByte--)
+            chunk[i] = (len >>> (iByte * 8)) & 0xff;
 
         chunk[1 + lenLen] = extCode;
         chunk.set(data, iDataStart);
@@ -96,149 +96,118 @@ export const ExtUtils = {
         return chunk;
     },
 
-    /** Decodes an extension MessagePack chunk, validates it and parses as the class type that a specific extension is responsible for. */
-    decode<T extends RawClass<any, any[]>>(ext: Ext<T, number>, chunk: Uint8Array): T {
-        const [data, extCode] = this.decodeRaw(chunk);
+    /** Converts a MessagePack chunk assumed to be in the `fixext`/`ext` format family and creates a class object using a specified extension that supports it. */
+    decodeWith<T extends RawClass<unknown>, S extends boolean>(ext: Ext<T, number, S>, chunk: Uint8Array): T["prototype"] {
+        const decodableRes = ext.isDecodable(chunk);
+        if (!decodableRes) throw new NonDecodableChunkError();
 
-        if (!ext.isCodeValid(extCode)) throw new Error(`The extension passed into the decoder does not supports code ${toLegible(extCode, true)}. Did you add an extension that supports it?`);
+        let subChunk: Uint8Array;
+        if (Array.isArray(decodableRes)) {
+            const [iStart, iEnd] = decodableRes;
+            subChunk = chunk.subarray(iStart, iEnd);
+        } else subChunk = chunk;
+
+        if (!ext.skipHeaderDecoding(subChunk)) return ext.decode(subChunk, <any>null);
+
+        const [data, extCode] = this.decodeRaw(subChunk);
+        if (!ext.isCodeValid(extCode)) throw new InvalidExtensionCodeError(extCode);
+
         return ext.decode(data, extCode);
     },
 
-    /** Decodes an extension MessagePack chunk, parses it to a buffer as well as its extension code. */
+    /** Converts a MessagePack chunk assumed to be in the `fixext`/`ext` format family and parses it as a pair of an extension code and the data buffer that came with the chunk. */
     decodeRaw(chunk: Uint8Array): [Uint8Array, number] {
-        const ranges = this.deriveChunkRanges(chunk);
+        const code = chunk[0];
+        if (code === undefined || code === NIL_CODE) throw new MissingHeaderCodeError();
 
-        const hasLenStartIdx = ranges.length === 5;
+        const indices = this.deriveIndices(chunk);
 
-        const iExtCode = ranges[<typeof hasLenStartIdx extends true ? 2 : 1>(1 + +hasLenStartIdx)];
+        const hasLenStartIdx = indices.length === 5;
+
+        const iExtCode = indices[<typeof hasLenStartIdx extends true ? 2 : 1>(1 + +hasLenStartIdx)];
         const extCode = chunk[iExtCode]!;
 
-        const iDataStart = ranges[<typeof hasLenStartIdx extends true ? 3 : 2>(2 + +hasLenStartIdx)];
-        const iDataEnd   = ranges[<typeof hasLenStartIdx extends true ? 4 : 3>(3 + +hasLenStartIdx)];
+        const iDataStart = indices[<typeof hasLenStartIdx extends true ? 3 : 2>(2 + +hasLenStartIdx)];
+        const iDataEnd   = indices[<typeof hasLenStartIdx extends true ? 4 : 3>(3 + +hasLenStartIdx)];
 
-        if (iDataEnd > chunk.byteLength) console.warn("Chunk buffer has insufficient data to be decoded. Was the chunk truncated?");
+        if (iDataEnd > chunk.byteLength) warnTruncatedChunk();
 
-        return [chunk.slice(iDataStart, iDataEnd), extCode];
+        return [chunk.subarray(iDataStart, iDataEnd), extCode];
     },
 
-    /** Checks whether a chunk header code corresponds to a MessagePack extension. */
+    /** Checks whether a chunk header code is supported by `Ext`. */
     isCodeValid(code: number): boolean {
         return (
+            // fixext
             code === 0xd4 ||
             code === 0xd5 ||
             code === 0xd6 ||
             code === 0xd7 ||
             code === 0xd8 ||
 
+            // ext
             code === 0xc7 ||
             code === 0xc8 ||
             code === 0xc9
         );
     },
 
-    /** Checks whether a chunk corresponds to a MessagePack extension. */
+    /** Checks whether a chunk is supported by `Ext`. */
     isChunkValid(chunk: Uint8Array): boolean {
         const code = chunk[0];
-        if (code === undefined) return false;
+        if (code === undefined) throw new MissingHeaderCodeError();
 
         return this.isCodeValid(code);
     },
 
-    /** Retrieves the starting index of each section of the chunk, as well as the final exclusive index, for an Ext. */
-    deriveChunkRanges(chunk: Uint8Array): [number, number, number, number] | [number, number, number, number, number] {
-        const iChunkStart: number = 0;
+    /** Computes the index of the chunk header code, the starting index of the data containing the length (will not appear if the chunk in the positive `fixext` format family), the index of the extension header code, the starting index of the data containing the raw value, as well as the final exclusive index of the chunk. */
+    deriveIndices(chunk: Uint8Array): [number, number, number, number] | [number, number, number, number, number] {
+        const iCode: number = 0;
+        const code = chunk[iCode]!;
 
-        const code = chunk[iChunkStart];
-        if (code === undefined) throw new Error("Unable to retrieve header code from `chunk`. Is the chunk empty/truncated or `chunk.byteOffset` exceeded its length?");
+        if (!this.isChunkValid(chunk)) throw new InvalidHeaderCodeError(code);
 
-        let len: number;
-        let lenLen: number;
+        // fixext
+        if ((code & 0xf0) === 0xd0) {
+            /* match code:
+             *     case 0xd4: len = 1
+             *     case 0xd5: len = 2
+             *     case 0xd6: len = 4
+             *     case 0xd7: len = 8
+             *     case 0xd8: len = 16
+             */
+            const len = 0b1 << (code - 0xd4);
 
-        switch (code) {
-            case 0xd4: {
-                len = 0x01;
-                lenLen = 0;
+            const iExtCode = iCode + 1;
 
-                break;
-            }
-
-            case 0xd5: {
-                len = 0x02;
-                lenLen = 0;
-
-                break;
-            }
-
-            case 0xd6: {
-                len = 0x04;
-                lenLen = 0;
-
-                break;
-            }
-
-            case 0xd7: {
-                len = 0x08;
-                lenLen = 0;
-
-                break;
-            }
-
-            case 0xd8: {
-                len = 0x10;
-                lenLen = 0;
-
-                break;
-            }
-
-            case 0xc7: {
-                len = 0;
-                lenLen = 1;
-
-                break;
-            }
-
-            case 0xc8: {
-                len = 0;
-                lenLen = 2;
-
-                break;
-            }
-
-            case 0xc9: {
-                len = 0;
-                lenLen = 4;
-
-                break;
-            }
-
-            default: throw new TypeError(`Invalid chunk header for \`Ext\`. Did not expect ${toLegible(code, true)}.`);
-        }
-
-        if (lenLen === 0) {
-            const iType = iChunkStart + 1;
-
-            const iDataStart = iType + 1;
+            const iDataStart = iExtCode + 1;
             const iDataEnd = iDataStart + len;
 
-            return [iChunkStart, iType, iDataStart, iDataEnd];
+            return [iCode, iExtCode, iDataStart, iDataEnd];
         }
 
-        const iLenStart = iChunkStart + 1;
+        // ext
+        /* match code:
+         *     case 0xc7: lenLen = 1
+         *     case 0xc8: lenLen = 2
+         *     case 0xc9: lenLen = 4
+         */
+        const lenLen = 0b1 << (code - 0xc7);
+        const maxLenLen = chunk.byteLength < lenLen ? chunk.byteLength : lenLen;
 
-        const chunkLenLen = chunk.byteLength < lenLen ? chunk.byteLength : lenLen;
+        const iLenStart = iCode + 1;
 
-        len = 0;
-        for (let i: number = iLenStart, nBytes: number = 0; nBytes < chunkLenLen; i++, nBytes++) {
+        let len: number = 0;
+        for (let i: number = iLenStart, iByte: number = 0; iByte < maxLenLen; i++, iByte++) {
             len <<= 8;
             len |= chunk[i]!;
         }
 
-        const iType = iLenStart + lenLen;
+        const iExtCode = iLenStart + 1;
 
-        const iDataStart = iType + 1;
+        const iDataStart = iExtCode + lenLen;
         const iDataEnd = iDataStart + len;
 
-        return [iChunkStart, iLenStart, iType, iDataStart, iDataEnd];
+        return [iCode, iLenStart, iExtCode, iDataStart, iDataEnd];
     }
 };
-

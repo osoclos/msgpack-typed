@@ -6,7 +6,7 @@
 
     "compilerOptions": {
         // Modules
-        "types": ["vite-plugin-wat2wasm/module-types"],
+        "types": ["vite-plugin-wat2wasm/types"],
 
         // Emit
         "declaration": true,

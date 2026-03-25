@@ -3,18 +3,18 @@ import __initHashTableModule from "./hash-table.wat";
 
 import __initLz4BlockModule from "./lz4-block.wat";
 
-export function initMathModule(): Promise<MathModuleExports> {
+export async function initMathModule(): Promise<MathModuleExports> {
     return __initMathModule<MathModuleExports>();
 }
 
-export function initHashTableModule(imports: HashTableModuleImports = {}): Promise<HashTableModuleExports> {
+export async function initHashTableModule(imports: HashTableModuleImports = {}): Promise<HashTableModuleExports> {
     imports.options ??= {};
     imports.options.nHashBits ??= 12;
 
     return __initHashTableModule<HashTableModuleExports, Required<HashTableModuleImports>>(<Required<HashTableModuleImports>>imports);
 }
 
-export function initLz4BlockModule(imports: Lz4BlockModuleImports): Promise<Lz4BlockModuleExports> {
+export async function initLz4BlockModule(imports: Lz4BlockModuleImports): Promise<Lz4BlockModuleExports> {
     return __initLz4BlockModule<Lz4BlockModuleExports, Required<Lz4BlockModuleImports>>(imports);
 }
 
@@ -42,8 +42,6 @@ export interface HashTableModuleExports {
 export interface Lz4BlockModuleImports {
     math: MathModuleExports;
     hashTable: HashTableModuleExports;
-
-    debug: { log(n: number): void; }
 }
 
 export interface Lz4BlockModuleExports {

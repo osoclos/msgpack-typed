@@ -1,209 +1,191 @@
-import { MpClassInterface, MpClassModule } from "../types";
-import { toLegible } from "../utils";
+import { NIL_CODE } from "../internal";
+import { InvalidDataTypeError, InvalidHeaderCodeError, MissingHeaderCodeError, NullInRequiredError, warnTruncatedChunk } from "../utils";
 
-export const Int = class Int implements MpClassInterface<IntPrimitive> {
-    #data: bigint;
+import { MpClassInterface, MpClassModule, MpResult } from "../types";
 
-    #nullable: boolean;
-    #isNull: boolean;
+/** A wrapper for signed integers, representing the negative `fixint` and signed `int` format families in the MessagePack specification. */
+export const Int = class Int<N extends boolean> implements MpClassInterface<IntPrimitive, N> {
+    #data: MpResult<IntPrimitive, N>;
+    #isOptional: N;
 
-    /** Wraps a signed integer for MessagePack parsing.
-     *
-     * @default 0
-     *
-     * @example new Int(); // creates a signed integer wrapper and defaults to `0`
-     *
-     * @example new Int(2); // wraps a `2` positive integer
-     * @example new Int(-81); // wraps a `81` negative integer
-     *
-     * @example new Int(537n); // wraps a `537` positive integer as a bigint
-     *
-     */
-    constructor(data?: IntPrimitive);
+    /** Wraps a native `number` or `bigint` and makes it usable for MessagePack parsing, with an option to specify if it can be nullable. */
+    constructor(data?: IntPrimitive, isOptional?: N);
 
-    /** Interprets the first bytes (derived from `Uint8Array.byteOffset`) from a buffer to a MessagePack signed integer wrapper.
-     *
-     * @example new Int(new Uint8Array([0x00])); // interprets the bytes (`0x00`) as `0`
-     *
-     * @example new Int(new Uint8Array([0x01, 0x02, 0x03])); // interprets the bytes (`0x01`, `0x02`, `0x03`) as `0x0003_0201 - (0x0003_0201 & 0x8000_0000)` using Two's compliment
-     * @example new Int(new Uint8Array([0xff, 0xfe])); // interprets the bytes (`0xff`, `0xfe`) as `0xfeff - (0xfeff & 0x8000)` using Two's compliment
-     *
-     * @example new Int(new Uint8Array()); // interprets an empty buffer as `0`
-     *
-     */
-    constructor(bfr: Uint8Array);
+    /** Wraps `null` and makes it usable for MessagePack parsing, which can be promoted to a signed integer. */
+    constructor(data: null, isOptional: true);
 
-    constructor(a: IntPrimitive | Uint8Array = 0) {
-        this.#nullable = false;
-        this.#isNull = false;
+    /** Interprets bytes in a buffer as a big-endian signed integer and makes it usable for MessagePack parsing, with an option to specify if it can be nullable. If the buffer is empty and marked as nullable, it will be assumed to be `null`. */
+    constructor(bfr: Uint8Array, isOptional?: N);
+    constructor(a?: unknown, isOptional: N = <N>false) {
+        this.#isOptional = isOptional;
 
-        if (a instanceof Uint8Array) {
-            const bfr = a;
+        if (!(a instanceof Uint8Array)) {
+            const data =
+                arguments.length === 0
+                    ? isOptional
+                        ? null
+                        : 0
+                    : a;
 
-            const nBytes = bfr.byteLength < 8 ? bfr.byteLength : 8;
+            if (!this.isValid(data)) throw new InvalidDataTypeError(data);
+            this.#data = data;
 
-            this.#data = 0n;
-            for (let i: number = 0; i < nBytes; i++) {
-                this.#data <<= 8n;
-                this.#data |= BigInt(bfr[i]!);
-            }
-
-            const maxByteLen =
-                nBytes <= 1
-                    ? 1 :
-                nBytes <= 2
-                    ? 2 :
-                nBytes <= 4
-                    ? 4
-                    : 8;
-
-            let needsInterpreting: boolean = false;
-            switch (maxByteLen) {
-                case 1: {
-                    needsInterpreting = this.#data > 0x7fn;
-                    break;
-                }
-
-                case 2: {
-                    needsInterpreting = this.#data > 0x7fffn;
-                    break;
-                }
-
-                case 4: {
-                    needsInterpreting = this.#data > 0x7fff_ffffn;
-                    break;
-                }
-
-                case 8: {
-                    needsInterpreting = this.#data > 0x7fff_ffff_ffff_ffffn;
-                    break;
-                }
-
-                default: break;
-            }
-
-            if (needsInterpreting) this.#data = BigInt.asIntN(maxByteLen * 8, this.#data);
             return;
         }
 
-        const data = a;
+        const bfr = a;
 
-        if (Int.isRawValid(data)) this.#data = BigInt(data);
-        else throw new TypeError(`Invalid value was passed into \`Int\`. Did not expect ${toLegible(data)}.`);
-    }
-
-    /** Wraps a nullable signed integer for MessagePack parsing.
-     *
-     * @default null
-     *
-     * @example Int.nullable(); // creates a nullable signed integer wrapper and defaults to `null`
-     *
-     * @example Int.nullable(null); // wraps `null` and allow it to be upgraded to an signed integer
-     *
-     * @example Int.nullable(2); // wraps a `2` positive integer
-     * @example Int.nullable(-81); // wraps a `81` negative integer
-     *
-     * @example Int.nullable(537n); // wraps a `537` positive integer as a bigint
-     *
-     */
-    static nullable(data?: IntPrimitive | null): MpClassInterface<IntPrimitive | null>;
-
-    /** Interprets the first bytes (derived from `Uint8Array.byteOffset`) from a buffer to a MessagePack nullable signed integer wrapper.
-     *
-     * @example Int.nullable(new Uint8Array([0x00])); // interprets the bytes (`0x00`) as `0`
-     *
-     * @example Int.nullable(new Uint8Array([0x01, 0x02, 0x03])); // interprets the bytes (`0x01`, `0x02`, `0x03`) as `0x0003_0201 - (0x0003_0201 & 0x8000_0000)` using Two's compliment
-     * @example Int.nullable(new Uint8Array([0xff, 0xfe])); // interprets the bytes (`0xff`, `0xfe`) as `0xfeff - (0xfeff & 0x8000)` using Two's compliment
-     *
-     * @example Int.nullable(new Uint8Array()); // interprets an empty buffer as `null`
-     *
-     */
-    static nullable(bfr: Uint8Array): MpClassInterface<IntPrimitive | null>;
-
-    static nullable(a: IntPrimitive | null | Uint8Array = null): MpClassInterface<IntPrimitive | null> {
-        let isNull: boolean;
-
-        if (a instanceof Uint8Array) {
-            const bfr = a;
-
-            const byte = bfr[0];
-            isNull = byte === undefined;
-        } else {
-            const data = a;
-            isNull = data === null;
+        if (isOptional && bfr.byteLength === 0) {
+            this.#data = <any>null;
+            return;
         }
 
-        const int = isNull ? new Int() : new Int(<IntPrimitive>a);
-        int.#nullable = true;
-        int.#isNull = isNull;
+        const nBytes = Math.min(bfr.byteLength, 8);
+        if (nBytes > 4) {
+            this.#data = 0n;
+            for (let i: number = 0; i < nBytes; i++) {
+                (<bigint>this.#data) <<= 8n;
+                (<bigint>this.#data) |= BigInt(bfr[i]!);
+            }
 
-        return int;
+            this.#data = BigInt.asIntN(64, this.#data);
+
+            return;
+        }
+
+        this.#data = 0;
+        for (let i: number = 0; i < nBytes; i++) {
+            (<number>this.#data) <<= 8;
+            (<number>this.#data) |= bfr[i]!;
+        }
+
+        (<number>this.#data) |= 0;
     }
 
-    /** Retrieves the wrapped signed integer value. */
-    raw(): IntPrimitive;
+    /** Wraps a native `number` or `bigint` and makes it usable for MessagePack parsing without allowing it to downgrade to `null`. */
+    static required(data: IntPrimitive): Int<false>;
 
-    /** Sets a new signed integer value and wrap it. */
-    raw(data: IntPrimitive): void;
-
-    raw(data?: IntPrimitive): IntPrimitive | void {
-        if (data === undefined && arguments.length === 0) return (
-            this.#nullable && this.#isNull
-                ? <IntPrimitive><unknown>null
-                : Number.MIN_SAFE_INTEGER <= this.#data && this.#data <= Number.MAX_SAFE_INTEGER
-                    ? Number(this.#data)
-                    : this.#data
-        );
-
-        if (this.#nullable && data === null) this.#isNull = true;
-
-        if (Int.isRawValid(data)) {
-            this.#data = BigInt(data);
-            this.#isNull = false;
-        } else throw new TypeError(`Invalid value was passed into \`Int\`. Did not expect ${toLegible(data)}.`);
+    /** Interprets bytes in a buffer as a big-endian signed integer and makes it usable for MessagePack parsing without allowing it to downgrade to `null`, defaulting to `0` if the buffer is empty. */
+    static required(bfr: Uint8Array): Int<false>;
+    static required(a?: unknown): Int<false> {
+        return <any>new Int(<any>a, false);
     }
 
-    /** Encodes the wrapped signed integer and converts it to a MessagePack chunk. */
-    encode(): Uint8Array {
-        if (this.#nullable && this.#isNull) return new Uint8Array([0xc0]);
+    /** Wraps a native `number` or `bigint`, or `null` and makes it usable for MessagePack parsing. If no argument is provided, it will default to `null`. */
+    static optional(data: IntPrimitive | null): Int<true>;
+
+    /** Interprets bytes in a buffer as a big-endian signed integer and makes it usable for MessagePack parsing. If the buffer is empty, it will be assumed to be `null`. */
+    static optional(bfr: Uint8Array): Int<true>;
+    static optional(a?: unknown): Int<true> {
+        return <any>new Int(<any>a, true);
+    }
+
+    /** The raw value stored in the wrapper. */
+    get data(): MpResult<IntPrimitive, N> {
+        return this.#data;
+    }
+
+    set data(data: unknown) {
+        if (this.isValid(data)) this.#data = data;
+        else if (data === null) throw new NullInRequiredError();
+        else throw new InvalidDataTypeError(data);
+    }
+
+    /* Whether this wrapper accepts `null` as a valid value. */
+    get isOptional(): N {
+        return this.#isOptional;
+    }
+
+    private set isOptional(isOptional: N) {
+        this.#isOptional = isOptional;
+    }
+
+    /* Transforms the raw value stored in the wrapper and converts it into a parsable MessagePack chunk. */
+    encode() {
+        if (this.#data === null) return new Uint8Array([NIL_CODE]);
+
+        const isNum = typeof this.#data === "number";
 
         let code: number;
         let len: number;
 
-        switch (true) {
-            case this.#data >= -0x20n && this.#data < 0x00: {
-                code = Number(this.#data);
-                len = 0;
+        if (isNum) {
+            switch (true) {
+                // negative fixint
+                case this.#data >= -0x20 && this.#data < 0x00: {
+                    code = <number>this.#data + 0x100;
+                    len = 0;
 
-                break;
+                    break;
+                }
+
+                // signed int
+                case this.#data >= -0x80 && this.#data <= 0x7f: {
+                    code = 0xd0;
+                    len = 1;
+
+                    break;
+                }
+
+                case this.#data >= -0x8000 && this.#data <= 0x7fff: {
+                    code = 0xd1;
+                    len = 2;
+
+                    break;
+                }
+
+                case this.#data >= -0x8000_0000 && this.#data <= 0xffff_ffff: {
+                    code = 0xd2;
+                    len = 4;
+
+                    break;
+                }
+
+                default: {
+                    code = 0xd3;
+                    len = 8;
+
+                    break;
+                }
             }
+        } else {
+            switch (true) {
+                // negative fixint
+                case this.#data >= -0x20n && this.#data < 0x00n: {
+                    code = Number(<bigint>this.#data) + 0x100;
+                    len = 0;
 
-            case this.#data >= -0x80n && this.#data <= 0x7fn: {
-                code = 0xd0;
-                len = 1;
+                    break;
+                }
 
-                break;
-            }
+                // signed int
+                case this.#data >= -0x80n && this.#data <= 0x7fn: {
+                    code = 0xd0;
+                    len = 1;
 
-            case this.#data >= -0x8000n && this.#data <= 0x7fffn: {
-                code = 0xd1;
-                len = 2;
+                    break;
+                }
 
-                break;
-            }
+                case this.#data >= -0x8000n && this.#data <= 0x7fffn: {
+                    code = 0xd1;
+                    len = 2;
 
-            case this.#data >= -0x8000_0000n && this.#data <= 0x7fff_ffffn: {
-                code = 0xd2;
-                len = 4;
+                    break;
+                }
 
-                break;
-            }
+                case this.#data >= -0x8000_0000n && this.#data <= 0x7fff_ffffn: {
+                    code = 0xd2;
+                    len = 4;
 
-            default: {
-                code = 0xd3;
-                len = 8;
+                    break;
+                }
 
-                break;
+                default: {
+                    code = 0xd3;
+                    len = 8;
+
+                    break;
+                }
             }
         }
 
@@ -212,42 +194,66 @@ export const Int = class Int implements MpClassInterface<IntPrimitive> {
         const chunk = new Uint8Array(chunkLen);
         chunk[0] = code;
 
+        // negative fixint
         if (len === 0) return chunk;
 
-        let tmpData = BigInt.asUintN(64, this.#data);
-        for (let i: number = len; i >= 1; i--) {
-            chunk[i] = Number(tmpData & 0xffn);
-            tmpData >>= 8n;
+        // negative int
+
+        if (isNum)
+            for (let i: number = 1, iByte: number = len - 1; iByte >= 0; i++, iByte--)
+                chunk[i] = (<number>this.#data >>> (iByte * 8)) & 0xff;
+        else {
+            const bytes = BigInt.asUintN(64, <bigint>this.#data);
+
+            for (let i: number = 1, iByte = BigInt(len - 1); iByte >= 0n; i++, iByte--)
+                chunk[i] = Number((bytes >> (iByte * 8n)) & 0xffn);
         }
 
         return chunk;
     }
 
-    /** Decodes a signed integer MessagePack chunk, validates it and parses it to an Int. */
-    static decode(chunk: Uint8Array): Int {
-        const ranges = this.deriveChunkRanges(chunk);
+    /* Converts a MessagePack chunk assumed to be in the negative `fixint`/signed `int` format family and creates a wrapper from it. If the chunk is in the `nil` format family, then a nullable wrapper is created, with its stored value set to `null`. */
+    static decode(chunk: Uint8Array): Int<false> {
+        const code = chunk[0];
+        if (code === undefined) throw new MissingHeaderCodeError();
 
-        const nRanges = ranges.length;
-        if (nRanges === 2) {
-            const code = chunk[ranges[0]]!;
+        if (code === NIL_CODE) return new Int(null, true);
+
+        const indices = this.deriveIndices(chunk);
+        if (indices.length === 2) {
+            const code = chunk[indices[0]]!;
             return new Int(code - 0x0100);
         }
-        const [, iDataStart, iDataEnd] = ranges;
-        if (iDataEnd > chunk.byteLength) console.warn("Chunk buffer has insufficient data to be decoded. Was the chunk truncated?");
+
+        const [, iDataStart, iDataEnd] = indices;
+        if (iDataEnd > chunk.byteLength) warnTruncatedChunk();
 
         return new Int(chunk.slice(iDataStart, iDataEnd));
     }
 
-    /** Checks whether a value is valid for an Int. */
-    static isRawValid(data: any): data is IntPrimitive {
-        return ((typeof data === "number" && Number.isInteger(data)) || typeof data === "bigint") && data >= -0x8000_0000_0000_0000n && data <= 0x7fff_ffff_ffff_ffffn;
+    /* Resets the value of the wrapper to `0`, the non-nullable default value. If the wrapper is nullable, it will be instead resetted to `null`. */
+    reset() {
+        this.#data = this.#isOptional ? <any>null : 0;
     }
 
-    /** Checks whether a chunk header code is valid for an Int. */
+    /* Checks whether a value can be stored inside this wrapper. */
+    isValid(data: unknown): data is MpResult<IntPrimitive, N>  {
+        return Int.isValid(data) || (this.isOptional && data === null);
+    }
+
+    /* Checks whether a value can be stored inside an instance of this wrapper. */
+    static isValid(data: unknown): data is IntPrimitive {
+        if (typeof data === "number" && Number.isInteger(data)) data = BigInt(data);
+        return typeof data === "bigint" ? data >= -0x8000_0000_0000_0000n && data <= 0x7fff_ffff_ffff_ffffn : false;
+    }
+
+    /* Checks whether a chunk header code is supported by an instance of this wrapper. */
     static isCodeValid(code: number): boolean {
         return (
+            // negative fixint
             code >=  0xe0 ||
 
+            // signed int
             code === 0xd0 ||
             code === 0xd1 ||
             code === 0xd2 ||
@@ -255,55 +261,42 @@ export const Int = class Int implements MpClassInterface<IntPrimitive> {
         );
     }
 
-    /** Checks whether a chunk is valid for an Int. */
+    /* Checks whether a chunk is supported by an instance of this wrapper. */
     static isChunkValid(chunk: Uint8Array): boolean {
         const code = chunk[0];
-        if (code === undefined) return false;
+        if (code === undefined) throw new MissingHeaderCodeError();
 
         return this.isCodeValid(code);
     }
 
-    /** Retrieves the starting index of each section of the chunk, as well as the final exclusive index, for an Int. */
-    static deriveChunkRanges(chunk: Uint8Array): [number, number] | [number, number, number] {
-        const iChunkStart: number = 0;
+    /* Computes the index of the chunk header code, the starting index of the data containing the raw value (will not appear if the chunk is in the negative `fixint` format family), as well as the final exclusive index of the chunk. */
+    static deriveIndices(chunk: Uint8Array): [number, number] | [number, number, number] {
+        const iCode: number = 0;
+        const code = chunk[iCode]!;
 
-        const code = chunk[iChunkStart];
-        if (code === undefined) throw new Error("Unable to retrieve header code from `chunk`. Is the chunk empty/truncated or `chunk.byteOffset` exceeded its length?");
+        if (!this.isChunkValid(chunk)) throw new InvalidHeaderCodeError(code);
 
-        const iDataStart = iChunkStart + 1;
-
-        if (code >= 0xe0) return [iChunkStart, iDataStart /* there is no "data", so its index can be used as the final exclusive index */];
-
-        let len: number;
-        switch (code) {
-            case 0xd0: {
-                len = 1;
-                break;
-            }
-
-            case 0xd1: {
-                len = 2;
-                break;
-            }
-
-            case 0xd2: {
-                len = 4;
-                break;
-            }
-
-            case 0xd3: {
-                len = 8;
-                break;
-            }
-
-            default: throw new TypeError(`Invalid chunk header for \`Int\`. Did not expect ${toLegible(code, true)}.`);
+        // negative fixint
+        if (code >= 0xe0) {
+            const iChunkEnd = iCode + 1;
+            return [iCode, iChunkEnd];
         }
 
-        const iDataEnd = iDataStart + len;
+        // signed int
 
-        return [iChunkStart, iDataStart, iDataEnd];
+        /* match code:
+         *     case 0xd0: len = 1
+         *     case 0xd1: len = 2
+         *     case 0xd2: len = 4
+         *     case 0xd3: len = 8
+         */
+        const len = 0b1 << (code - 0xd0);
+
+        const iDataStart = iCode + 1;
+        const iDataEnd   = iDataStart + len;
+
+        return [iCode, iDataStart, iDataEnd];
     }
-} satisfies MpClassModule<IntPrimitive>;
+} satisfies MpClassModule<IntPrimitive, boolean>;
 
-export type Int = typeof Int["prototype"];
 export type IntPrimitive = number | bigint;

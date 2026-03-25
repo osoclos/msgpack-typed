@@ -1,116 +1,102 @@
-import { MpClassInterface, MpClassModule } from "../types";
-import { toLegible } from "../utils";
+import { NIL_CODE } from "../internal";
+import { InvalidDataTypeError, InvalidHeaderCodeError, MissingHeaderCodeError, NullInRequiredError, warnTruncatedChunk } from "../utils";
 
-export const Str = class Str implements MpClassInterface<StrPrimitive> {
-    #data: string;
+import { MpClassInterface, MpClassModule, MpResult } from "../types";
 
-    #nullable: boolean;
-    #isNull: boolean;
+/** A wrapper for strings, representing the `fixstr` and `str` format families in the MessagePack specification. */
+export const Str = class Str<N extends boolean> implements MpClassInterface<StrPrimitive, N> {
+    #data: MpResult<StrPrimitive, N>;
+
+    #isOptional: N;
 
     static #encoder = new TextEncoder();
     static #decoder = new TextDecoder("utf-8", { fatal: true });
 
-    /** Wraps a string for MessagePack parsing.
-     *
-     * @default ""
-     *
-     * @example new Str(); // creates a string wrapper and defaults to `""`
-     * @example new Str("foo"); // wraps a "foo" string
-     *
-     */
-    constructor(data?: StrPrimitive);
+    /** Wraps a native `string` and makes it usable for MessagePack parsing, with an option to specify if it can be nullable. */
+    constructor(data?: StrPrimitive, isOptional?: N);
 
-    /** Interprets the first bytes (derived from `Uint8Array.byteOffset`) from a buffer to a MessagePack string wrapper.
-     *
-     * @example new Str(new Uint8Array([0x41, 0x42, 0x43])); // interprets the bytes (`0x41`, `0x42`, `0x43`) as "ABC"
-     * @example new Str(new Uint8Array([])); // interprets an empty buffer as ""
-     *
-     */
-    constructor(bfr: Uint8Array);
+    /** Wraps `null` and makes it usable for MessagePack parsing, which can be promoted to a string. */
+    constructor(data: null, isOptional: true);
 
-    constructor(a: StrPrimitive | Uint8Array = "") {
-        this.#nullable = false;
-        this.#isNull = false;
+    /** Interprets bytes in a buffer as a string and makes it usable for MessagePack parsing, with an option to specify if it can be nullable. If the buffer is empty and marked as nullable, it will be assumed to be `null`. */
+    constructor(bfr: Uint8Array, isOptional?: N);
+    constructor(a?: unknown, isOptional: N = <N>false) {
+        this.#isOptional = isOptional;
 
-        if (a instanceof Uint8Array) {
-            const bfr = a;
+        if (!(a instanceof Uint8Array)) {
+            const data =
+                arguments.length === 0
+                    ? isOptional
+                        ? null
+                        : ""
+                    : a;
 
-            this.#data = Str.#decoder.decode(bfr);
+            if (!this.isValid(data)) throw new InvalidDataTypeError(data);
+            this.#data = data;
+
             return;
         }
 
-        const data = a;
+        const bfr = a;
 
-        if (Str.isRawValid(data)) this.#data = data;
-        else throw new TypeError(`Invalid value was passed into \`Str\`. Did not expect ${toLegible(data)}.`);
-    }
-
-    /** Wraps a nullable string for MessagePack parsing.
-     *
-     * @default null
-     *
-     * @example Str.nullable(); // creates a nullable string wrapper and defaults to `null`
-     * @example Str.nullable("foo"); // wraps a "foo" string
-     *
-     */
-    static nullable(data?: StrPrimitive | null): MpClassInterface<StrPrimitive | null>;
-
-    /** Interprets the first bytes (derived from `Uint8Array.byteOffset`) from a buffer to a MessagePack nullable string wrapper.
-     *
-     * @example Str.nullable(new Uint8Array([0x41, 0x42, 0x43])); // interprets the bytes (`0x41`, `0x42`, `0x43`) as "ABC"
-     * @example Str.nullable(new Uint8Array([])); // interprets an empty buffer as `null`
-     *
-     */
-    static nullable(bfr: Uint8Array): MpClassInterface<StrPrimitive | null>;
-
-    static nullable(a: StrPrimitive | null | Uint8Array = null): MpClassInterface<StrPrimitive | null> {
-        let isNull: boolean;
-
-        if (a instanceof Uint8Array) {
-            const bfr = a;
-
-            const byte = bfr[0];
-            isNull = byte === undefined;
-        } else {
-            const data = a;
-            isNull = data === null;
+        if (isOptional && bfr.byteLength === 0) {
+            this.#data = <any>null;
+            return;
         }
 
-        const str = isNull ? new Str() : new Str(<StrPrimitive>a);
-        str.#nullable = true;
-        str.#isNull = isNull;
-
-        return str;
+        this.#data = Str.#decoder.decode(bfr);
     }
 
-    /** Retrieves the wrapped string value. */
-    raw(): StrPrimitive;
+    /** Wraps a native `string` and makes it usable for MessagePack parsing without allowing it to downgrade to `null`. */
+    static required(data: StrPrimitive): Str<false>;
 
-    /** Sets a new string value and wrap it. */
-    raw(data: StrPrimitive): void;
-
-    raw(data?: StrPrimitive): StrPrimitive | void {
-        if (data === undefined && arguments.length === 0) return this.#nullable && this.#isNull ? <StrPrimitive><unknown>null : this.#data;
-
-        if (this.#nullable && data === null) this.#isNull = true;
-
-        if (Str.isRawValid(data)) {
-            this.#data = data;
-            this.#isNull = false;
-        } else throw new TypeError(`Invalid value was passed into \`Str\`. Did not expect ${toLegible(data)}.`);
+    /** Interprets bytes in a buffer as a string and makes it usable for MessagePack parsing without allowing it to downgrade to `null`, defaulting to `""` if the buffer is empty. */
+    static required(bfr: Uint8Array): Str<false>;
+    static required(a?: unknown): Str<false> {
+        return <any>new Str(<any>a, false);
     }
 
-    /** Encodes the wrapped string and converts it to a MessagePack chunk. */
-    encode(): Uint8Array {
-        if (this.#nullable && this.#isNull) return new Uint8Array([0xc0]);
+    /** Wraps a native `string`, or `null` and makes it usable for MessagePack parsing. If no argument is provided, it will default to `null`. */
+    static optional(data: StrPrimitive | null): Str<true>;
 
-        let code: number;
-        let lenLen: number;
+    /** Interprets bytes in a buffer as a string and makes it usable for MessagePack parsing. If the buffer is empty, it will be assumed to be `null`. */
+    static optional(bfr: Uint8Array): Str<true>;
+    static optional(a?: unknown): Str<true> {
+        return <any>new Str(<any>a, true);
+    }
+
+    /** The raw value stored in the wrapper. */
+    get data(): MpResult<StrPrimitive, N> {
+        return this.#data;
+    }
+
+    set data(data: unknown) {
+        if (this.isValid(data)) this.#data = data;
+        else if (data === null) throw new NullInRequiredError();
+        else throw new InvalidDataTypeError(data);
+    }
+
+    /* Whether this wrapper accepts `null` as a valid value. */
+    get isOptional(): N {
+        return this.#isOptional;
+    }
+
+    private set isOptional(isOptional: N) {
+        this.#isOptional = isOptional;
+    }
+
+    /* Transforms the raw value stored in the wrapper and converts it into a parsable MessagePack chunk. */
+    encode() {
+        if (this.#data === null) return new Uint8Array([NIL_CODE]);
 
         const bytes = Str.#encoder.encode(this.#data);
         const len = bytes.byteLength;
 
+        let code: number;
+        let lenLen: number;
+
         switch (true) {
+            // fixstr
             case len < 0x20: {
                 code = 0xa0 | len;
                 lenLen = 0;
@@ -118,6 +104,7 @@ export const Str = class Str implements MpClassInterface<StrPrimitive> {
                 break;
             }
 
+            // str
             case len <= 0xff: {
                 code = 0xd9;
                 lenLen = 1;
@@ -142,101 +129,105 @@ export const Str = class Str implements MpClassInterface<StrPrimitive> {
 
         const iDataStart = 1 + lenLen;
 
-        const bfr = new Uint8Array(iDataStart + len);
-        bfr[0] = code;
+        const chunkLen = iDataStart + len;
 
-        let tmpLen = len;
-        for (let i: number = lenLen; i >= 1; i--) {
-            bfr[i] = tmpLen & 0xff;
-            tmpLen >>>= 8;
-        }
+        const chunk = new Uint8Array(chunkLen);
+        chunk[0] = code;
 
-        bfr.set(bytes, iDataStart);
+        for (let i: number = 1, iByte: number = lenLen - 1; iByte >= 0; i++, iByte--)
+            chunk[i] = (len >>> (iByte * 8)) & 0xff;
 
-        return bfr;
+        chunk.set(bytes, iDataStart);
+
+        return chunk;
     }
 
-    /** Decodes a string MessagePack chunk, validates it and parses it to a Str. */
-    static decode(chunk: Uint8Array): Str {
-        const ranges = this.deriveChunkRanges(chunk);
+    /* Converts a MessagePack chunk assumed to be in the `fixstr`/`str` format family and creates a wrapper from it. If the chunk is in the `nil` format family, then a nullable wrapper is created, with its stored value set to `null`. */
+    static decode(chunk: Uint8Array): Str<false> {
+        const code = chunk[0];
+        if (code === undefined) throw new MissingHeaderCodeError();
 
-        const hasLenStartIdx = ranges.length === 4;
+        if (code === NIL_CODE) return new Str(null, true);
 
-        const iDataStart = ranges[<typeof hasLenStartIdx extends true ? 2 : 1>(1 + +hasLenStartIdx)];
-        const iDataEnd   = ranges[<typeof hasLenStartIdx extends true ? 3 : 2>(2 + +hasLenStartIdx)];
+        const indices = this.deriveIndices(chunk);
 
-        if (iDataEnd > chunk.byteLength) console.warn("Chunk buffer has insufficient data to be decoded. Was the chunk truncated?");
+        const hasLenStartIdx = indices.length === 4;
 
-        return new Str(chunk.slice(iDataStart, iDataEnd));
+        const iDataStart = indices[<typeof hasLenStartIdx extends true ? 2 : 1>(1 + +hasLenStartIdx)];
+        const iDataEnd   = indices[<typeof hasLenStartIdx extends true ? 3 : 2>(2 + +hasLenStartIdx)];
+
+        if (iDataEnd > chunk.byteLength) warnTruncatedChunk();
+
+        return new Str(chunk.subarray(iDataStart, iDataEnd));
     }
 
-    /** Checks whether a value is valid for a Str. */
-    static isRawValid(data: any): data is StrPrimitive {
+    /* Resets the value of the wrapper to `""`, the non-nullable default value. If the wrapper is nullable, it will be instead resetted to `null`. */
+    reset() {
+        this.#data = this.#isOptional ? <any>null : "";
+    }
+
+    /* Checks whether a value can be stored inside this wrapper. */
+    isValid(data: unknown): data is MpResult<StrPrimitive, N>  {
+        return Str.isValid(data) || (this.isOptional && data === null);
+    }
+
+    /* Checks whether a value can be stored inside an instance of this wrapper. */
+    static isValid(data: unknown): data is StrPrimitive {
         return typeof data === "string";
     }
 
-    /** Checks whether a chunk header code is valid for a Str. */
+    /* Checks whether a chunk header code is supported by an instance of this wrapper. */
     static isCodeValid(code: number): boolean {
         return (
+            // fixstr
             (code & 0xe0) === 0xa0 ||
 
+            // str
             code === 0xd9 ||
             code === 0xda ||
             code === 0xdb
         );
     }
 
-    /** Checks whether a chunk is valid for a Str. */
+    /* Checks whether a chunk is supported by an instance of this wrapper. */
     static isChunkValid(chunk: Uint8Array): boolean {
         const code = chunk[0];
-        if (code === undefined) return false;
+        if (code === undefined) throw new MissingHeaderCodeError();
 
         return this.isCodeValid(code);
     }
 
-    /** Retrieves the starting index of each section of the chunk, as well as the final exclusive index, for a Str. */
-    static deriveChunkRanges(chunk: Uint8Array): [number, number, number] | [number, number, number, number] {
-        const iChunkStart: number = 0;
+    /* Computes the index of the chunk header code, the starting index of the data containing the length (will not appear if the chunk is in the `fixstr` format family), the starting index of the data containing the raw value, as well as the final exclusive index of the chunk. */
+    static deriveIndices(chunk: Uint8Array): [number, number, number] | [number, number, number, number] {
+        const iCode: number = 0;
+        const code = chunk[iCode]!;
 
-        const code = chunk[iChunkStart];
-        if (code === undefined) throw new Error("Unable to retrieve header code from `chunk`. Is the chunk empty/truncated or `chunk.byteOffset` exceeded its length?");
+        if (!this.isChunkValid(chunk)) throw new InvalidHeaderCodeError(code);
 
+        // fixstr
         if ((code & 0xe0) === 0xa0) {
             const len = code & 0x1f;
 
-            const iDataStart = iChunkStart + 1;
+            const iDataStart = iCode +  1;
             const iDataEnd = iDataStart + len;
 
-            return [iChunkStart, iDataStart, iDataEnd];
+            return [iCode, iDataStart, iDataEnd];
         }
 
-        let lenLen: number;
+        // str
 
-        switch (code) {
-            case 0xd9: {
-                lenLen = 1;
-                break;
-            }
+        /* match code:
+         *     case 0xd9: lenLen = 1
+         *     case 0xda: lenLen = 2
+         *     case 0xdb: lenLen = 4
+         */
+        const lenLen = 0b1 << (code - 0xd9);
+        const maxLenLen = chunk.byteLength < lenLen ? chunk.byteLength : lenLen;
 
-            case 0xda: {
-                lenLen = 2;
-                break;
-            }
-
-            case 0xdb: {
-                lenLen = 4;
-                break;
-            }
-
-            default: throw new TypeError(`Invalid chunk header for \`Str\`. Did not expect ${toLegible(code, true)}.`);
-        }
-
-        const iLenStart = iChunkStart + 1;
-
-        const chunkLenLen = chunk.byteLength < lenLen ? chunk.byteLength : lenLen;
+        const iLenStart = iCode + 1;
 
         let len: number = 0;
-        for (let i: number = iLenStart, nBytes: number = 0; nBytes < chunkLenLen; i++, nBytes++) {
+        for (let i: number = iLenStart, iByte: number = 0; iByte < maxLenLen; i++, iByte++) {
             len <<= 8;
             len |= chunk[i]!;
         }
@@ -244,9 +235,8 @@ export const Str = class Str implements MpClassInterface<StrPrimitive> {
         const iDataStart = iLenStart + lenLen;
         const iDataEnd = iDataStart + len;
 
-        return [iChunkStart, iLenStart, iDataStart, iDataEnd];
+        return [iCode, iLenStart, iDataStart, iDataEnd];
     }
-} satisfies MpClassModule<StrPrimitive>;
+} satisfies MpClassModule<StrPrimitive, boolean>;
 
-export type Str = typeof Str["prototype"];
 export type StrPrimitive = string;

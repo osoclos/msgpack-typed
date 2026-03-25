@@ -1,83 +1,35 @@
+import { Ext } from "../classes";
 
-import { Bool, Ext, Flt, Int, Slice, Str } from "../classes";
-import { Arr, Obj } from "../containers";
+import { NIL_CODE, RawClass } from "../internal";
+import { MP_CLASS_LIST, MP_CONTAINER_LIST } from "../types";
 
-import { Lz4BlockExt } from "../extensions";
-
-import { MpClassUnion, MpPrimitiveUnion } from "../types";
+import { NonEncodableChunkError } from "./errors";
 
 import { ExtUtils } from "./ExtUtils";
+import { Lz4Block } from "./Lz4Block";
 
-import { mpLz4Pack } from "./mpLz4Pack";
+/** Encodes any data, either made with wrappers or a primitive, in which case it implicitly converts any other items into a wrapper-appropriate for its type, before converting it into a parsable MessagePack chunk. You can also specify extensions to encode custom classes with and compress the buffer after encoding. */
+export function encodeGeneric(data: Exclude<unknown, undefined | symbol>, exts: Ext<RawClass<unknown>, number, boolean> | Ext<RawClass<unknown>, number, boolean>[] = [], doCompression: boolean = false): Uint8Array {
+    const encodedBfr = __encodeGeneric(data, exts);
+    return doCompression ? Lz4Block.pack(encodedBfr) : encodedBfr;
+}
 
-/** Encodes an arbitrary MessagePack class or primitive to a chunk buffer. */
-export function encodeGeneric(data: MpClassUnion | MpPrimitiveUnion): Uint8Array;
+function __encodeGeneric(data: Exclude<unknown, undefined | symbol>, exts: Ext<RawClass<unknown>, number, boolean> | Ext<RawClass<unknown>, number, boolean>[] = []) {
+    if (data === undefined) throw new NonEncodableChunkError(data);
 
-/** Encodes a value or object to a chunk buffer, with an option to add extensions to the encoder. */
-export function encodeGeneric(data: any, exts?: Ext<any, number> | Ext<any, number>[]): Uint8Array;
+    if (data === null) return new Uint8Array([NIL_CODE]);
 
-export function encodeGeneric(data: any, exts: Ext<any, number> | Ext<any, number>[] = []): Uint8Array {
     if (!Array.isArray(exts)) exts = [exts];
 
-    const iLz4BlockExt = exts.findIndex((ext) => ext.codes.includes(0x62) && ext.codes.includes(0x63) && (<any>ext)[Symbol.toStringTag] === "Lz4BlockExt");
-
-    let lz4BlockExt: Lz4BlockExt | null = null;
-    if (iLz4BlockExt >= 0) lz4BlockExt = <Lz4BlockExt>exts.splice(iLz4BlockExt, 1)[0]!;
-
     for (const ext of exts)
-        if (ext.isObjValid(data)) ExtUtils.encode(ext, data);
+        if (ext.isEncodable(data)) return ExtUtils.encodeWith(ext, data);
 
-    switch (true) {
-        case typeof data === "number": {
-            data = new Flt(data);
-            break;
-        }
+    for (const Cls of MP_CLASS_LIST)
+        if (data instanceof Cls) return data.encode();
+        else if (Cls.isValid(data)) return new (<any>Cls)(data).encode();
 
-        case typeof data === "bigint": {
-            data = new Int((data & 0x7fff_ffff_ffff_ffffn) - (data & 0x8000_0000_0000_0000n));
-            break;
-        }
+    for (const Container of MP_CONTAINER_LIST)
+        if (Container.isValid(data)) return (<any>Container.encode)(data, exts);
 
-        case typeof data === "string": {
-            data = new Str(data);
-            break;
-        }
-
-        case typeof data === "boolean": {
-            data = new Bool(data);
-            break;
-        }
-
-        case data instanceof Uint8Array: {
-            data = new Slice(data);
-            break;
-        }
-
-        default: break;
-    }
-
-    let bfr: Uint8Array;
-    switch (true) {
-        case data === null: {
-            bfr = new Uint8Array([0xc0]);
-            break;
-        }
-
-        case Array.isArray(data): {
-            bfr = Arr.encode(data);
-            break;
-        }
-
-        case data instanceof Map: {
-            bfr = Obj.encode(data);
-            break;
-        }
-
-        default: {
-            bfr = data.encode();
-            break;
-        }
-    }
-
-    return lz4BlockExt === null ? bfr : mpLz4Pack(lz4BlockExt.lz4Block, bfr, lz4BlockExt.maxBlockSize);
+    throw new NonEncodableChunkError(data);
 }
