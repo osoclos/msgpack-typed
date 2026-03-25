@@ -203,9 +203,9 @@ export const ExtUtils = {
             len |= chunk[i]!;
         }
 
-        const iExtCode = iLenStart + 1;
+        const iExtCode = iLenStart + lenLen;
 
-        const iDataStart = iExtCode + lenLen;
+        const iDataStart = iExtCode + 1;
         const iDataEnd = iDataStart + len;
 
         return [iCode, iLenStart, iExtCode, iDataStart, iDataEnd];
