@@ -14,7 +14,7 @@ export const Obj = {
         const header = Obj.encodeHeader(obj);
 
         const buffers: Uint8Array[] = [header];
-            for (const [key, item] of obj instanceof Map ? obj : Object.entries(obj)) buffers.push(encodeGeneric(key, exts, doCompression), encodeGeneric(item, exts, doCompression));
+        for (const [key, item] of obj instanceof Map ? obj : Object.entries(obj)) buffers.push(encodeGeneric(key, exts), encodeGeneric(item, exts));
 
         const chunkLen = buffers.reduce((a, b) => a + b.length, 0);
 

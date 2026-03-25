@@ -41,11 +41,11 @@ export const Arr = {
     },
 
     /** Serialises any data stored inside wrappers in the array and implicitly converts any other items into a wrapper-appropriate for its type before converting it into a parsable MessagePack chunk. */
-    encode(arr: ArrPrimitive, exts: Ext<RawClass<unknown>, number, boolean> | Ext<RawClass<unknown>, number, boolean>[] = [], doCompression: boolean = false) {
+    encode(arr: ArrPrimitive, exts: Ext<RawClass<unknown>, number, boolean> | Ext<RawClass<unknown>, number, boolean>[] = []) {
         const header = this.encodeHeader(arr);
 
         const buffers: Uint8Array[] = [header];
-        for (const item of arr) buffers.push(encodeGeneric(item, exts, doCompression));
+        for (const item of arr) buffers.push(encodeGeneric(item, exts));
 
         const chunkLen = buffers.reduce((a, b) => a + b.length, 0);
 
