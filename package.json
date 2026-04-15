@@ -1,6 +1,6 @@
 {
     "name": "msgpack-typed",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "description": "A MessagePack encoder and decoder implementation focused on type preservation and interoperability with other codecs",
 
     "homepage": "https://github.com/osoclos/msgpack-typed",
