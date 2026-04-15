@@ -229,12 +229,14 @@ function parse<K, V>(obj: Map<K, V> | Record<Extract<K, Exclude<keyof any, symbo
                     continue parseEachPair;
                 }
             }
+
+            parsedPair.push(<ToParsed<K | V>>item);
         }
 
         parsed.set(<ToParsed<K>>parsedPair[0], <ToParsed<V>>parsedPair[1]);
     }
 
-    return obj instanceof Map ? parsed : Object.fromEntries(parsed.entries());
+    return obj instanceof Map ? parsed : Object.fromEntries(parsed);
 }
 
 /** Converts a MessagePack chunk assumed to be in the `fixarray`/`array` format family and parses it into a map of wrappers, `null`s and nested arrays and maps. */
