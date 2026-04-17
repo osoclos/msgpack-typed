@@ -134,7 +134,7 @@ export const Int = class Int<N extends boolean> implements MpClassInterface<IntP
                     break;
                 }
 
-                case this.#data >= -0x8000_0000 && this.#data <= 0xffff_ffff: {
+                case this.#data >= -0x8000_0000 && this.#data <= 0x7fff_ffff: {
                     code = 0xd2;
                     len = 4;
 
