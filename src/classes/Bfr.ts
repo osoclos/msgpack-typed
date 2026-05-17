@@ -4,7 +4,7 @@ import { InvalidDataTypeError, InvalidHeaderCodeError, MissingHeaderCodeError, N
 import { MpClassInterface, MpClassModule, MpResult } from "../types";
 
 /** A wrapper for buffers, representing the `bin` format families in the MessagePack specification. */
-export const Bfr = class Bfr<N extends boolean> implements MpClassInterface<BfrPrimitive, N> {
+export const Bfr: MpClassModule<BfrPrimitive, boolean> = class Bfr<N extends boolean> implements MpClassInterface<BfrPrimitive, N> {
     #data: MpResult<BfrPrimitive, N>;
     #isOptional: N;
 

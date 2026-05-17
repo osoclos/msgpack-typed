@@ -4,7 +4,7 @@ import { InvalidDataTypeError, InvalidHeaderCodeError, MissingHeaderCodeError, N
 import { MpClassInterface, MpClassModule, MpResult } from "../types";
 
 /** A wrapper for signed integers, representing the negative `fixint` and signed `int` format families in the MessagePack specification. */
-export const Int = class Int<N extends boolean> implements MpClassInterface<IntPrimitive, N> {
+export const Int: MpClassModule<IntPrimitive, boolean> = class Int<N extends boolean> implements MpClassInterface<IntPrimitive, N> {
     #data: MpResult<IntPrimitive, N>;
     #isOptional: N;
 

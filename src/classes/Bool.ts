@@ -4,7 +4,7 @@ import { InvalidDataTypeError, InvalidHeaderCodeError, MissingHeaderCodeError, N
 import { MpClassInterface, MpClassModule, MpResult } from "../types";
 
 /** A wrapper for booleans, representing the `bool` format family in the MessagePack specification. */
-export const Bool = class Bool<N extends boolean> implements MpClassInterface<BoolPrimitive, N> {
+export const Bool: MpClassModule<BoolPrimitive, boolean> = class Bool<N extends boolean> implements MpClassInterface<BoolPrimitive, N> {
     #data: MpResult<BoolPrimitive, N>;
     #isOptional: N;
 

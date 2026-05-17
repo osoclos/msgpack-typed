@@ -4,7 +4,7 @@ import { InvalidDataTypeError, InvalidHeaderCodeError, MissingHeaderCodeError, N
 import { MpClassInterface, MpClassModule, MpResult } from "../types";
 
 /** A wrapper for floats and decimals, representing the `float` format family in the MessagePack specification. */
-export const Flt = class Flt<N extends boolean> implements MpClassInterface<FltPrimitive, N> {
+export const Flt: MpClassModule<FltPrimitive, boolean> = class Flt<N extends boolean> implements MpClassInterface<FltPrimitive, N> {
     #data: MpResult<FltPrimitive, N>;
     #isOptional: N;
 

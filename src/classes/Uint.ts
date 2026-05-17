@@ -4,7 +4,7 @@ import { InvalidDataTypeError, InvalidHeaderCodeError, MissingHeaderCodeError, N
 import { MpClassInterface, MpClassModule, MpResult } from "../types";
 
 /** A wrapper for unsigned integers, representing the positive `fixint` and unsigned `int` format families in the MessagePack specification. */
-export const Uint = class Uint<N extends boolean> implements MpClassInterface<UintPrimitive, N> {
+export const Uint: MpClassModule<UintPrimitive, boolean> = class Uint<N extends boolean> implements MpClassInterface<UintPrimitive, N> {
     #data: MpResult<UintPrimitive, N>;
     #isOptional: N;
 

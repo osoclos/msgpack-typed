@@ -4,7 +4,7 @@ import { InvalidDataTypeError, InvalidHeaderCodeError, MissingHeaderCodeError, N
 import { MpClassInterface, MpClassModule, MpResult } from "../types";
 
 /** A wrapper for strings, representing the `fixstr` and `str` format families in the MessagePack specification. */
-export const Str = class Str<N extends boolean> implements MpClassInterface<StrPrimitive, N> {
+export const Str: MpClassModule<StrPrimitive, boolean> = class Str<N extends boolean> implements MpClassInterface<StrPrimitive, N> {
     #data: MpResult<StrPrimitive, N>;
 
     #isOptional: N;
