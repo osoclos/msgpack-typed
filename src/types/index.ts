@@ -1,3 +1,5 @@
+export * from "./schema";
+
 export * from "./MpClass";
 export * from "./MpContainer";
 

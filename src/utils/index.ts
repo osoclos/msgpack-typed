@@ -1,4 +1,5 @@
 export * from "./errors";
+export * from "./types";
 
 export * from "./ExtUtils";
 export * from "./Lz4Block";
