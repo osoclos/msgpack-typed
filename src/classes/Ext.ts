@@ -41,6 +41,14 @@ export abstract class Ext<T extends RawClass<unknown>, C extends number, S exten
         this.#isDecodable = this.#isExtChunkSupported;
     }
 
+    /** Checks whether a code is being used by the extension. */
+    isUsingCode(code: number): code is C;
+    isUsingCode(codes: number[]): codes is C[];
+    isUsingCode(codes: number | number[]): codes is C | C[] {
+        if (typeof codes === "number") codes = [codes];
+        return codes.every((code) => this.#codes.includes(<C>code));
+    }
+
     /** Serialises data passed into the extension and converts it into a data buffer that will be later appended with additional header data to transform it into a MessagePack chunk. */
     abstract encode(data: T["prototype"]): [Uint8Array, C];
 
