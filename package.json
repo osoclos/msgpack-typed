@@ -1,6 +1,6 @@
 {
     "name": "msgpack-typed",
-    "version": "0.1.2",
+    "version": "0.2.0",
     "description": "A MessagePack encoder and decoder implementation focused on type preservation and interoperability with other codecs",
 
     "homepage": "https://github.com/osoclos/msgpack-typed",
@@ -38,25 +38,27 @@
     },
 
     "scripts": {
-        "dev": "concurrently 'tsdown --watch' 'vite --config tests/vite.config.ts'",
+        "dev": "concurrently \"tsdown --watch\" \"vitest watch\"",
 
         "build": "tsdown",
-        "test": "vite --config tests/vite.config.ts",
+        "test": "vitest",
 
         "bump": "tsdown && bumpp"
     },
 
     "devDependencies": {
-        "tsdown": "^0.18.4",
+        "tsdown": "^0.22.2",
 
-        "vite": "^8.0.0",
+        "vitest": "^4.1.8",
+        "@vitest/browser-preview": "^4.1.8",
+
         "vite-plugin-wat2wasm": "^2.0.0",
 
-        "typescript": "~5.9.3",
+        "typescript": "^6.0.3",
 
-        "@types/node": "^25.5.0",
+        "@types/node": "^25.9.3",
 
-        "bumpp": "^10.4.1",
-        "concurrently": "^9.2.1"
+        "bumpp": "^11.1.0",
+        "concurrently": "^10.0.3"
     }
 }
