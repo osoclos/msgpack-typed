@@ -1,8 +1,3 @@
-export * from "./classes";
-export * from "./containers";
-
-export * from "./extensions";
-
-export * from "./types";
-
-export * from "./utils";
+export function add(a: number, b: number): number {
+    return a + b;
+}
