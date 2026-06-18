@@ -262,4 +262,4 @@ export const Uint: MpClassModuleSubtyped<ValueUint, SubtypeUint> = class Uint im
     }
 } satisfies MpClassModuleSubtyped<ValueUint, SubtypeUint>;
 
-export type Uint = (typeof Uint)["prototype"];
+export type Uint = typeof Uint["prototype"];
