@@ -12,7 +12,7 @@ export class Bool extends MpClass<ValueBool>() {
             const value = a;
 
             if (Bool.isValueValid(value)) this.#value = value;
-            else throw new MpError.InvalidValue(this, "constructor");
+            else throw new MpError.InvalidValue(this[Symbol.toStringTag], "constructor");
 
             return;
         }
@@ -22,7 +22,7 @@ export class Bool extends MpClass<ValueBool>() {
         const value = bfr[0]! !== 0x00;
 
         if (Bool.isValueValid(value)) this.#value = value;
-        else throw new MpError.InvalidValue(this, "constructor");
+        else throw new MpError.InvalidValue(this[Symbol.toStringTag], "constructor");
     }
 
     override get value(): ValueBool {
@@ -31,7 +31,7 @@ export class Bool extends MpClass<ValueBool>() {
 
     override set value(value: ValueBool) {
         if (Bool.isValueValid(value)) this.#value = value;
-        else throw new MpError.InvalidValue(this, "value");
+        else throw new MpError.InvalidValue(this[Symbol.toStringTag], "value");
     }
 
     override encode(): Uint8Array {
@@ -44,7 +44,7 @@ export class Bool extends MpClass<ValueBool>() {
         const iCode = indices[0];
         const iChunkEnd = indices[1];
 
-        if (iChunkEnd > chunk.byteLength) throw new MpError.TruncatedChunk(this.prototype, "decode", iChunkEnd, chunk.byteLength);
+        if (iChunkEnd > chunk.byteLength) throw new MpError.TruncatedChunk(Bool.name, "decode", iChunkEnd, chunk.byteLength);
 
         const code = chunk[iCode]!;
         const value = code === 0xc3;
@@ -65,7 +65,7 @@ export class Bool extends MpClass<ValueBool>() {
 
     static override isChunkValid(chunk: Uint8Array): boolean {
         const code = chunk[0 /* iCode */];
-        if (code === undefined) throw new MpError.MissingCode(this.prototype, "isChunkValid");
+        if (code === undefined) throw new MpError.MissingCode(Bool.name, "isChunkValid");
 
         return this.isCodeValid(code);
     }
@@ -73,7 +73,7 @@ export class Bool extends MpClass<ValueBool>() {
     static override deriveChunkIndices(chunk: Uint8Array): [number, number] {
         const code = chunk[0 /* iCode */]!; // ignore undefined since it is checked by isChunkValid
 
-        if (!this.isChunkValid(chunk)) throw new MpError.InvalidCode(this.prototype, "deriveChunkIndices", code);
+        if (!this.isChunkValid(chunk)) throw new MpError.InvalidCode(Bool.name, "deriveChunkIndices", code);
 
         return [
             0 /* iCode */,

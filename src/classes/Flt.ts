@@ -13,13 +13,13 @@ export class Flt extends
         super(a as ValueFlt, subtype);
 
         if (Flt.isSubtypeValid(subtype)) this.#subtype = subtype;
-        else throw new MpError.InvalidSubtype(this, "constructor", subtype);
+        else throw new MpError.InvalidSubtype(this[Symbol.toStringTag], "constructor", subtype);
 
         if (typeof a === "number") {
             const value = a;
 
             if (Flt.isValueValid(value, subtype)) this.#value = value;
-            else throw new MpError.InvalidValue(this, "constructor");
+            else throw new MpError.InvalidValue(this[Symbol.toStringTag], "constructor");
 
             return;
         }
@@ -32,7 +32,7 @@ export class Flt extends
         const value = len > 4 ? view.getFloat64(0) : view.getFloat32(0);
 
         if (Flt.isValueValid(value, subtype)) this.#value = value;
-        else throw new MpError.InvalidValue(this, "constructor");
+        else throw new MpError.InvalidValue(this[Symbol.toStringTag], "constructor");
     }
 
     override get value(): ValueFlt {
@@ -41,7 +41,7 @@ export class Flt extends
 
     override set value(value: ValueFlt) {
         if (Flt.isValueValid(value)) this.#value = value;
-        else throw new MpError.InvalidValue(this, "value");
+        else throw new MpError.InvalidValue(this[Symbol.toStringTag], "value");
     }
 
     get subtype(): SubtypeFlt {
@@ -50,7 +50,7 @@ export class Flt extends
 
     set subtype(subtype: SubtypeFlt) {
         if (Flt.isSubtypeValid(subtype)) this.#subtype = subtype;
-        else throw new MpError.InvalidSubtype(this, "subtype", subtype);
+        else throw new MpError.InvalidSubtype(this[Symbol.toStringTag], "subtype", subtype);
     }
 
     override encode(): Uint8Array {
@@ -92,7 +92,7 @@ export class Flt extends
         const iDataStart = indices[1];
         const iDataEnd   = indices[2];
 
-        if (iDataEnd > chunk.byteLength) throw new MpError.TruncatedChunk(this.prototype, "decode", iDataEnd, chunk.byteLength);
+        if (iDataEnd > chunk.byteLength) throw new MpError.TruncatedChunk(Flt.name, "decode", iDataEnd, chunk.byteLength);
 
         const code = chunk[iCode]!;
         const subtype = this.code2Subtype(code);
@@ -101,7 +101,7 @@ export class Flt extends
     }
 
     static override value2Subtype(value: ValueFlt): SubtypeFlt {
-        if (typeof value !== "number") throw new MpError.InvalidValue(this.prototype, "value2Subtype");
+        if (typeof value !== "number") throw new MpError.InvalidValue(Flt.name, "value2Subtype");
         return Object.is(value, Math.fround(value)) ? "F32" : "F64";
     }
 
@@ -111,7 +111,7 @@ export class Flt extends
             case 0xcb: return "F64";
         }
 
-        throw new MpError.InvalidCode(this.prototype, "code2Subtype", code);
+        throw new MpError.InvalidCode(Flt.name, "code2Subtype", code);
     }
 
     static override isValueValid(value: unknown, subtype: SubtypeFlt = "F64"): value is ValueFlt {
@@ -141,7 +141,7 @@ export class Flt extends
     static override isChunkValid(chunk: Uint8Array): SubtypeFlt | false;
     static override isChunkValid(chunk: Uint8Array): SubtypeFlt | false {
         const code = chunk[0 /* iCode */];
-        if (code === undefined) throw new MpError.MissingCode(this.prototype, "isChunkValid");
+        if (code === undefined) throw new MpError.MissingCode(Flt.name, "isChunkValid");
 
         return this.isCodeValid(code);
     }
@@ -150,7 +150,7 @@ export class Flt extends
         const code = chunk[0 /* iCode */]!; // ignore undefined since it is checked by isChunkValid
 
         const subtype = this.isChunkValid(chunk);
-        if (!subtype) throw new MpError.InvalidCode(this.prototype, "deriveChunkIndices", code);
+        if (!subtype) throw new MpError.InvalidCode(Flt.name, "deriveChunkIndices", code);
 
         /* match code:
          *     case 0xca: len = 4 // F32

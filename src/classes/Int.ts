@@ -13,7 +13,7 @@ export class Int extends
         super(a as ValueInt, subtype);
 
         if (Int.isSubtypeValid(subtype)) this.#subtype = subtype;
-        else throw new MpError.InvalidSubtype(this, "constructor", subtype);
+        else throw new MpError.InvalidSubtype(this[Symbol.toStringTag], "constructor", subtype);
 
         if (
             typeof a === "number" ||
@@ -22,7 +22,7 @@ export class Int extends
             const value = a;
 
             if (Int.isValueValid(value, subtype)) this.#value = value;
-            else throw new MpError.InvalidValue(this, "constructor");
+            else throw new MpError.InvalidValue(this[Symbol.toStringTag], "constructor");
 
             return;
         }
@@ -83,7 +83,7 @@ export class Int extends
         }
 
         if (Int.isValueValid(value, subtype)) this.#value = value;
-        else throw new MpError.InvalidValue(this, "constructor");
+        else throw new MpError.InvalidValue(this[Symbol.toStringTag], "constructor");
     }
 
     override get value(): ValueInt {
@@ -92,7 +92,7 @@ export class Int extends
 
     override set value(value: ValueInt) {
         if (Int.isValueValid(value)) this.#value = value;
-        else throw new MpError.InvalidValue(this, "value");
+        else throw new MpError.InvalidValue(this[Symbol.toStringTag], "value");
     }
 
     get subtype(): SubtypeInt {
@@ -101,7 +101,7 @@ export class Int extends
 
     set subtype(subtype: SubtypeInt) {
         if (Int.isSubtypeValid(subtype)) this.#subtype = subtype;
-        else throw new MpError.InvalidSubtype(this, "subtype", subtype);
+        else throw new MpError.InvalidSubtype(this[Symbol.toStringTag], "subtype", subtype);
     }
 
     override encode(): Uint8Array {
@@ -184,7 +184,7 @@ export class Int extends
         const iDataStart = indices[1];
         const iDataEnd   = indices[2];
 
-        if (iDataEnd > chunk.byteLength) throw new MpError.TruncatedChunk(this.prototype, "decode", iDataEnd, chunk.byteLength);
+        if (iDataEnd > chunk.byteLength) throw new MpError.TruncatedChunk(Int.name, "decode", iDataEnd, chunk.byteLength);
 
         const code = chunk[iCode]!;
         const subtype = this.code2Subtype(code);
@@ -194,7 +194,7 @@ export class Int extends
 
     static override value2Subtype(value: ValueInt): SubtypeInt {
         if (typeof value === "number") {
-            if (value % 1.0 !== 0.0) throw new MpError.InvalidValue(this.prototype, "value2Subtype");
+            if (value % 1.0 !== 0.0) throw new MpError.InvalidValue(Int.name, "value2Subtype");
 
             if (-0x20 <= value && value < 0x00) return "FIXINT";
 
@@ -216,7 +216,7 @@ export class Int extends
             if (-0x8000_0000_0000_0000n <= value && value <= 0x7fff_ffff_ffff_ffffn) return "I64";
         }
 
-        throw new MpError.InvalidValue(this.prototype, "value2Subtype");
+        throw new MpError.InvalidValue(Int.name, "value2Subtype");
     }
 
     static override code2Subtype(code: number): SubtypeInt {
@@ -229,7 +229,7 @@ export class Int extends
             case 0xd3: return "I64";
         }
 
-        throw new MpError.InvalidCode(this.prototype, "code2Subtype", code);
+        throw new MpError.InvalidCode(Int.name, "code2Subtype", code);
     }
 
     static override isValueValid(value: unknown, subtype: SubtypeInt = "I32"): value is ValueInt {
@@ -293,7 +293,7 @@ export class Int extends
     static override isChunkValid(chunk: Uint8Array): SubtypeInt | false;
     static override isChunkValid(chunk: Uint8Array): SubtypeInt | false {
         const code = chunk[0 /* iCode */];
-        if (code === undefined) throw new MpError.MissingCode(this.prototype, "isChunkValid");
+        if (code === undefined) throw new MpError.MissingCode(Int.name, "isChunkValid");
 
         return this.isCodeValid(code);
     }
@@ -302,7 +302,7 @@ export class Int extends
         const code = chunk[0 /* iCode */]!; // ignore undefined since it is checked by isChunkValid
 
         const subtype = this.isChunkValid(chunk);
-        if (!subtype) throw new MpError.InvalidCode(this.prototype, "deriveChunkIndices", code);
+        if (!subtype) throw new MpError.InvalidCode(Int.name, "deriveChunkIndices", code);
 
         if (subtype === "FIXINT")
             return [

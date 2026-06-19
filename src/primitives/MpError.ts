@@ -1,21 +1,21 @@
-import type { ConstructorChild } from "../utils";
+import { ExtUtils, type ConstructorChild } from "../utils";
 import type { MpClassInterface, MpClassModule, MpClassInterfaceSubtyped, MpClassModuleSubtyped } from "./MpClass";
 
 export const MpError = {
     InvalidValue: class extends Error {
         constructor(
-            instance:
-                MpClassInterface<unknown> |
-                MpClassInterfaceSubtyped<unknown, string>,
-
+            nameCls: string,
             nameMethod: Omit<
                 keyof MpClassInterface<unknown> | keyof MpClassModule<unknown> |
                 keyof MpClassInterfaceSubtyped<unknown, string> | keyof MpClassModuleSubtyped<unknown, string> |
-                "constructor" | `Symbol.${keyof typeof Symbol}`
-            , symbol>
-        ) {
-            const nameCls = instance[Symbol.toStringTag];
 
+                keyof typeof ExtUtils |
+
+                "constructor" | `Symbol.${keyof typeof Symbol}`,
+
+                symbol
+            >
+        ) {
             let cause: string;
             switch (nameMethod) {
                 case "constructor": { cause = `Tried to create ${nameCls} with an invalid value.`; break; }
@@ -32,19 +32,17 @@ export const MpError = {
 
     InvalidCode: class extends Error {
         constructor(
-            instance:
-                MpClassInterface<unknown> |
-                MpClassInterfaceSubtyped<unknown, string>,
-
+            nameCls: string,
             nameMethod: Omit<
                 keyof MpClassInterface<unknown> | keyof MpClassModule<unknown> |
                 keyof MpClassInterfaceSubtyped<unknown, string> | keyof MpClassModuleSubtyped<unknown, string> |
-                "constructor" | `Symbol.${keyof typeof Symbol}`
-            , symbol>,
+                "constructor" | `Symbol.${keyof typeof Symbol}`,
+
+                symbol
+            >,
 
             code: number
         ) {
-            const nameCls = instance[Symbol.toStringTag];
             const codeHex = "0x" + code.toString(16).padStart(2, "0");
 
             let cause: string;
@@ -61,16 +59,16 @@ export const MpError = {
 
     InvalidSubtype: class extends Error {
         constructor(
-            instance: MpClassInterfaceSubtyped<unknown, string>,
+            nameCls: string,
             nameMethod: Omit<
                 keyof MpClassInterfaceSubtyped<unknown, string> | keyof MpClassModuleSubtyped<unknown, string> |
-                "constructor" | `Symbol.${keyof typeof Symbol}`
-            , symbol>,
+                "constructor" | `Symbol.${keyof typeof Symbol}`,
+
+                symbol
+            >,
 
             subtype: string
         ) {
-            const nameCls = instance[Symbol.toStringTag];
-
             let cause: string;
             switch (nameMethod) {
                 case "constructor": { cause = `Tried to create ${nameCls} with subtype "${subtype}".`; break; }
@@ -85,15 +83,14 @@ export const MpError = {
 
     MissingCode: class extends Error {
         constructor(
-            _instance:
-                MpClassInterface<unknown> |
-                MpClassInterfaceSubtyped<unknown, string>,
-
+            nameCls: string,
             nameMethod: Omit<
                 keyof MpClassInterface<unknown> | keyof MpClassModule<unknown> |
                 keyof MpClassInterfaceSubtyped<unknown, string> | keyof MpClassModuleSubtyped<unknown, string> |
-                "constructor" | `Symbol.${keyof typeof Symbol}`
-            , symbol>
+                "constructor" | `Symbol.${keyof typeof Symbol}`,
+
+                symbol
+            >
         ) {
             let cause: string;
             switch (nameMethod) {
@@ -101,27 +98,24 @@ export const MpError = {
                 default: { cause = "Unknown Reason"; break; }
             }
 
-            super("Chunk has a missing header code.", { cause });
+            super(`Chunk for ${nameCls} has a missing header code.`, { cause });
         }
     },
 
     TruncatedChunk: class extends Error {
         constructor(
-            instance:
-                MpClassInterface<unknown> |
-                MpClassInterfaceSubtyped<unknown, string>,
-
+            nameCls: string,
             nameMethod: Omit<
                 keyof MpClassInterface<unknown> | keyof MpClassModule<unknown> |
                 keyof MpClassInterfaceSubtyped<unknown, string> | keyof MpClassModuleSubtyped<unknown, string> |
-                "constructor" | `Symbol.${keyof typeof Symbol}`
-            , symbol>,
+                "constructor" | `Symbol.${keyof typeof Symbol}`,
+
+                symbol
+            >,
 
             lenExpected: number,
             lenActual: number
         ) {
-            const nameCls = instance[Symbol.toStringTag];
-
             let cause: string;
             switch (nameMethod) {
                 case "decode": { cause = `Tried to decode a chunk for ${nameCls}.`; break; }
@@ -134,17 +128,15 @@ export const MpError = {
 
     NoImpl: class extends Error {
         constructor(
-            instance:
-                MpClassInterface<unknown> |
-                MpClassInterfaceSubtyped<unknown, string>,
-
+            nameCls: string,
             nameMethod: Omit<
                 keyof MpClassInterface<unknown> | keyof MpClassModule<unknown> |
                 keyof MpClassInterfaceSubtyped<unknown, string> | keyof MpClassModuleSubtyped<unknown, string> |
-                "constructor" | `Symbol.${keyof typeof Symbol}`
-            , symbol>
+                "constructor" | `Symbol.${keyof typeof Symbol}`,
+
+                symbol
+            >
         ) {
-            const nameCls = instance[Symbol.toStringTag];
             super(`${nameCls}::${nameMethod} does not have an implementation!`);
         }
     }

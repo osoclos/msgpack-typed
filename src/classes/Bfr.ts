@@ -13,12 +13,12 @@ export class Bfr extends
         super(a as ValueBfr, subtype);
 
         if (Bfr.isSubtypeValid(subtype)) this.#subtype = subtype;
-        else throw new MpError.InvalidSubtype(this, "constructor", subtype);
+        else throw new MpError.InvalidSubtype(this[Symbol.toStringTag], "constructor", subtype);
 
         const value = a;
 
         if (Bfr.isValueValid(value, subtype)) this.#value = value;
-        else throw new MpError.InvalidValue(this, "constructor");
+        else throw new MpError.InvalidValue(this[Symbol.toStringTag], "constructor");
     }
 
     override get value(): ValueBfr {
@@ -27,7 +27,7 @@ export class Bfr extends
 
     override set value(value: ValueBfr) {
         if (Bfr.isValueValid(value)) this.#value = value;
-        else throw new MpError.InvalidValue(this, "value");
+        else throw new MpError.InvalidValue(this[Symbol.toStringTag], "value");
     }
 
     get subtype(): SubtypeBfr {
@@ -36,7 +36,7 @@ export class Bfr extends
 
     set subtype(subtype: SubtypeBfr) {
         if (Bfr.isSubtypeValid(subtype)) this.#subtype = subtype;
-        else throw new MpError.InvalidSubtype(this, "subtype", subtype);
+        else throw new MpError.InvalidSubtype(this[Symbol.toStringTag], "subtype", subtype);
     }
 
     override encode(): Uint8Array {
@@ -100,7 +100,7 @@ export class Bfr extends
         const iDataStart = indices[1 + +hasLenIdx /* hasLenIdx ? 2 : 1 */];
         const iDataEnd   = indices[2 + +hasLenIdx /* hasLenIdx ? 3 : 2 */]!;
 
-        if (iDataEnd > chunk.byteLength) throw new MpError.TruncatedChunk(this.prototype, "decode", iDataEnd, chunk.byteLength);
+        if (iDataEnd > chunk.byteLength) throw new MpError.TruncatedChunk(Bfr.name, "decode", iDataEnd, chunk.byteLength);
 
         const code = chunk[iCode]!;
         const subtype = this.code2Subtype(code);
@@ -109,7 +109,7 @@ export class Bfr extends
     }
 
     static override value2Subtype(value: ValueBfr): SubtypeBfr {
-        if (!(value instanceof Uint8Array)) throw new MpError.InvalidValue(this.prototype, "value2Subtype");
+        if (!(value instanceof Uint8Array)) throw new MpError.InvalidValue(Bfr.name, "value2Subtype");
 
         const len = value.byteLength;
 
@@ -117,7 +117,7 @@ export class Bfr extends
         if (len <= 0xffff) return "BFR16";
         if (len <= 0xffff_ffff) return "BFR32";
 
-        throw new MpError.InvalidValue(this.prototype, "value2Subtype");
+        throw new MpError.InvalidValue(Bfr.name, "value2Subtype");
     }
 
     static override code2Subtype(code: number): SubtypeBfr {
@@ -127,11 +127,11 @@ export class Bfr extends
             case 0xc6: return "BFR32";
         }
 
-        throw new MpError.InvalidCode(this.prototype, "code2Subtype", code);
+        throw new MpError.InvalidCode(Bfr.name, "code2Subtype", code);
     }
 
     static override isValueValid(value: unknown, subtype: SubtypeBfr = "BFR32"): value is ValueBfr {
-        if (!(value instanceof Uint8Array)) throw new MpError.InvalidValue(this.prototype, "value2Subtype");
+        if (!(value instanceof Uint8Array)) throw new MpError.InvalidValue(Bfr.name, "value2Subtype");
 
         const len = value.byteLength;
 
@@ -166,7 +166,7 @@ export class Bfr extends
     static override isChunkValid(chunk: Uint8Array): SubtypeBfr | false;
     static override isChunkValid(chunk: Uint8Array): SubtypeBfr | false {
         const code = chunk[0 /* iCode */];
-        if (code === undefined) throw new MpError.MissingCode(this.prototype, "isChunkValid");
+        if (code === undefined) throw new MpError.MissingCode(Bfr.name, "isChunkValid");
 
         return this.isCodeValid(code);
     }
@@ -175,7 +175,7 @@ export class Bfr extends
         const code = chunk[0 /* iCode */]!; // ignore undefined since it is checked by isChunkValid
 
         const subtype = this.isChunkValid(chunk);
-        if (!subtype) throw new MpError.InvalidCode(this.prototype, "deriveChunkIndices", code);
+        if (!subtype) throw new MpError.InvalidCode(Bfr.name, "deriveChunkIndices", code);
 
         /* match code:
          *     case 0xc4: lenLen = 1 // BFR8

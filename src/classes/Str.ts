@@ -16,13 +16,13 @@ export class Str extends
         super(a as ValueStr, subtype);
 
         if (Str.isSubtypeValid(subtype)) this.#subtype = subtype;
-        else throw new MpError.InvalidSubtype(this, "constructor", subtype);
+        else throw new MpError.InvalidSubtype(this[Symbol.toStringTag], "constructor", subtype);
 
         if (typeof a === "string") {
             const value = a;
 
             if (Str.isValueValid(value, subtype)) this.#value = Str.#encoder.encode(value);
-            else throw new MpError.InvalidValue(this, "constructor");
+            else throw new MpError.InvalidValue(this[Symbol.toStringTag], "constructor");
 
             return;
         }
@@ -32,7 +32,7 @@ export class Str extends
         const value = Str.#decoder.decode(bfr);
 
         if (Str.isValueValid(value, subtype)) this.#value = Str.#encoder.encode(value);
-        else throw new MpError.InvalidValue(this, "constructor");
+        else throw new MpError.InvalidValue(this[Symbol.toStringTag], "constructor");
     }
 
     static {
@@ -46,7 +46,7 @@ export class Str extends
 
     override set value(value: ValueStr) {
         if (Str.isValueValid(value)) this.#value = Str.#encoder.encode(value);
-        else throw new MpError.InvalidValue(this, "value");
+        else throw new MpError.InvalidValue(this[Symbol.toStringTag], "value");
     }
 
     get subtype(): SubtypeStr {
@@ -55,7 +55,7 @@ export class Str extends
 
     set subtype(subtype: SubtypeStr) {
         if (Str.isSubtypeValid(subtype)) this.#subtype = subtype;
-        else throw new MpError.InvalidSubtype(this, "subtype", subtype);
+        else throw new MpError.InvalidSubtype(this[Symbol.toStringTag], "subtype", subtype);
     }
 
     override encode(): Uint8Array {
@@ -128,7 +128,7 @@ export class Str extends
         const iDataStart = indices[1 + +hasLenIdx /* hasLenIdx ? 2 : 1 */];
         const iDataEnd   = indices[2 + +hasLenIdx /* hasLenIdx ? 3 : 2 */]!;
 
-        if (iDataEnd > chunk.byteLength) throw new MpError.TruncatedChunk(this.prototype, "decode", iDataEnd, chunk.byteLength);
+        if (iDataEnd > chunk.byteLength) throw new MpError.TruncatedChunk(Str.name, "decode", iDataEnd, chunk.byteLength);
 
         const code = chunk[iCode]!;
         const subtype = this.code2Subtype(code);
@@ -137,7 +137,7 @@ export class Str extends
     }
 
     static override value2Subtype(value: ValueStr): SubtypeStr {
-        if (typeof value !== "string") throw new MpError.InvalidValue(this.prototype, "value2Subtype");
+        if (typeof value !== "string") throw new MpError.InvalidValue(Str.name, "value2Subtype");
 
         const bytes = Str.#encoder.encode(value);
         const len = bytes.byteLength;
@@ -148,7 +148,7 @@ export class Str extends
         if (len <= 0xffff) return "STR16";
         if (len <= 0xffff_ffff) return "STR32";
 
-        throw new MpError.InvalidValue(this.prototype, "value2Subtype");
+        throw new MpError.InvalidValue(Str.name, "value2Subtype");
     }
 
     static override code2Subtype(code: number): SubtypeStr {
@@ -160,7 +160,7 @@ export class Str extends
             case 0xdb: return "STR32";
         }
 
-        throw new MpError.InvalidCode(this.prototype, "code2Subtype", code);
+        throw new MpError.InvalidCode(Str.name, "code2Subtype", code);
     }
 
     static override isValueValid(value: unknown, subtype: SubtypeStr = "STR32"): value is ValueStr {
@@ -206,7 +206,7 @@ export class Str extends
     static override isChunkValid(chunk: Uint8Array): SubtypeStr | false;
     static override isChunkValid(chunk: Uint8Array): SubtypeStr | false {
         const code = chunk[0 /* iCode */];
-        if (code === undefined) throw new MpError.MissingCode(this.prototype, "isChunkValid");
+        if (code === undefined) throw new MpError.MissingCode(Str.name, "isChunkValid");
 
         return this.isCodeValid(code);
     }
@@ -215,7 +215,7 @@ export class Str extends
         const code = chunk[0 /* iCode */]!; // ignore undefined since it is checked by isChunkValid
 
         const subtype = this.isChunkValid(chunk);
-        if (!subtype) throw new MpError.InvalidCode(this.prototype, "deriveChunkIndices", code);
+        if (!subtype) throw new MpError.InvalidCode(Str.name, "deriveChunkIndices", code);
 
         if (subtype === "FIXSTR") {
             const len = code & 0x1f;
