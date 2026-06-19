@@ -187,7 +187,7 @@ export class Int extends
         const code = chunk[iCode]!;
         const subtype = this.code2Subtype(code);
 
-        return new Int(chunk.slice(iDataStart, iDataEnd), subtype);
+        return new Int(chunk.subarray(iDataStart, iDataEnd), subtype);
     }
 
     static override value2Subtype(value: ValueInt): SubtypeInt {

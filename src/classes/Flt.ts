@@ -93,7 +93,7 @@ export class Flt extends
         const code = chunk[iCode]!;
         const subtype = this.code2Subtype(code);
 
-        return new Flt(chunk.slice(iDataStart, iDataEnd), subtype);
+        return new Flt(chunk.subarray(iDataStart, iDataEnd), subtype);
     }
 
     static override value2Subtype(value: ValueFlt): SubtypeFlt {
