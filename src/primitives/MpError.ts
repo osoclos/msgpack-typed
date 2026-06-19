@@ -91,8 +91,18 @@ export const MpError = {
     },
 
     NoImpl: class extends Error {
-        constructor(nameCls: string, nameReason: string) {
-            super(`\`${nameCls}::${nameReason}\` does not have an implementation!`);
+        constructor(nameCls: string, nameMethod: string) {
+            super(`\`${nameCls}::${nameMethod}\` does not have an implementation!`);
+        }
+    },
+
+    lz4: {
+        NotInitalized: class extends Error {
+            constructor(nameCls: string, nameMethod: string) {
+                super(`\`${nameCls}::${nameMethod}\` cannot be called as the module has not been initialized!`);
+            }
         }
     }
-} satisfies Record<string, ConstructorChild<Error>>;
+} satisfies RecordErrors;
+
+type RecordErrors = { [key: string]: RecordErrors | ConstructorChild<Error> };
