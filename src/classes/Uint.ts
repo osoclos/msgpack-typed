@@ -240,7 +240,10 @@ export class Uint extends
                 case "U8" : return value <= 0xff;
                 case "U16": return value <= 0xffff;
                 case "U32": return value <= 0xffff_ffff;
-                case "U64": return value <= Number.MAX_SAFE_INTEGER || BigInt(value) <= 0xffff_ffff_ffff_ffffn;
+                case "U64": return (
+                    value <= Number.MAX_SAFE_INTEGER ||
+                    BigInt(value) <= 0xffff_ffff_ffff_ffffn
+                );
             }
         }
 
@@ -324,7 +327,7 @@ export class Uint extends
     }
 
     override get [Symbol.toStringTag](): string {
-        return "Uint";
+        return Uint.name;
     }
 }
 
