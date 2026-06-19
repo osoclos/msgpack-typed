@@ -89,15 +89,15 @@ export class Flt extends
 
         const iCode = indices[0];
 
-        const iDataStart = indices[1];
-        const iDataEnd   = indices[2];
+        const iValueStart = indices[1];
+        const iValueEnd   = indices[2];
 
-        if (iDataEnd > chunk.byteLength) throw new MpError.TruncatedChunk(this.name, "DECODING", iDataEnd, chunk.byteLength);
+        if (iValueEnd > chunk.byteLength) throw new MpError.TruncatedChunk(this.name, "DECODING", iValueEnd, chunk.byteLength);
 
         const code = chunk[iCode]!;
         const subtype = this.code2Subtype(code);
 
-        return new Flt(chunk.subarray(iDataStart, iDataEnd), subtype);
+        return new Flt(chunk.subarray(iValueStart, iValueEnd), subtype);
     }
 
     static override value2Subtype(value: ValueFlt): SubtypeFlt {
@@ -161,8 +161,8 @@ export class Flt extends
         return [
             0 /* iCode */,
 
-            1 /* iDataStart */,
-            1 + len /* iDataEnd */
+            1 /* iValueStart */,
+            1 + len /* iValueEnd */
         ];
     }
 

@@ -181,15 +181,15 @@ export class Int extends
             return new Int(value, "FIXINT");
         }
 
-        const iDataStart = indices[1];
-        const iDataEnd   = indices[2];
+        const iValueStart = indices[1];
+        const iValueEnd   = indices[2];
 
-        if (iDataEnd > chunk.byteLength) throw new MpError.TruncatedChunk(this.name, "DECODING", iDataEnd, chunk.byteLength);
+        if (iValueEnd > chunk.byteLength) throw new MpError.TruncatedChunk(this.name, "DECODING", iValueEnd, chunk.byteLength);
 
         const code = chunk[iCode]!;
         const subtype = this.code2Subtype(code);
 
-        return new Int(chunk.subarray(iDataStart, iDataEnd), subtype);
+        return new Int(chunk.subarray(iValueStart, iValueEnd), subtype);
     }
 
     static override value2Subtype(value: ValueInt): SubtypeInt {
@@ -321,8 +321,8 @@ export class Int extends
         return [
             0 /* iCode */,
 
-            1 /* iDataStart */,
-            1 + len /* iDataEnd */
+            1 /* iValueStart */,
+            1 + len /* iValueEnd */
         ];
     }
 
