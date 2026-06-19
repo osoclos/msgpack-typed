@@ -1,27 +1,16 @@
-import { ExtUtils, type ConstructorChild } from "../utils";
-import type { MpClassInterface, MpClassModule, MpClassInterfaceSubtyped, MpClassModuleSubtyped } from "./MpClass";
+import { type ConstructorChild } from "../utils";
 
 export const MpError = {
     InvalidValue: class extends Error {
-        constructor(
-            nameCls: string,
-            nameMethod: Omit<
-                keyof MpClassInterface<unknown> | keyof MpClassModule<unknown> |
-                keyof MpClassInterfaceSubtyped<unknown, string> | keyof MpClassModuleSubtyped<unknown, string> |
-
-                keyof typeof ExtUtils |
-
-                "constructor" | `Symbol.${keyof typeof Symbol}`,
-
-                symbol
-            >
-        ) {
+        constructor(nameCls: string, nameReason: "CONSTRUCTOR" | "ASSIGNMENT" | "ENCODING" | "MAP_SUBTYPE") {
             let cause: string;
-            switch (nameMethod) {
-                case "constructor": { cause = `Tried to create ${nameCls} with an invalid value.`; break; }
-                case "value": { cause = `Tried to assign a new value in ${nameCls} with an invalid value.`; break; }
+            switch (nameReason) {
+                case "CONSTRUCTOR": { cause = `Tried to create ${nameCls} with an invalid value.`; break; }
+                case "ASSIGNMENT": { cause = `Tried to assign an invalid value in ${nameCls}.`; break; }
 
-                case "value2Subtype": { cause = `Tried to match an invalid value to a subtype in ${nameCls}.`; break; }
+                case "ENCODING": { cause = `Invalid value used when encoding ${nameCls}.`; break; }
+
+                case "MAP_SUBTYPE": { cause = `Tried to match an invalid value to a subtype in ${nameCls}.`; break; }
 
                 default: { cause = "Unknown Reason"; break; }
             }
@@ -31,24 +20,16 @@ export const MpError = {
     },
 
     InvalidCode: class extends Error {
-        constructor(
-            nameCls: string,
-            nameMethod: Omit<
-                keyof MpClassInterface<unknown> | keyof MpClassModule<unknown> |
-                keyof MpClassInterfaceSubtyped<unknown, string> | keyof MpClassModuleSubtyped<unknown, string> |
-                "constructor" | `Symbol.${keyof typeof Symbol}`,
-
-                symbol
-            >,
+        constructor(nameCls: string, nameReason: "MAP_SUBTYPE" | "UNSUPPORTED",
 
             code: number
         ) {
             const codeHex = "0x" + code.toString(16).padStart(2, "0");
 
             let cause: string;
-            switch (nameMethod) {
-                case "code2Subtype": { cause = `Tried to match an unsupported code ${codeHex} to a subtype in ${nameCls}.`; break; }
-                case "deriveChunkIndices": { cause = `Unsupported code ${codeHex} was found in chunk header supposedly for ${nameCls}.`; break; }
+            switch (nameReason) {
+                case "MAP_SUBTYPE": { cause = `Tried to match an unsupported code ${codeHex} to a subtype in ${nameCls}.`; break; }
+                case "UNSUPPORTED": { cause = `Unsupported code ${codeHex} was found in chunk header supposedly for ${nameCls}.`; break; }
 
                 default: { cause = "Unknown Reason"; break; }
             }
@@ -58,21 +39,11 @@ export const MpError = {
     },
 
     InvalidSubtype: class extends Error {
-        constructor(
-            nameCls: string,
-            nameMethod: Omit<
-                keyof MpClassInterfaceSubtyped<unknown, string> | keyof MpClassModuleSubtyped<unknown, string> |
-                "constructor" | `Symbol.${keyof typeof Symbol}`,
-
-                symbol
-            >,
-
-            subtype: string
-        ) {
+        constructor(nameCls: string, nameReason: "CONSTRUCTOR" | "ASSIGNMENT", subtype: string) {
             let cause: string;
-            switch (nameMethod) {
-                case "constructor": { cause = `Tried to create ${nameCls} with subtype "${subtype}".`; break; }
-                case "subtype": { cause = `Tried to assign an invalid subtype "${subtype}" in ${nameCls}.`; break; }
+            switch (nameReason) {
+                case "CONSTRUCTOR": { cause = `Tried to create ${nameCls} with subtype "${subtype}".`; break; }
+                case "ASSIGNMENT": { cause = `Tried to assign an invalid subtype "${subtype}" in ${nameCls}.`; break; }
 
                 default: { cause = "Unknown Reason"; break; }
             }
@@ -82,19 +53,10 @@ export const MpError = {
     },
 
     MissingCode: class extends Error {
-        constructor(
-            nameCls: string,
-            nameMethod: Omit<
-                keyof MpClassInterface<unknown> | keyof MpClassModule<unknown> |
-                keyof MpClassInterfaceSubtyped<unknown, string> | keyof MpClassModuleSubtyped<unknown, string> |
-                "constructor" | `Symbol.${keyof typeof Symbol}`,
-
-                symbol
-            >
-        ) {
+        constructor(nameCls: string, nameReason: "VALIDATE_CHUNK") {
             let cause: string;
-            switch (nameMethod) {
-                case "isChunkValid": { cause = "Tried to validate a chunk with no header code."; break; }
+            switch (nameReason) {
+                case "VALIDATE_CHUNK": { cause = "Tried to validate a chunk with no header code."; break; }
                 default: { cause = "Unknown Reason"; break; }
             }
 
@@ -103,22 +65,10 @@ export const MpError = {
     },
 
     TruncatedChunk: class extends Error {
-        constructor(
-            nameCls: string,
-            nameMethod: Omit<
-                keyof MpClassInterface<unknown> | keyof MpClassModule<unknown> |
-                keyof MpClassInterfaceSubtyped<unknown, string> | keyof MpClassModuleSubtyped<unknown, string> |
-                "constructor" | `Symbol.${keyof typeof Symbol}`,
-
-                symbol
-            >,
-
-            lenExpected: number,
-            lenActual: number
-        ) {
+        constructor(nameCls: string, nameReason: "DECODING", lenExpected: number, lenActual: number) {
             let cause: string;
-            switch (nameMethod) {
-                case "decode": { cause = `Tried to decode a chunk for ${nameCls}.`; break; }
+            switch (nameReason) {
+                case "DECODING": { cause = `Tried to decode a chunk for ${nameCls}.`; break; }
                 default: { cause = "Unknown Reason"; break; }
             }
 
@@ -127,17 +77,8 @@ export const MpError = {
     },
 
     NoImpl: class extends Error {
-        constructor(
-            nameCls: string,
-            nameMethod: Omit<
-                keyof MpClassInterface<unknown> | keyof MpClassModule<unknown> |
-                keyof MpClassInterfaceSubtyped<unknown, string> | keyof MpClassModuleSubtyped<unknown, string> |
-                "constructor" | `Symbol.${keyof typeof Symbol}`,
-
-                symbol
-            >
-        ) {
-            super(`${nameCls}::${nameMethod} does not have an implementation!`);
+        constructor(nameCls: string, nameReason: string) {
+            super(`${nameCls}::${nameReason} does not have an implementation!`);
         }
     }
 } satisfies Record<string, ConstructorChild<Error>>;

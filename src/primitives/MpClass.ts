@@ -48,39 +48,39 @@ export const MpClass = <V>(): MpClassModule<V> => class MpClass implements MpCla
     constructor(_a?: V | Uint8Array) {}
 
     get value(): V {
-        throw new MpError.NoImpl(this, "value");
+        throw new MpError.NoImpl(this[Symbol.toStringTag], "value");
     }
 
     set value(_value: V) {
-        throw new MpError.NoImpl(this, "value");
+        throw new MpError.NoImpl(this[Symbol.toStringTag], "value");
     }
 
     encode(): Uint8Array {
-        throw new MpError.NoImpl(this, "encode");
+        throw new MpError.NoImpl(this[Symbol.toStringTag], "encode");
     }
 
     static decode(_chunk: Uint8Array): MpClassInterface<V> {
-        throw new MpError.NoImpl(this.prototype, "decode");
+        throw new MpError.NoImpl(this.name, "decode");
     }
 
     static isValueValid(_value: unknown): _value is V {
-        throw new MpError.NoImpl(this.prototype, "isValueValid");
+        throw new MpError.NoImpl(this.name, "isValueValid");
     }
 
     static isCodeValid(_code: number): boolean {
-        throw new MpError.NoImpl(this.prototype, "isCodeValid");
+        throw new MpError.NoImpl(this.name, "isCodeValid");
     }
 
     static isChunkValid(_chunk: Uint8Array): boolean {
-        throw new MpError.NoImpl(this.prototype, "isChunkValid");
+        throw new MpError.NoImpl(this.name, "isChunkValid");
     }
 
     static deriveChunkIndices(_chunk: Uint8Array): number[] {
-        throw new MpError.NoImpl(this.prototype, "deriveChunkIndices");
+        throw new MpError.NoImpl(this.name, "deriveChunkIndices");
     }
 
     get [Symbol.toStringTag](): string {
-        throw new MpError.NoImpl(this, "Symbol.toStringTag");
+        throw new MpError.NoImpl(this[Symbol.toStringTag], "Symbol.toStringTag");
     }
 };
 
@@ -92,34 +92,34 @@ export const MpClassSubtyped = <V, T extends string>(): MpClassModuleSubtyped<V,
     }
 
     get subtype(): T {
-        throw new MpError.NoImpl(this, "subtype");
+        throw new MpError.NoImpl(this[Symbol.toStringTag], "subtype");
     }
 
     set subtype(_subtype: T) {
-        throw new MpError.NoImpl(this, "subtype");
+        throw new MpError.NoImpl(this[Symbol.toStringTag], "subtype");
     }
 
     static value2Subtype(_value: V): T {
-        throw new MpError.NoImpl(this.prototype, "value2Subtype");
+        throw new MpError.NoImpl(this.name, "value2Subtype");
     }
 
     static code2Subtype(_code: number): T {
-        throw new MpError.NoImpl(this.prototype, "code2Subtype");
+        throw new MpError.NoImpl(this.name, "code2Subtype");
     }
 
     static isSubtypeValid(_subtype: T): _subtype is T {
-        throw new MpError.NoImpl(this.prototype, "isSubtypeValid");
+        throw new MpError.NoImpl(this.name, "isSubtypeValid");
     }
 
     static override isCodeValid(_code: number): false;
     static override isCodeValid(_code: number): T | false;
     static override isCodeValid(_code: number): T | false {
-        throw new MpError.NoImpl(this.prototype, "isCodeValid");
+        throw new MpError.NoImpl(this.name, "isCodeValid");
     }
 
     static override isChunkValid(_chunk: Uint8Array): false;
     static override isChunkValid(_chunk: Uint8Array): T | false;
     static override isChunkValid(_chunk: Uint8Array): T | false {
-        throw new MpError.NoImpl(this.prototype, "isChunkValid");
+        throw new MpError.NoImpl(this.name, "isChunkValid");
     }
 } satisfies MpClassModuleSubtyped<V, T>;
