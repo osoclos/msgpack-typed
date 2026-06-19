@@ -21,6 +21,8 @@ export const MpError = {
                 case "constructor" as any: { cause = `Tried to create ${nameCls} with an invalid value.`; break; }
                 case "value" as any: { cause = `Tried to assign a new value in ${nameCls} with an invalid value.`; break; }
 
+                case "value2Subtype": { cause = `Tried to match an invalid value to a subtype in ${nameCls}.`; break; }
+
                 default: { cause = "Unknown Reason"; break; }
             }
 
@@ -47,7 +49,7 @@ export const MpError = {
 
             let cause: string;
             switch (nameMethod) {
-                case "code2Subtype": { cause = `Tried to match a subtype from ${nameCls} to code ${codeHex}.`; break; }
+                case "code2Subtype": { cause = `Tried to match an unsupported code ${codeHex} to a subtype in ${nameCls}.`; break; }
                 case "deriveChunkIndices": { cause = `Unsupported code ${codeHex} was found in chunk header supposedly for ${nameCls}.`; break; }
 
                 default: { cause = "Unknown Reason"; break; }

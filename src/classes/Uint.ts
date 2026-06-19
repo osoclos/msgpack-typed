@@ -188,6 +188,35 @@ export class Uint extends
         return new Uint(chunk.slice(iDataStart, iDataEnd), subtype);
     }
 
+    static override value2Subtype(value: ValueUint): SubtypeUint {
+        if (typeof value === "number") {
+            if (value < 0 || value % 1.0 !== 0.0) throw new MpError.InvalidValue(this.prototype, "value2Subtype");
+
+            if (value <= 0x7f) return "FIXINT";
+
+            if (value <= 0xff) return "U8";
+            if (value <= 0xffff) return "U16";
+            if (value <= 0xffff_ffff) return "U32";
+            if (
+                value <= Number.MAX_SAFE_INTEGER ||
+                BigInt(value) <= 0xffff_ffff_ffff_ffffn
+            ) return "U64";
+        }
+
+        if (typeof value === "bigint") {
+            if (value < 0n) throw new MpError.InvalidValue(this.prototype, "value2Subtype");
+
+            if (value <= 0x7fn) return "FIXINT";
+
+            if (value <= 0xffn) return "U8";
+            if (value <= 0xffffn) return "U16";
+            if (value <= 0xffff_ffffn) return "U32";
+            if (value <= 0xffff_ffff_ffff_ffffn) return "U64";
+        }
+
+        throw new MpError.InvalidValue(this.prototype, "value2Subtype");
+    }
+
     static override code2Subtype(code: number): SubtypeUint {
         if (code <= 0x7f) return "FIXINT";
 

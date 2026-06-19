@@ -32,6 +32,7 @@ export type MpClassModuleSubtyped<V, T extends string> = MpClassModule<V> & {
     new (value?: V, subtype?: T): MpClassInterfaceSubtyped<V, T>;
     new (bfr: Uint8Array, subtype?: T): MpClassInterfaceSubtyped<V, T>;
 
+    value2Subtype(value: V): T;
     code2Subtype(code: number): T;
 
     isValueValid(value: unknown, subtype?: T): value is V;
@@ -96,6 +97,10 @@ export const MpClassSubtyped = <V, T extends string>(): MpClassModuleSubtyped<V,
 
     set subtype(_subtype: T) {
         throw new MpError.NoImpl(this, "subtype" as any);
+    }
+
+    static value2Subtype(_value: V): T {
+        throw new MpError.NoImpl(this.prototype, "value2Subtype");
     }
 
     static code2Subtype(_code: number): T {
