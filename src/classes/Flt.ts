@@ -9,7 +9,7 @@ export class Flt extends
 
     constructor(value?: ValueFlt, subtype?: SubtypeFlt);
     constructor(bfr: Uint8Array, subtype?: SubtypeFlt);
-    constructor(a: ValueFlt | Uint8Array = 0, subtype: SubtypeFlt = "F64") {
+    constructor(a: ValueFlt | Uint8Array = 0.0, subtype: SubtypeFlt = "F64") {
         super(a as ValueFlt, subtype);
 
         if (Flt.isSubtypeValid(subtype)) this.#subtype = subtype;
