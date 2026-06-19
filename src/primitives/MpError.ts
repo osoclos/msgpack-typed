@@ -76,6 +76,20 @@ export const MpError = {
         }
     },
 
+    IncompatibleChunk: class extends Error {
+        constructor(nameCls: string, nameReason: "DECODING" | "INVALID_CODE") {
+            let cause: string;
+            switch (nameReason) {
+                case "DECODING": { cause = `Tried to decode a chunk for \`${nameCls}\`.`; break; }
+                case "INVALID_CODE": { cause = `Chunk has an invalid header/extension code for \`${nameCls}\`.`; break; }
+
+                default: { cause = "Unknown Reason"; break; }
+            }
+
+            super(`Chunk cannot be decoded into \`${nameCls}\``, { cause });
+        }
+    },
+
     NoImpl: class extends Error {
         constructor(nameCls: string, nameReason: string) {
             super(`\`${nameCls}::${nameReason}\` does not have an implementation!`);
