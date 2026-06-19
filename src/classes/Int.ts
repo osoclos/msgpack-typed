@@ -173,7 +173,7 @@ export class Int extends
     static override decode(chunk: Uint8Array): Int {
         const indices = this.deriveChunkIndices(chunk);
 
-        const [iCode] = indices;
+        const iCode = indices[0];
 
         // FIXINT
         if (indices.length === 2) {
@@ -181,7 +181,9 @@ export class Int extends
             return new Int(value, "FIXINT");
         }
 
-        const [, iDataStart, iDataEnd] = indices;
+        const iDataStart = indices[1];
+        const iDataEnd   = indices[2];
+
         if (iDataEnd > chunk.byteLength) throw new MpError.TruncatedChunk(this.prototype, "decode", iDataEnd, chunk.byteLength);
 
         const code = chunk[iCode]!;

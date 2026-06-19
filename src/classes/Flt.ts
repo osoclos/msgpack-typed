@@ -87,7 +87,11 @@ export class Flt extends
     static override decode(chunk: Uint8Array): Flt {
         const indices = this.deriveChunkIndices(chunk);
 
-        const [iCode, iDataStart, iDataEnd] = indices;
+        const iCode = indices[0];
+
+        const iDataStart = indices[1];
+        const iDataEnd   = indices[2];
+
         if (iDataEnd > chunk.byteLength) throw new MpError.TruncatedChunk(this.prototype, "decode", iDataEnd, chunk.byteLength);
 
         const code = chunk[iCode]!;
