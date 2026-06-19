@@ -1,19 +1,19 @@
-import { type MpClassInterface, type MpClassInterfaceSubtyped, type MpClassModuleSubtyped } from "../types";
+import { MpClassSubtyped, MpError } from "../primitives";
 
-export type ValueUint = number | bigint;
-
-const SUBTYPES_UINT = ["FIXINT", "U8", "U16", "U32", "U64"] as const;
-export type SubtypeUint = typeof SUBTYPES_UINT[number];
-
-export const Uint: MpClassModuleSubtyped<ValueUint, SubtypeUint> = class Uint implements MpClassInterfaceSubtyped<ValueUint, SubtypeUint> {
+export class Uint extends
+    // @ts-ignore
+    MpClassSubtyped<ValueUint, SubtypeUint>()
+{
     #value: ValueUint;
     #subtype: SubtypeUint;
 
     constructor(value?: ValueUint, subtype?: SubtypeUint);
     constructor(bfr: Uint8Array, subtype?: SubtypeUint);
-    constructor(a: ValueUint | Uint8Array = 0, subtype: SubtypeUint = "U64") {
+    constructor(a: ValueUint | Uint8Array = 0, subtype: SubtypeUint = "U32") {
+        super(a as ValueUint, subtype);
+
         if (Uint.isSubtypeValid(subtype)) this.#subtype = subtype;
-        else throw new Error("InvalidSubtypeError");
+        else throw new MpError.InvalidSubtype(this, "constructor" as any, subtype);
 
         if (
             typeof a === "number" ||
@@ -22,63 +22,75 @@ export const Uint: MpClassModuleSubtyped<ValueUint, SubtypeUint> = class Uint im
             const value = a;
 
             if (Uint.isValueValid(value, subtype)) this.#value = value;
-            else throw new Error("InvalidValueError");
+            else throw new MpError.InvalidValue(this, "constructor" as any);
 
             return;
         }
 
         const bfr = a;
-        const view = new DataView(bfr.buffer);
+        const len = bfr.byteLength;
 
-        if (bfr.byteLength >= 8) {
-            this.#value = view.getBigUint64(0);
-            return;
-        }
+        let value: ValueUint;
 
-        if (bfr.byteLength > 4) {
-            let value = 0n;
-
-            for (let i: number = 0; i < bfr.byteLength; i++) {
-                value <<= 8n;
-                value |= BigInt(bfr[i]!);
+        switch (len) {
+            case 0: {
+                value = 0;
+                break;
             }
 
-            this.#value = value;
-            return;
+            case 1: {
+                value = bfr[0]!;
+                break;
+            }
+
+            case 2: {
+                value =
+                    (bfr[0]!    << 8) |
+                     bfr[1]! /* << 0 */;
+
+                break;
+            }
+
+            case 3: {
+                value =
+                    (bfr[0]!    << 16) |
+                    (bfr[1]!    <<  8) |
+                     bfr[2]! /* <<  0 */;
+
+                break;
+            }
+
+            default: {
+                const view = new DataView(bfr.buffer, bfr.byteOffset);
+
+                if (len === 4) {
+                    value = view.getUint32(0);
+                    break;
+                }
+
+                if (len >= 8) {
+                    value = view.getBigUint64(0);
+                    break;
+                }
+
+                value = 0n;
+                for (let i: number = 0; i < len; i++) value = (value << 8n) | BigInt(bfr[i]!);
+
+                break;
+            }
         }
 
-        if (bfr.byteLength === 4) {
-            this.#value = view.getUint32(0);
-            return;
-        }
-
-        if (bfr.byteLength === 2) {
-            this.#value = view.getUint16(0);
-            return;
-        }
-
-        if (bfr.byteLength === 1) {
-            this.#value = bfr[0]!;
-            return;
-        }
-
-        let value = 0;
-
-        for (let i: number = 0; i < bfr.byteLength; i++) {
-            value <<= 8;
-            value |= bfr[i]!;
-        }
-
-        this.#value = value;
+        if (Uint.isValueValid(value, subtype)) this.#value = value;
+        else throw new MpError.InvalidValue(this, "constructor" as any);
     }
 
-    get value(): ValueUint {
+    override get value(): ValueUint {
         return this.#value;
     }
 
-    set value(value: ValueUint) {
+    override set value(value: ValueUint) {
         if (Uint.isValueValid(value)) this.#value = value;
-        else throw new Error("InvalidValueError");
+        else throw new MpError.InvalidValue(this, "value" as any);
     }
 
     get subtype(): SubtypeUint {
@@ -87,29 +99,19 @@ export const Uint: MpClassModuleSubtyped<ValueUint, SubtypeUint> = class Uint im
 
     set subtype(subtype: SubtypeUint) {
         if (Uint.isSubtypeValid(subtype)) this.#subtype = subtype;
-        else throw new Error("InvalidSubtypeError");
+        else throw new MpError.InvalidSubtype(this, "subtype" as any, subtype);
     }
 
-    encode(): Uint8Array {
-        if (this.#subtype === "FIXINT") {
-            const code = typeof this.#value === "bigint" ? Number(this.#value) : this.#value;
-            return new Uint8Array([code]);
-        }
+    override encode(): Uint8Array {
+        if (this.#subtype === "FIXINT") return new Uint8Array([Number(this.#value) /* code */]);
 
         let code: number;
         let len: number;
-
-        let chunk: Uint8Array;
-        let view: DataView;
-
-        let fWrite: (value: ValueUint) => void;
 
         switch (this.#subtype) {
             case "U8": {
                 code = 0xcc;
                 len = 1;
-
-                fWrite = (value: ValueUint) => void (chunk[1] = typeof value === "bigint" ? Number(value) : value);
 
                 break;
             }
@@ -118,16 +120,12 @@ export const Uint: MpClassModuleSubtyped<ValueUint, SubtypeUint> = class Uint im
                 code = 0xcd;
                 len = 2;
 
-                fWrite = (value: ValueUint) => void view.setUint16(1, typeof value === "bigint" ? Number(value) : value);
-
                 break;
             }
 
             case "U32": {
                 code = 0xce;
                 len = 4;
-
-                fWrite = (value: ValueUint) => void view.setUint32(1, typeof value === "bigint" ? Number(value) : value);
 
                 break;
             }
@@ -136,41 +134,74 @@ export const Uint: MpClassModuleSubtyped<ValueUint, SubtypeUint> = class Uint im
                 code = 0xcf;
                 len = 8;
 
-                fWrite = (value: ValueUint) => void view.setBigUint64(1, typeof value === "number" ? BigInt(value) : value);
-
                 break;
             }
         }
 
-        chunk = new Uint8Array(1 + len);
-        view = new DataView(chunk.buffer);
-
+        const chunk = new Uint8Array(1 + len);
         chunk[0] = code;
 
-        fWrite(this.#value);
+        if (this.#subtype === "U8") {
+            chunk[1] = Number(this.#value);
+            return chunk;
+        }
+
+        const view = new DataView(chunk.buffer);
+
+        switch (this.#subtype) {
+            case "U16": {
+                view.setUint16(1, Number(this.#value));
+                break;
+            }
+
+            case "U32": {
+                view.setUint32(1, Number(this.#value));
+                break;
+            }
+
+            case "U64": {
+                view.setBigUint64(1, BigInt(this.#value));
+                break;
+            }
+        }
 
         return chunk;
     }
 
-    static decode(chunk: Uint8Array, subtype: SubtypeUint = "U64"): Uint {
-        if (chunk.byteLength === 0) throw new Error("TruncatedChunkError");
-        const code = chunk[0]!;
+    static override decode(chunk: Uint8Array): Uint {
+        const indices = this.deriveChunkIndices(chunk);
 
-        const indices = this.deriveIndices(chunk);
-        if (indices.length === 2) return new Uint(code);
+        const [iCode] = indices;
+
+        // FIXINT
+        if (indices.length === 2) {
+            const value = chunk[iCode]!;
+            return new Uint(value, "FIXINT");
+        }
 
         const [, iDataStart, iDataEnd] = indices;
-        if (iDataEnd > chunk.byteLength) console.warn("truncatedChunk");
+        if (iDataEnd > chunk.byteLength) throw new MpError.TruncatedChunk(this.prototype, "decode", iDataEnd, chunk.byteLength);
+
+        const code = chunk[iCode]!;
+        const subtype = this.code2Subtype(code);
 
         return new Uint(chunk.slice(iDataStart, iDataEnd), subtype);
     }
 
-    static cast(item: MpClassInterface<unknown>, subtype: SubtypeUint = "U64"): Uint {
-        if (item instanceof Uint) return new Uint(item.value, subtype);
-        throw new Error("InvalidItemError");
+    static override code2Subtype(code: number): SubtypeUint {
+        if (code <= 0x7f) return "FIXINT";
+
+        switch (code) {
+            case 0xcc: return "U8" ;
+            case 0xcd: return "U16";
+            case 0xce: return "U32";
+            case 0xcf: return "U64";
+        }
+
+        throw new MpError.InvalidCode(this.prototype, "code2Subtype", code);
     }
 
-    static isValueValid(value: unknown, subtype: SubtypeUint = "U64"): value is ValueUint {
+    static override isValueValid(value: unknown, subtype: SubtypeUint = "U32"): value is ValueUint {
         if (typeof value === "number") {
             if (value < 0 || value % 1.0 !== 0.0) return false;
 
@@ -200,7 +231,7 @@ export const Uint: MpClassModuleSubtyped<ValueUint, SubtypeUint> = class Uint im
         return false;
     }
 
-    static isSubtypeValid(subtype: string): subtype is SubtypeUint {
+    static override isSubtypeValid(subtype: string): subtype is SubtypeUint {
         return (
             subtype === "FIXINT" ||
 
@@ -211,41 +242,41 @@ export const Uint: MpClassModuleSubtyped<ValueUint, SubtypeUint> = class Uint im
         );
     }
 
-    static isCodeValid(code: number, subtypes: SubtypeUint | SubtypeUint[] = SUBTYPES_UINT as unknown as SubtypeUint[]): boolean {
-        if (!Array.isArray(subtypes)) subtypes = [subtypes];
+    static override isCodeValid(code: number): false;
+    static override isCodeValid(code: number): SubtypeUint | false;
+    static override isCodeValid(code: number): SubtypeUint | false {
+        if (code <= 0x7f) return "FIXINT";
 
-        for (const subtype of subtypes) {
-            switch (subtype) {
-                case "FIXINT": return code <= 0x7f;
-
-                case "U8" : return code === 0xcc;
-                case "U16": return code === 0xcd;
-                case "U32": return code === 0xce;
-                case "U64": return code === 0xcf;
-            }
+        switch (code) {
+            case 0xcc: return "U8";
+            case 0xcd: return "U16";
+            case 0xce: return "U32";
+            case 0xcf: return "U64";
         }
 
         return false;
     }
 
-    static isChunkValid(chunk: Uint8Array, subtypes: SubtypeUint | SubtypeUint[] = SUBTYPES_UINT as unknown as SubtypeUint[]) {
-        if (chunk.byteLength === 0) throw new Error("TruncatedChunkError");
-        const code = chunk[0]!;
+    static override isChunkValid(chunk: Uint8Array): false;
+    static override isChunkValid(chunk: Uint8Array): SubtypeUint | false;
+    static override isChunkValid(chunk: Uint8Array): SubtypeUint | false {
+        const code = chunk[0 /* iCode */];
+        if (code === undefined) throw new MpError.MissingCode(this.prototype, "isChunkValid");
 
-        return this.isCodeValid(code, subtypes);
+        return this.isCodeValid(code);
     }
 
-    static deriveIndices(chunk: Uint8Array): [number, number] | [number, number, number] {
-        const iCode: number = 0;
-        const code = chunk[iCode]!;
+    static override deriveChunkIndices(chunk: Uint8Array): [number, number] | [number, number, number] {
+        const code = chunk[0 /* iCode */]!; // ignore undefined since it is checked by isChunkValid
 
-        if (!this.isChunkValid(chunk)) throw new Error(`InvalidCodeError: ${code}`);
+        const subtype = this.isChunkValid(chunk);
+        if (!subtype) throw new MpError.InvalidCode(this.prototype, "deriveChunkIndices", code);
 
-        // FIXINT
-        if (code <= 0x7f) {
-            const iChunkEnd = iCode + 1;
-            return [iCode, iChunkEnd];
-        }
+        if (subtype === "FIXINT")
+            return [
+                0 /* iCode */,
+                1 /* iChunkEnd */
+            ];
 
         /* match code:
          *     case 0xcc: len = 1 // U8
@@ -255,11 +286,18 @@ export const Uint: MpClassModuleSubtyped<ValueUint, SubtypeUint> = class Uint im
          */
         const len = 0b1 << (code - 0xcc);
 
-        const iDataStart = iCode + 1;
-        const iDataEnd   = iDataStart + len;
+        return [
+            0 /* iCode */,
 
-        return [iCode, iDataStart, iDataEnd];
+            1 /* iDataStart */,
+            1 + len /* iDataEnd */
+        ];
     }
-} satisfies MpClassModuleSubtyped<ValueUint, SubtypeUint>;
 
-export type Uint = typeof Uint["prototype"];
+    override get [Symbol.toStringTag](): string {
+        return "Uint";
+    }
+}
+
+export type ValueUint = number | bigint;
+export type SubtypeUint = "FIXINT" | "U8" | "U16" | "U32" | "U64";
