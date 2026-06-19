@@ -13,12 +13,12 @@ export class Bfr extends
         super(a as ValueBfr, subtype);
 
         if (Bfr.isSubtypeValid(subtype)) this.#subtype = subtype;
-        else throw new MpError.InvalidSubtype(this, "constructor" as any, subtype);
+        else throw new MpError.InvalidSubtype(this, "constructor", subtype);
 
         const value = a;
 
         if (Bfr.isValueValid(value, subtype)) this.#value = value;
-        else throw new MpError.InvalidValue(this, "constructor" as any);
+        else throw new MpError.InvalidValue(this, "constructor");
     }
 
     override get value(): ValueBfr {
@@ -27,7 +27,7 @@ export class Bfr extends
 
     override set value(value: ValueBfr) {
         if (Bfr.isValueValid(value)) this.#value = value;
-        else throw new MpError.InvalidValue(this, "value" as any);
+        else throw new MpError.InvalidValue(this, "value");
     }
 
     get subtype(): SubtypeBfr {
@@ -36,7 +36,7 @@ export class Bfr extends
 
     set subtype(subtype: SubtypeBfr) {
         if (Bfr.isSubtypeValid(subtype)) this.#subtype = subtype;
-        else throw new MpError.InvalidSubtype(this, "subtype" as any, subtype);
+        else throw new MpError.InvalidSubtype(this, "subtype", subtype);
     }
 
     override encode(): Uint8Array {

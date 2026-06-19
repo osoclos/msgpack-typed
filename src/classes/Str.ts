@@ -16,13 +16,13 @@ export class Str extends
         super(a as ValueStr, subtype);
 
         if (Str.isSubtypeValid(subtype)) this.#subtype = subtype;
-        else throw new MpError.InvalidSubtype(this, "constructor" as any, subtype);
+        else throw new MpError.InvalidSubtype(this, "constructor", subtype);
 
         if (typeof a === "string") {
             const value = a;
 
             if (Str.isValueValid(value, subtype)) this.#value = Str.#encoder.encode(value);
-            else throw new MpError.InvalidValue(this, "constructor" as any);
+            else throw new MpError.InvalidValue(this, "constructor");
 
             return;
         }
@@ -32,7 +32,7 @@ export class Str extends
         const value = Str.#decoder.decode(bfr);
 
         if (Str.isValueValid(value, subtype)) this.#value = Str.#encoder.encode(value);
-        else throw new MpError.InvalidValue(this, "constructor" as any);
+        else throw new MpError.InvalidValue(this, "constructor");
     }
 
     static {
@@ -46,7 +46,7 @@ export class Str extends
 
     override set value(value: ValueStr) {
         if (Str.isValueValid(value)) this.#value = Str.#encoder.encode(value);
-        else throw new MpError.InvalidValue(this, "value" as any);
+        else throw new MpError.InvalidValue(this, "value");
     }
 
     get subtype(): SubtypeStr {
@@ -55,7 +55,7 @@ export class Str extends
 
     set subtype(subtype: SubtypeStr) {
         if (Str.isSubtypeValid(subtype)) this.#subtype = subtype;
-        else throw new MpError.InvalidSubtype(this, "subtype" as any, subtype);
+        else throw new MpError.InvalidSubtype(this, "subtype", subtype);
     }
 
     override encode(): Uint8Array {

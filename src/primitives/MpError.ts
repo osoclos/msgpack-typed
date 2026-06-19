@@ -1,4 +1,4 @@
-import type { ConstructorChild, ExtractMethodNames } from "../utils";
+import type { ConstructorChild } from "../utils";
 import type { MpClassInterface, MpClassModule, MpClassInterfaceSubtyped, MpClassModuleSubtyped } from "./MpClass";
 
 export const MpError = {
@@ -8,18 +8,18 @@ export const MpError = {
                 MpClassInterface<unknown> |
                 MpClassInterfaceSubtyped<unknown, string>,
 
-            nameMethod:
-                ExtractMethodNames<
-                    MpClassInterface<unknown> | MpClassModule<unknown> |
-                    MpClassInterfaceSubtyped<unknown, string> | MpClassModuleSubtyped<unknown, string>
-                >
+            nameMethod: Omit<
+                keyof MpClassInterface<unknown> | keyof MpClassModule<unknown> |
+                keyof MpClassInterfaceSubtyped<unknown, string> | keyof MpClassModuleSubtyped<unknown, string> |
+                "constructor" | `Symbol.${keyof typeof Symbol}`
+            , symbol>
         ) {
             const nameCls = instance[Symbol.toStringTag];
 
             let cause: string;
             switch (nameMethod) {
-                case "constructor" as any: { cause = `Tried to create ${nameCls} with an invalid value.`; break; }
-                case "value" as any: { cause = `Tried to assign a new value in ${nameCls} with an invalid value.`; break; }
+                case "constructor": { cause = `Tried to create ${nameCls} with an invalid value.`; break; }
+                case "value": { cause = `Tried to assign a new value in ${nameCls} with an invalid value.`; break; }
 
                 case "value2Subtype": { cause = `Tried to match an invalid value to a subtype in ${nameCls}.`; break; }
 
@@ -36,11 +36,11 @@ export const MpError = {
                 MpClassInterface<unknown> |
                 MpClassInterfaceSubtyped<unknown, string>,
 
-            nameMethod:
-                ExtractMethodNames<
-                    MpClassInterface<unknown> | MpClassModule<unknown> |
-                    MpClassInterfaceSubtyped<unknown, string> | MpClassModuleSubtyped<unknown, string>
-                >,
+            nameMethod: Omit<
+                keyof MpClassInterface<unknown> | keyof MpClassModule<unknown> |
+                keyof MpClassInterfaceSubtyped<unknown, string> | keyof MpClassModuleSubtyped<unknown, string> |
+                "constructor" | `Symbol.${keyof typeof Symbol}`
+            , symbol>,
 
             code: number
         ) {
@@ -60,13 +60,21 @@ export const MpError = {
     },
 
     InvalidSubtype: class extends Error {
-        constructor(instance: MpClassInterfaceSubtyped<unknown, string>, nameMethod: ExtractMethodNames<MpClassInterfaceSubtyped<unknown, string> | MpClassModuleSubtyped<unknown, string>>, subtype: string) {
+        constructor(
+            instance: MpClassInterfaceSubtyped<unknown, string>,
+            nameMethod: Omit<
+                keyof MpClassInterfaceSubtyped<unknown, string> | keyof MpClassModuleSubtyped<unknown, string> |
+                "constructor" | `Symbol.${keyof typeof Symbol}`
+            , symbol>,
+
+            subtype: string
+        ) {
             const nameCls = instance[Symbol.toStringTag];
 
             let cause: string;
             switch (nameMethod) {
-                case "constructor" as any: { cause = `Tried to create ${nameCls} with subtype "${subtype}".`; break; }
-                case "subtype" as any: { cause = `Tried to assign an invalid subtype "${subtype}" in ${nameCls}.`; break; }
+                case "constructor": { cause = `Tried to create ${nameCls} with subtype "${subtype}".`; break; }
+                case "subtype": { cause = `Tried to assign an invalid subtype "${subtype}" in ${nameCls}.`; break; }
 
                 default: { cause = "Unknown Reason"; break; }
             }
@@ -81,11 +89,11 @@ export const MpError = {
                 MpClassInterface<unknown> |
                 MpClassInterfaceSubtyped<unknown, string>,
 
-            nameMethod:
-                ExtractMethodNames<
-                    MpClassInterface<unknown> | MpClassModule<unknown> |
-                    MpClassInterfaceSubtyped<unknown, string> | MpClassModuleSubtyped<unknown, string>
-                >
+            nameMethod: Omit<
+                keyof MpClassInterface<unknown> | keyof MpClassModule<unknown> |
+                keyof MpClassInterfaceSubtyped<unknown, string> | keyof MpClassModuleSubtyped<unknown, string> |
+                "constructor" | `Symbol.${keyof typeof Symbol}`
+            , symbol>
         ) {
             let cause: string;
             switch (nameMethod) {
@@ -103,11 +111,11 @@ export const MpError = {
                 MpClassInterface<unknown> |
                 MpClassInterfaceSubtyped<unknown, string>,
 
-            nameMethod:
-                ExtractMethodNames<
-                    MpClassInterface<unknown> | MpClassModule<unknown> |
-                    MpClassInterfaceSubtyped<unknown, string> | MpClassModuleSubtyped<unknown, string>
-                >,
+            nameMethod: Omit<
+                keyof MpClassInterface<unknown> | keyof MpClassModule<unknown> |
+                keyof MpClassInterfaceSubtyped<unknown, string> | keyof MpClassModuleSubtyped<unknown, string> |
+                "constructor" | `Symbol.${keyof typeof Symbol}`
+            , symbol>,
 
             lenExpected: number,
             lenActual: number
@@ -130,11 +138,11 @@ export const MpError = {
                 MpClassInterface<unknown> |
                 MpClassInterfaceSubtyped<unknown, string>,
 
-            nameMethod:
-                ExtractMethodNames<
-                    MpClassInterface<unknown> | MpClassModule<unknown> |
-                    MpClassInterfaceSubtyped<unknown, string> | MpClassModuleSubtyped<unknown, string>
-                >
+            nameMethod: Omit<
+                keyof MpClassInterface<unknown> | keyof MpClassModule<unknown> |
+                keyof MpClassInterfaceSubtyped<unknown, string> | keyof MpClassModuleSubtyped<unknown, string> |
+                "constructor" | `Symbol.${keyof typeof Symbol}`
+            , symbol>
         ) {
             const nameCls = instance[Symbol.toStringTag];
             super(`${nameCls}::${nameMethod} does not have an implementation!`);

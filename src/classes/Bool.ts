@@ -12,7 +12,7 @@ export class Bool extends MpClass<ValueBool>() {
             const value = a;
 
             if (Bool.isValueValid(value)) this.#value = value;
-            else throw new MpError.InvalidValue(this, "constructor" as any);
+            else throw new MpError.InvalidValue(this, "constructor");
 
             return;
         }
@@ -22,7 +22,7 @@ export class Bool extends MpClass<ValueBool>() {
         const value = bfr[0]! !== 0x00;
 
         if (Bool.isValueValid(value)) this.#value = value;
-        else throw new MpError.InvalidValue(this, "constructor" as any);
+        else throw new MpError.InvalidValue(this, "constructor");
     }
 
     override get value(): ValueBool {
@@ -31,7 +31,7 @@ export class Bool extends MpClass<ValueBool>() {
 
     override set value(value: ValueBool) {
         if (Bool.isValueValid(value)) this.#value = value;
-        else throw new MpError.InvalidValue(this, "value" as any);
+        else throw new MpError.InvalidValue(this, "value");
     }
 
     override encode(): Uint8Array {

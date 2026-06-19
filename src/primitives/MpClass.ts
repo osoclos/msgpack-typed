@@ -48,11 +48,11 @@ export const MpClass = <V>(): MpClassModule<V> => class MpClass implements MpCla
     constructor(_a?: V | Uint8Array) {}
 
     get value(): V {
-        throw new MpError.NoImpl(this, "value" as any);
+        throw new MpError.NoImpl(this, "value");
     }
 
     set value(_value: V) {
-        throw new MpError.NoImpl(this, "value" as any);
+        throw new MpError.NoImpl(this, "value");
     }
 
     encode(): Uint8Array {
@@ -80,7 +80,7 @@ export const MpClass = <V>(): MpClassModule<V> => class MpClass implements MpCla
     }
 
     get [Symbol.toStringTag](): string {
-        throw new MpError.NoImpl(this, "Symbol.toStringTag" as any);
+        throw new MpError.NoImpl(this, "Symbol.toStringTag");
     }
 };
 
@@ -92,11 +92,11 @@ export const MpClassSubtyped = <V, T extends string>(): MpClassModuleSubtyped<V,
     }
 
     get subtype(): T {
-        throw new MpError.NoImpl(this, "subtype" as any);
+        throw new MpError.NoImpl(this, "subtype");
     }
 
     set subtype(_subtype: T) {
-        throw new MpError.NoImpl(this, "subtype" as any);
+        throw new MpError.NoImpl(this, "subtype");
     }
 
     static value2Subtype(_value: V): T {

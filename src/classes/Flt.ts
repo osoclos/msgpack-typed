@@ -13,13 +13,13 @@ export class Flt extends
         super(a as ValueFlt, subtype);
 
         if (Flt.isSubtypeValid(subtype)) this.#subtype = subtype;
-        else throw new MpError.InvalidSubtype(this, "constructor" as any, subtype);
+        else throw new MpError.InvalidSubtype(this, "constructor", subtype);
 
         if (typeof a === "number") {
             const value = a;
 
             if (Flt.isValueValid(value, subtype)) this.#value = value;
-            else throw new MpError.InvalidValue(this, "constructor" as any);
+            else throw new MpError.InvalidValue(this, "constructor");
 
             return;
         }
@@ -32,7 +32,7 @@ export class Flt extends
         const value = len > 4 ? view.getFloat64(0) : view.getFloat32(0);
 
         if (Flt.isValueValid(value, subtype)) this.#value = value;
-        else throw new MpError.InvalidValue(this, "constructor" as any);
+        else throw new MpError.InvalidValue(this, "constructor");
     }
 
     override get value(): ValueFlt {
@@ -41,7 +41,7 @@ export class Flt extends
 
     override set value(value: ValueFlt) {
         if (Flt.isValueValid(value)) this.#value = value;
-        else throw new MpError.InvalidValue(this, "value" as any);
+        else throw new MpError.InvalidValue(this, "value");
     }
 
     get subtype(): SubtypeFlt {
@@ -50,7 +50,7 @@ export class Flt extends
 
     set subtype(subtype: SubtypeFlt) {
         if (Flt.isSubtypeValid(subtype)) this.#subtype = subtype;
-        else throw new MpError.InvalidSubtype(this, "subtype" as any, subtype);
+        else throw new MpError.InvalidSubtype(this, "subtype", subtype);
     }
 
     override encode(): Uint8Array {

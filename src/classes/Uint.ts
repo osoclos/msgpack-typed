@@ -13,7 +13,7 @@ export class Uint extends
         super(a as ValueUint, subtype);
 
         if (Uint.isSubtypeValid(subtype)) this.#subtype = subtype;
-        else throw new MpError.InvalidSubtype(this, "constructor" as any, subtype);
+        else throw new MpError.InvalidSubtype(this, "constructor", subtype);
 
         if (
             typeof a === "number" ||
@@ -22,7 +22,7 @@ export class Uint extends
             const value = a;
 
             if (Uint.isValueValid(value, subtype)) this.#value = value;
-            else throw new MpError.InvalidValue(this, "constructor" as any);
+            else throw new MpError.InvalidValue(this, "constructor");
 
             return;
         }
@@ -81,7 +81,7 @@ export class Uint extends
         }
 
         if (Uint.isValueValid(value, subtype)) this.#value = value;
-        else throw new MpError.InvalidValue(this, "constructor" as any);
+        else throw new MpError.InvalidValue(this, "constructor");
     }
 
     override get value(): ValueUint {
@@ -90,7 +90,7 @@ export class Uint extends
 
     override set value(value: ValueUint) {
         if (Uint.isValueValid(value)) this.#value = value;
-        else throw new MpError.InvalidValue(this, "value" as any);
+        else throw new MpError.InvalidValue(this, "value");
     }
 
     get subtype(): SubtypeUint {
@@ -99,7 +99,7 @@ export class Uint extends
 
     set subtype(subtype: SubtypeUint) {
         if (Uint.isSubtypeValid(subtype)) this.#subtype = subtype;
-        else throw new MpError.InvalidSubtype(this, "subtype" as any, subtype);
+        else throw new MpError.InvalidSubtype(this, "subtype", subtype);
     }
 
     override encode(): Uint8Array {
