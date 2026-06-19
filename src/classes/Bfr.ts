@@ -97,7 +97,7 @@ export class Bfr extends
 
         const iCode = indices[0];
 
-        const iDataStart = indices[1 + +hasLenIdx /* hasLenIdx ? 2 : 1 */];
+        const iDataStart = indices[1 + +hasLenIdx /* hasLenIdx ? 2 : 1 */]!;
         const iDataEnd   = indices[2 + +hasLenIdx /* hasLenIdx ? 3 : 2 */]!;
 
         if (iDataEnd > chunk.byteLength) throw new MpError.TruncatedChunk(this.name, "DECODING", iDataEnd, chunk.byteLength);
