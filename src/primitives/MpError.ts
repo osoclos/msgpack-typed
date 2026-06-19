@@ -5,17 +5,17 @@ export const MpError = {
         constructor(nameCls: string, nameReason: "CONSTRUCTOR" | "ASSIGNMENT" | "ENCODING" | "MAP_SUBTYPE") {
             let cause: string;
             switch (nameReason) {
-                case "CONSTRUCTOR": { cause = `Tried to create ${nameCls} with an invalid value.`; break; }
-                case "ASSIGNMENT": { cause = `Tried to assign an invalid value in ${nameCls}.`; break; }
+                case "CONSTRUCTOR": { cause = `Tried to create \`${nameCls}\` with an invalid value.`; break; }
+                case "ASSIGNMENT": { cause = `Tried to assign an invalid value in \`${nameCls}\`.`; break; }
 
-                case "ENCODING": { cause = `Invalid value used when encoding ${nameCls}.`; break; }
+                case "ENCODING": { cause = `Invalid value used when encoding \`${nameCls}\`.`; break; }
 
-                case "MAP_SUBTYPE": { cause = `Tried to match an invalid value to a subtype in ${nameCls}.`; break; }
+                case "MAP_SUBTYPE": { cause = `Tried to match an invalid value to a subtype in \`${nameCls}\`.`; break; }
 
                 default: { cause = "Unknown Reason"; break; }
             }
 
-            super(`Invalid value was used in ${nameCls}.`, { cause });
+            super(`Invalid value was used in \`${nameCls}\`.`, { cause });
         }
     },
 
@@ -28,13 +28,13 @@ export const MpError = {
 
             let cause: string;
             switch (nameReason) {
-                case "MAP_SUBTYPE": { cause = `Tried to match an unsupported code ${codeHex} to a subtype in ${nameCls}.`; break; }
-                case "UNSUPPORTED": { cause = `Unsupported code ${codeHex} was found in chunk header supposedly for ${nameCls}.`; break; }
+                case "MAP_SUBTYPE": { cause = `Tried to match an unsupported code ${codeHex} to a subtype in \`${nameCls}\`.`; break; }
+                case "UNSUPPORTED": { cause = `Unsupported code ${codeHex} was found in chunk header supposedly for \`${nameCls}\`.`; break; }
 
                 default: { cause = "Unknown Reason"; break; }
             }
 
-            super(`Code ${codeHex} does not satisfy the range of codes that ${nameCls} supports.`, { cause });
+            super(`Code ${codeHex} does not satisfy the range of codes that \`${nameCls}\` supports.`, { cause });
         }
     },
 
@@ -42,13 +42,13 @@ export const MpError = {
         constructor(nameCls: string, nameReason: "CONSTRUCTOR" | "ASSIGNMENT", subtype: string) {
             let cause: string;
             switch (nameReason) {
-                case "CONSTRUCTOR": { cause = `Tried to create ${nameCls} with subtype "${subtype}".`; break; }
-                case "ASSIGNMENT": { cause = `Tried to assign an invalid subtype "${subtype}" in ${nameCls}.`; break; }
+                case "CONSTRUCTOR": { cause = `Tried to create \`${nameCls}\` with subtype "${subtype}".`; break; }
+                case "ASSIGNMENT": { cause = `Tried to assign an invalid subtype "${subtype}" in \`${nameCls}\`.`; break; }
 
                 default: { cause = "Unknown Reason"; break; }
             }
 
-            super(`Subtype "${subtype}" does not exist in ${nameCls}.`, { cause });
+            super(`Subtype "${subtype}" does not exist in \`${nameCls}\`.`, { cause });
         }
     },
 
@@ -60,7 +60,7 @@ export const MpError = {
                 default: { cause = "Unknown Reason"; break; }
             }
 
-            super(`Chunk for ${nameCls} has a missing header code.`, { cause });
+            super(`Chunk for \`${nameCls}\` has a missing header code.`, { cause });
         }
     },
 
@@ -68,7 +68,7 @@ export const MpError = {
         constructor(nameCls: string, nameReason: "DECODING", lenExpected: number, lenActual: number) {
             let cause: string;
             switch (nameReason) {
-                case "DECODING": { cause = `Tried to decode a chunk for ${nameCls}.`; break; }
+                case "DECODING": { cause = `Tried to decode a chunk for \`${nameCls}\`.`; break; }
                 default: { cause = "Unknown Reason"; break; }
             }
 
@@ -78,7 +78,7 @@ export const MpError = {
 
     NoImpl: class extends Error {
         constructor(nameCls: string, nameReason: string) {
-            super(`${nameCls}::${nameReason} does not have an implementation!`);
+            super(`\`${nameCls}::${nameReason}\` does not have an implementation!`);
         }
     }
 } satisfies Record<string, ConstructorChild<Error>>;
