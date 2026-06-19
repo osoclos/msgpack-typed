@@ -309,10 +309,10 @@ export class Int extends
             ];
 
         /* match code:
-         *     case 0xcc: len = 1 // I8
-         *     case 0xcd: len = 2 // I16
-         *     case 0xce: len = 4 // I32
-         *     case 0xcf: len = 8 // I64
+         *     case 0xd0: len = 1 // I8
+         *     case 0xd1: len = 2 // I16
+         *     case 0xd2: len = 4 // I32
+         *     case 0xd3: len = 8 // I64
          */
         const len = 0b1 << (code - 0xd0);
 

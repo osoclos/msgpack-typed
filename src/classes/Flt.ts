@@ -149,8 +149,8 @@ export class Flt extends
         if (!subtype) throw new MpError.InvalidCode(this.prototype, "deriveChunkIndices", code);
 
         /* match code:
-         *     case 0xce: len = 4 // F32
-         *     case 0xcf: len = 8 // F64
+         *     case 0xca: len = 4 // F32
+         *     case 0xcb: len = 8 // F64
          */
         const len = 0b100 << (code - 0xca);
 
