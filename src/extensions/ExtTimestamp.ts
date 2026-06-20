@@ -4,7 +4,7 @@ import { Ext } from "./Ext";
 export class ExtTimestamp extends Ext<DateConstructor, -1> {
     /** Creates an extension to allow Date objects to be parsed as MessagePack chunks. */
     constructor() {
-        super(-1);
+        super([-1]);
     }
 
     override encode(date: Date): [Uint8Array, -1] {

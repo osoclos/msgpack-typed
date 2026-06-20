@@ -3,18 +3,10 @@ import type { Constructor } from "../internal";
 
 /** A parser for custom classes, representing the `fixext` and `ext` format families in the MessagePack specification. */
 export abstract class Ext<T extends Constructor<unknown>, C extends number, S extends boolean = false> {
-    #codes: C[];
+    #codes: Set<C>;
 
-    protected constructor(codes: C | C[]) {
-        this.#codes = Array.isArray(codes) ? [...codes] : [codes];
-    }
-
-    /** Checks whether a code is being used by the extension. */
-    isUsingCode(code: number): code is C;
-    isUsingCode(codes: number[]): codes is C[];
-    isUsingCode(codes: number | number[]): codes is C | C[] {
-        if (typeof codes === "number") codes = [codes];
-        return codes.every((code) => this.#codes.includes(code as C));
+    protected constructor(codes: C[]) {
+        this.#codes = new Set(codes);
     }
 
     /** Serialises data passed into the extension and converts it into a data buffer that will be later appended with additional header data to transform it into a MessagePack chunk. */
@@ -36,7 +28,7 @@ export abstract class Ext<T extends Constructor<unknown>, C extends number, S ex
 
     /** Checks whether a extension header code is supported by this extension. */
     isCodeValid(code: number): code is C {
-        return this.#codes.includes(code as C);
+        return this.#codes.has(code as C);
     }
 
     /** Determines whether to treat the given chunk as raw buffer data and skip extension header decoding. Useful if you are dealing with raw buffer data instead of extension chunk data. */

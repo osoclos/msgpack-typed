@@ -121,9 +121,11 @@ export const LZ4Compression = {
         if (ExtUtils.isChunkValid(chunk)) {
             const payload = ExtUtils.decodeRaw(chunk)[0];
 
-            const iBlockStart = Int.deriveChunkIndices(payload).pop()!;
+            const indices = Int.deriveChunkIndices(payload);
 
+            const iBlockStart = indices[indices.length - 1]!;
             const block = payload.subarray(iBlockStart);
+
             const len = block.byteLength;
 
             lz4Block.growPreDecode(len);
@@ -148,29 +150,36 @@ export const LZ4Compression = {
             const hasLenStartIdx = indices.length === 4;
             const iSubchunks = indices[1 + +hasLenStartIdx /* hasLenStartIdx ? 2 : 1 */] as number[];
 
-            const subchunkExt = chunk.subarray(iSubchunks.shift()!);
+            const iExt = iSubchunks[0]!;
+            const subchunkExt = chunk.subarray(iExt);
 
             const subchunksLengthsOrig = ExtUtils.decodeRaw(subchunkExt)[0];
 
             const lengthsOrig: number[] = [];
+            let bfrLen: number = 0;
+
             for (let i: number = 0; i < subchunksLengthsOrig.byteLength;) {
                 const subchunk = subchunksLengthsOrig.subarray(i);
 
-                const subchunkLen = Int.deriveChunkIndices(subchunk).pop()!;
+                const indices = Int.deriveChunkIndices(subchunk);
+
+                const subchunkLen = indices[indices.length - 1]!;
 
                 const lenOrig = Int.decode(subchunk).value as number;
                 lengthsOrig.push(lenOrig);
 
                 i += subchunkLen;
+                bfrLen += lenOrig;
             }
 
-            const blocks: Uint8Array[] = [];
-            let blocksLen: number = 0;
+            const nBlocks = iSubchunks.length - 1;
+            if (nBlocks !== lengthsOrig.length) warn("MISMATCHED_DATA_BLOCK_COUNT", lengthsOrig.length, nBlocks);
 
+            const bfrDecoded = new Uint8Array(bfrLen);
             let memLz4 = new Uint8Array(lz4Block.memory.buffer);
 
-            for (let i: number = 0; i < iSubchunks.length; i++) {
-                const subchunk = chunk.subarray(iSubchunks[i]);
+            for (let iSubchunk: number = 1, iBfr: number = 0; iSubchunk < iSubchunks.length; iSubchunk++) {
+                const subchunk = chunk.subarray(iSubchunks[iSubchunk]);
 
                 const bfr = Bfr.decode(subchunk).value;
                 const len = bfr.byteLength;
@@ -185,27 +194,13 @@ export const LZ4Compression = {
 
                 const lenUnpacked = iOutEnd - iOutStart;
 
-                const lenOrig = lengthsOrig[i]!;
+                const lenOrig = lengthsOrig[iSubchunk - 1]!;
                 if (lenUnpacked !== lenOrig) warn("MISMATCHED_LENGTH_CHECK", lenOrig, lenUnpacked);
 
-                const block = memLz4.slice(iOutStart, iOutEnd);
+                const block = memLz4.subarray(iOutStart, iOutEnd);
 
-                blocks.push(block);
-                blocksLen += lenUnpacked;
-            }
-
-            if (blocks.length !== lengthsOrig.length) {
-                warn("MISMATCHED_DATA_BLOCK_COUNT", lengthsOrig.length, blocks.length);
-                if (blocks.length > lengthsOrig.length) blocks.splice(lengthsOrig.length);
-            }
-
-            const bfrDecoded = new Uint8Array(blocksLen);
-
-            for (let iBlock: number = 0, iLen: number = 0; iBlock < blocks.length; iBlock++) {
-                const block = blocks[iBlock]!;
-
-                bfrDecoded.set(block, iLen);
-                iLen += block.byteLength;
+                bfrDecoded.set(block, iBfr);
+                iBfr += lenUnpacked;
             }
 
             return bfrDecoded;
@@ -233,10 +228,12 @@ export const LZ4Compression = {
             const hasLenStartIdx = indices.length === 4;
             const iSubchunks = indices[1 + +hasLenStartIdx /* hasLenStartIdx ? 2 : 1 */]! as number[];
 
-            const chunkExt = chunk.subarray(iSubchunks.shift());
-            if (!ExtUtils.isChunkValid(chunkExt)) return false;
+            const iExt = iSubchunks[0]!;
+            const subchunkExt = chunk.subarray(iExt);
 
-            const resDecodedExt = ExtUtils.decodeRaw(chunk);
+            if (!ExtUtils.isChunkValid(subchunkExt)) return false;
+
+            const resDecodedExt = ExtUtils.decodeRaw(subchunkExt);
 
             const codeExt = resDecodedExt[1];
             if (codeExt !== 0x62) return false;
@@ -248,12 +245,18 @@ export const LZ4Compression = {
 
                 if (!Int.isChunkValid(subchunkLen)) return false;
 
-                const lenLen = Int.deriveChunkIndices(subchunkLen).pop()!;
+                const indices = Int.deriveChunkIndices(subchunkLen);
+
+                const lenLen = indices[indices.length - 1]!;
                 i += lenLen;
             }
 
-            for (const i of iSubchunks)
-                if (!Bfr.isChunkValid(chunk.subarray(i))) return false;
+            for (let iSubchunk: number = 1; iSubchunk < iSubchunks.length; iSubchunk++) {
+                const i = iSubchunks[iSubchunk];
+
+                const block = chunk.subarray(i);
+                if (!Bfr.isChunkValid(block)) return false;
+            }
 
             return true;
         }
