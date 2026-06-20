@@ -38,8 +38,8 @@ export function decodeAny<C extends unknown>(chunk: Uint8Array, b?: boolean | Ex
 
     if (Bfr.isCodeValid(code)) return Bfr.decode(chunk);
 
-    if (Arr.isCodeValid(code)) return Arr.decode(chunk);
-    if (Obj.isCodeValid(code)) return Obj.decode(chunk);
+    if (Arr.isCodeValid(code)) return Arr.decode(chunk, exts, doDecompression);
+    if (Obj.isCodeValid(code)) return Obj.decode(chunk, exts, doDecompression);
 
     throw new MpError.IncompatibleChunk("decodeAny", "DECODING");
 }

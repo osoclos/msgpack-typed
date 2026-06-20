@@ -4,19 +4,19 @@ import { MpError, type Constructor } from "../internal";
 /** An object to handle any extension-related features and helper functions to ease extension development and usage. */
 export const ExtUtils = {
     /** Serialises data and converts it into a parsable MessagePack chunk using a specified extension that supports it. */
-    encodeWith<T extends Constructor<unknown>>(ext: Ext<T, number, boolean>, data: T["prototype"]) {
-        if (!ext.isEncodable(data)) throw new MpError.InvalidValue("ExtUtils", "ENCODING");
+    encodeWith<T extends Constructor<unknown>>(ext: Ext<T, number, boolean>, value: T["prototype"]) {
+        if (!ext.isEncodable(value)) throw new MpError.InvalidValue("ExtUtils", "ENCODING");
 
-        const [extData, extCode] = ext.encode(data);
-        return this.encodeRaw(extData, extCode);
+        const [payload, extCode] = ext.encode(value);
+        return this.encodeRaw(payload, extCode);
     },
 
     /** Converts a buffer containing data into a parsable MessagePack chunk given an extension code. Useful if you already have custom data in byte form. */
-    encodeRaw(data: Uint8Array, extCode: number) {
+    encodeRaw(payload: Uint8Array, extCode: number) {
         let code: number;
         let lenLen: number;
 
-        const len = data.byteLength;
+        const len = payload.byteLength;
 
         // FIXEXT
         switch (len) {
@@ -93,8 +93,8 @@ export const ExtUtils = {
             }
 
             case 2: {
-                chunk[1] = len    >>> 8;
-                chunk[2] = len /* >>> 0 */;
+                chunk[1] = (len    >>> 8)   & 0xff;
+                chunk[2] =  len /* >>> 0 */ & 0xff;
 
                 break;
             }
@@ -108,7 +108,7 @@ export const ExtUtils = {
         }
 
         chunk[1 + lenLen] = extCode;
-        chunk.set(data, 1 + lenLen + 1);
+        chunk.set(payload, 1 + lenLen + 1);
 
         return chunk;
     },
@@ -128,10 +128,10 @@ export const ExtUtils = {
 
         if (!ext.skipHeaderDecoding(subChunk)) return ext.decode(subChunk, null!);
 
-        const [data, extCode] = this.decodeRaw(subChunk);
+        const [payload, extCode] = this.decodeRaw(subChunk);
         if (!ext.isCodeValid(extCode)) throw new MpError.IncompatibleChunk("ExtUtils", "INVALID_CODE");
 
-        return ext.decode(data, extCode);
+        return ext.decode(payload, extCode);
     },
 
     /** Converts a MessagePack chunk assumed to be in the `fixext`/`ext` format family and parses it as a pair of an extension code and the data buffer that came with the chunk. */
@@ -143,12 +143,12 @@ export const ExtUtils = {
         const iExtCode = indices[1 + +hasLenStartIdx /* hasLenStartIdx ? 2 : 1 */]!;
         const extCode = chunk[iExtCode]!;
 
-        const iDataStart = indices[2 + +hasLenStartIdx /* hasLenStartIdx ? 3 : 2 */]!;
-        const iDataEnd   = indices[3 + +hasLenStartIdx /* hasLenStartIdx ? 4 : 3 */]!;
+        const iPayloadStart = indices[2 + +hasLenStartIdx /* hasLenStartIdx ? 3 : 2 */]!;
+        const iPayloadEnd   = indices[3 + +hasLenStartIdx /* hasLenStartIdx ? 4 : 3 */]!;
 
-        if (iDataEnd > chunk.byteLength) throw new MpError.TruncatedChunk("ExtUtils", "DECODING", iDataEnd, chunk.byteLength);
+        if (iPayloadEnd > chunk.byteLength) throw new MpError.TruncatedChunk("ExtUtils", "DECODING", iPayloadEnd, chunk.byteLength);
 
-        return [chunk.subarray(iDataStart, iDataEnd), extCode];
+        return [chunk.subarray(iPayloadStart, iPayloadEnd), extCode];
     },
 
     /** Checks whether a chunk header code is supported by `Ext`. */
@@ -198,8 +198,8 @@ export const ExtUtils = {
 
                 1 /* iExtCode */,
 
-                1 + 1 /* iDataStart */,
-                1 + 1 + len /* iDataEnd */
+                1 + 1 /* iPayloadStart */,
+                1 + 1 + len /* iPayloadEnd */
             ];
         }
 
@@ -211,10 +211,31 @@ export const ExtUtils = {
          *     case 0xc9: lenLen = 4
          */
         const lenLen = 0b1 << (code - 0xc7);
-        const maxLenLen = chunk.byteLength < lenLen ? chunk.byteLength : lenLen;
 
-        let len: number = 0;
-        for (let i: number = 1 /* iLenStart */, iByte: number = 0; iByte < maxLenLen; i++, iByte++) len = (len << 8) | chunk[i]!;
+        let len: number;
+        switch (lenLen) {
+            case 1: {
+                len = chunk[1]!;
+                break;
+            }
+
+            case 2: {
+                len =
+                    (chunk[1]!    << 8) |
+                     chunk[2]! /* << 0 */;
+
+                break;
+            }
+
+            case 4: {
+                const view = new DataView(chunk.buffer);
+
+                len = view.getUint32(1);
+                break;
+            }
+
+            default: throw new MpError.InvalidCode("ExtUtils", "UNSUPPORTED", code);
+        }
 
         return [
             0 /* iCode */,
@@ -223,8 +244,8 @@ export const ExtUtils = {
 
             1 + lenLen /* iExtCode */,
 
-            1 + lenLen + 1 /* iDataStart */,
-            1 + lenLen + 1 + len /* iDataEnd */
+            1 + lenLen + 1 /* iPayloadStart */,
+            1 + lenLen + 1 + len /* iPayloadEnd */
         ];
     }
 };
