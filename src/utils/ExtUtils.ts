@@ -1,7 +1,5 @@
 import { Ext } from "../extensions";
-import { MpError } from "../primitives";
-
-import type { Constructor } from "./Constructor";
+import { MpError, type Constructor } from "../internal";
 
 /** An object to handle any extension-related features and helper functions to ease extension development and usage. */
 export const ExtUtils = {
@@ -122,11 +120,13 @@ export const ExtUtils = {
 
         let subChunk: Uint8Array;
         if (Array.isArray(decodableRes)) {
-            const [iStart, iEnd] = decodableRes;
+            const iStart = decodableRes[0];
+            const iEnd   = decodableRes[1];
+
             subChunk = chunk.subarray(iStart, iEnd);
         } else subChunk = chunk;
 
-        if (!ext.skipHeaderDecoding(subChunk)) return ext.decode(subChunk, null as unknown as number);
+        if (!ext.skipHeaderDecoding(subChunk)) return ext.decode(subChunk, null!);
 
         const [data, extCode] = this.decodeRaw(subChunk);
         if (!ext.isCodeValid(extCode)) throw new MpError.IncompatibleChunk("ExtUtils", "INVALID_CODE");

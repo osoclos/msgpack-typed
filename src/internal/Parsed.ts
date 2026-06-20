@@ -1,3 +1,4 @@
+import type { ValueFlt, ValueInt, ValueStr, ValueUint } from "../classes";
 import type { MpClassInterface } from "./MpClass";
 
 export type Parsed<T> =
@@ -6,9 +7,7 @@ export type Parsed<T> =
     T extends readonly (infer I)[]
         ? Parsed<I>[] :
     T extends Map<infer K, infer V>
-        ? Map<Parsed<K>, Parsed<V>> :
-    T extends Record<infer K, infer T>
-        ? K extends symbol
-            ? never
-            : Record<K, Parsed<T>>
+        ? Parsed<K> extends Exclude<ValueStr | ValueUint | ValueInt | ValueFlt, bigint>
+            ? Record<Parsed<K>, Parsed<T>>
+            : Map<Parsed<K>, Parsed<V>>
         : T;
