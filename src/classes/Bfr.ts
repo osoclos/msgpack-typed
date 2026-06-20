@@ -207,10 +207,30 @@ export class Bfr extends MpClassSubtyped<ValueBfr, SubtypeBfr>() {
          */
         const lenLen = 0b1 << (code - 0xc4);
 
-        const maxLenLen = chunk.byteLength < lenLen ? chunk.byteLength : lenLen;
+        let len: number;
+        switch (lenLen) {
+            case 1: {
+                len = chunk[1]!;
+                break;
+            }
 
-        let len: number = 0;
-        for (let i: number = 1 /* iLenStart */, iByte: number = 0; iByte < maxLenLen; i++, iByte++) len = (len << 8) | chunk[i]!;
+            case 2: {
+                len =
+                    (chunk[1]!    << 8) |
+                     chunk[2]! /* << 0 */;
+
+                break;
+            }
+
+            case 4: {
+                const view = new DataView(chunk.buffer);
+
+                len = view.getUint32(1);
+                break;
+            }
+
+            default: throw new MpError.InvalidCode("ExtUtils", "UNSUPPORTED", code);
+        }
 
         return [
             0 /* iCode */,
