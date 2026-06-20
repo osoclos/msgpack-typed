@@ -9,16 +9,18 @@ export interface MpClassInterface<V> {
     get [Symbol.toStringTag](): string;
 }
 
-export type MpClassInterfaceSubtyped<V, T extends string> = MpClassInterface<V> & {
+export interface MpClassInterfaceSubtyped<V, T extends string> extends MpClassInterface<V> {
     get subtype(): T;
     set subtype(subtype: T);
-}
+};
 
 export interface MpClassModule<V> {
     new (value?: V): MpClassInterface<V>;
     new (bfr: Uint8Array): MpClassInterface<V>;
 
     decode(chunk: Uint8Array): MpClassInterface<V>;
+
+    value2LenEncoded?(value?: V): number;
 
     isValueValid(value: unknown): value is V;
 
@@ -28,19 +30,24 @@ export interface MpClassModule<V> {
     deriveChunkIndices(chunk: Uint8Array): number[];
 }
 
-export type MpClassModuleSubtyped<V, T extends string> = MpClassModule<V> & {
+export interface MpClassModuleSubtyped<V, T extends string> extends MpClassModule<V> {
     new (value?: V, subtype?: T): MpClassInterfaceSubtyped<V, T>;
     new (bfr: Uint8Array, subtype?: T): MpClassInterfaceSubtyped<V, T>;
 
     value2Subtype(value: V): T;
     code2Subtype(code: number): T;
 
+    subtype2LenEncoded?(subtype: T): number;
+
     isValueValid(value: unknown, subtype?: T): value is V;
     isSubtypeValid(subtype: string): subtype is T;
 
+    isCodeValid(code: number): false;
     isCodeValid(code: number): T | false;
+
+    isChunkValid(chunk: Uint8Array): false;
     isChunkValid(chunk: Uint8Array): T | false;
-}
+};
 
 export const MpClass = <V>(): MpClassModule<V> => class MpClass implements MpClassInterface<V> {
     constructor(value?: V);
@@ -61,6 +68,10 @@ export const MpClass = <V>(): MpClassModule<V> => class MpClass implements MpCla
 
     static decode(_chunk: Uint8Array): MpClassInterface<V> {
         throw new MpError.NoImpl(this.name, "decode");
+    }
+
+    static value2LenEncoded(): number {
+        throw new MpError.NoImpl(this.name, "value2LenEncoded");
     }
 
     static isValueValid(_value: unknown): _value is V {
@@ -107,6 +118,10 @@ export const MpClassSubtyped = <V, T extends string>(): MpClassModuleSubtyped<V,
         throw new MpError.NoImpl(this.name, "code2Subtype");
     }
 
+    static subtype2LenEncoded(): number {
+        throw new MpError.NoImpl(this.name, "subtype2LenEncoded");
+    }
+
     static isSubtypeValid(_subtype: T): _subtype is T {
         throw new MpError.NoImpl(this.name, "isSubtypeValid");
     }
@@ -122,4 +137,4 @@ export const MpClassSubtyped = <V, T extends string>(): MpClassModuleSubtyped<V,
     static override isChunkValid(_chunk: Uint8Array): T | false {
         throw new MpError.NoImpl(this.name, "isChunkValid");
     }
-} satisfies MpClassModuleSubtyped<V, T>;
+};

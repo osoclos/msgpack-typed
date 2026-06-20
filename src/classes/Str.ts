@@ -49,11 +49,11 @@ export class Str extends
         else throw new MpError.InvalidValue(this[Symbol.toStringTag], "ASSIGNMENT");
     }
 
-    get subtype(): SubtypeStr {
+    override get subtype(): SubtypeStr {
         return this.#subtype;
     }
 
-    set subtype(subtype: SubtypeStr) {
+    override set subtype(subtype: SubtypeStr) {
         if (Str.isSubtypeValid(subtype)) this.#subtype = subtype;
         else throw new MpError.InvalidSubtype(this[Symbol.toStringTag], "ASSIGNMENT", subtype);
     }
@@ -161,6 +161,37 @@ export class Str extends
         }
 
         throw new MpError.InvalidCode(this.name, "MAP_SUBTYPE", code);
+    }
+
+    static override value2LenEncoded(value: SubtypeStr): number {
+        let lenEncoded: number;
+
+        const subtype = this.value2Subtype(value);
+        switch (subtype) {
+            case "FIXSTR": {
+                lenEncoded = 1;
+                break;
+            }
+
+            case "STR8": {
+                lenEncoded = 1 + 1;
+                break;
+            }
+
+            case "STR16": {
+                lenEncoded = 1 + 2;
+                break;
+            }
+
+            case "STR32": {
+                lenEncoded = 1 + 4;
+                break;
+            }
+        }
+
+        lenEncoded += Str.#encoder.encode(value).byteLength;
+
+        return lenEncoded;
     }
 
     static override isValueValid(value: unknown, subtype: SubtypeStr = "STR32"): value is ValueStr {

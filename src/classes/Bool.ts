@@ -52,6 +52,10 @@ export class Bool extends MpClass<ValueBool>() {
         return new Bool(value);
     }
 
+    static override value2LenEncoded(): number {
+        return 1;
+    }
+
     static override isValueValid(value: unknown): value is ValueBool {
         return typeof value === "boolean";
     }

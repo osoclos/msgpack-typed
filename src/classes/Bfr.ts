@@ -30,11 +30,11 @@ export class Bfr extends
         else throw new MpError.InvalidValue(this[Symbol.toStringTag], "ASSIGNMENT");
     }
 
-    get subtype(): SubtypeBfr {
+    override get subtype(): SubtypeBfr {
         return this.#subtype;
     }
 
-    set subtype(subtype: SubtypeBfr) {
+    override set subtype(subtype: SubtypeBfr) {
         if (Bfr.isSubtypeValid(subtype)) this.#subtype = subtype;
         else throw new MpError.InvalidSubtype(this[Symbol.toStringTag], "ASSIGNMENT", subtype);
     }
@@ -128,6 +128,32 @@ export class Bfr extends
         }
 
         throw new MpError.InvalidCode(this.name, "MAP_SUBTYPE", code);
+    }
+
+    static override value2LenEncoded(value: ValueBfr): number {
+        let lenEncoded: number;
+
+        const subtype = this.value2Subtype(value);
+        switch (subtype) {
+            case "BFR8": {
+                lenEncoded = 1 + 1;
+                break;
+            }
+
+            case "BFR16": {
+                lenEncoded = 1 + 2;
+                break;
+            }
+
+            case "BFR32": {
+                lenEncoded = 1 + 4;
+                break;
+            }
+        }
+
+        lenEncoded += value.byteLength;
+
+        return lenEncoded;
     }
 
     static override isValueValid(value: unknown, subtype: SubtypeBfr = "BFR32"): value is ValueBfr {

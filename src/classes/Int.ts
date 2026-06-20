@@ -95,11 +95,11 @@ export class Int extends
         else throw new MpError.InvalidValue(this[Symbol.toStringTag], "ASSIGNMENT");
     }
 
-    get subtype(): SubtypeInt {
+    override get subtype(): SubtypeInt {
         return this.#subtype;
     }
 
-    set subtype(subtype: SubtypeInt) {
+    override set subtype(subtype: SubtypeInt) {
         if (Int.isSubtypeValid(subtype)) this.#subtype = subtype;
         else throw new MpError.InvalidSubtype(this[Symbol.toStringTag], "ASSIGNMENT", subtype);
     }
@@ -230,6 +230,17 @@ export class Int extends
         }
 
         throw new MpError.InvalidCode(this.name, "MAP_SUBTYPE", code);
+    }
+
+    static override subtype2LenEncoded(subtype: SubtypeInt): number {
+        switch (subtype) {
+            case "FIXINT": return 1;
+
+            case "I8": return 1 + 1;
+            case "I16": return 1 + 2;
+            case "I32": return 1 + 4;
+            case "I64": return 1 + 8;
+        }
     }
 
     static override isValueValid(value: unknown, subtype: SubtypeInt = "I32"): value is ValueInt {

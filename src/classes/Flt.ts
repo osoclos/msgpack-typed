@@ -44,11 +44,11 @@ export class Flt extends
         else throw new MpError.InvalidValue(this[Symbol.toStringTag], "ASSIGNMENT");
     }
 
-    get subtype(): SubtypeFlt {
+    override get subtype(): SubtypeFlt {
         return this.#subtype;
     }
 
-    set subtype(subtype: SubtypeFlt) {
+    override set subtype(subtype: SubtypeFlt) {
         if (Flt.isSubtypeValid(subtype)) this.#subtype = subtype;
         else throw new MpError.InvalidSubtype(this[Symbol.toStringTag], "ASSIGNMENT", subtype);
     }
@@ -112,6 +112,13 @@ export class Flt extends
         }
 
         throw new MpError.InvalidCode(this.name, "MAP_SUBTYPE", code);
+    }
+
+    static override subtype2LenEncoded(subtype: SubtypeFlt): number {
+        switch (subtype) {
+            case "F32": return 1 + 4;
+            case "F64": return 1 + 8;
+        }
     }
 
     static override isValueValid(value: unknown, subtype: SubtypeFlt = "F64"): value is ValueFlt {
