@@ -431,8 +431,8 @@
         (local.get $p_out)
     )
 
-    ;; func grow_pre_encode(len: i32):
-    (func $grow_pre_encode (param $len i32)
+    ;; func grow_pre_encode(len: i32) -> i32:
+    (func $grow_pre_encode (param $len i32) (result i32)
         ;; _0 = len / I8_MAX
         (i32.div_u (local.get $len) (i32.const 0xff (; I8_MAX ;)))
 
@@ -445,21 +445,21 @@
         ;; _0_max_total_size = _0_max_decoded_size + len
         (i32.add (; _0_max_decoded_size ;) (local.get $len))
 
-        ;; grow_to_fit_len(len = _0_max_total_size)
+        ;; return grow_to_fit_len(len = _0_max_total_size)
         (call $grow_to_fit_len (; _0_max_total_size ;))
     )
 
-    ;; func grow_pre_decode(len: i32):
-    (func $grow_pre_decode (param $len i32)
+    ;; func grow_pre_decode(len: i32) -> i32:
+    (func $grow_pre_decode (param $len i32) (result i32)
         ;; _0_max_total_size = len + len
         (i32.add (local.get $len) (local.get $len))
 
-        ;; grow_to_fit_len(len = _0_max_total_size)
+        ;; return grow_to_fit_len(len = _0_max_total_size)
         (call $grow_to_fit_len (; _0_max_total_size ;))
     )
 
-    ;; func grow_to_fit_len(len: i32):
-    (func $grow_to_fit_len (param $len i32)
+    ;; func grow_to_fit_len(len: i32) -> i32:
+    (func $grow_to_fit_len (param $len i32) (result i32)
         (local $page_delta i32)
 
         ;; page_delta = len >>> 16 // => len / MEM_PAGE_SIZE
@@ -475,9 +475,10 @@
         ;; page_delta -= _m.size
         (local.tee $page_delta (i32.sub (local.get $page_delta) (memory.size)))
 
-        ;; if page_delta >>> 31 /* page_delta < 0 */: return
+        ;; if page_delta >>> 31 /* page_delta < 0 */: return 0
         (if (i32.shr_u (; page_delta ;) (i32.const 31))
             (then
+                (i32.const 0)
                 (return)
             )
         )
@@ -491,6 +492,9 @@
                 (throw $CannotGrowMemory)
             )
         )
+
+        ;; return page_delta
+        (local.get $page_delta)
     )
 
     ;; export encode
