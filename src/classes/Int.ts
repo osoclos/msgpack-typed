@@ -145,7 +145,7 @@ export class Int extends MpClassSubtyped<ValueInt, SubtypeInt>() {
             return chunk;
         }
 
-        const view = new DataView(chunk.buffer);
+        const view = new DataView(chunk.buffer, chunk.byteOffset);
 
         switch (this.#subtype) {
             case "I16": {

@@ -143,7 +143,7 @@ export class Uint extends MpClassSubtyped<ValueUint, SubtypeUint>() {
             return chunk;
         }
 
-        const view = new DataView(chunk.buffer);
+        const view = new DataView(chunk.buffer, chunk.byteOffset);
 
         switch (this.#subtype) {
             case "U16": {

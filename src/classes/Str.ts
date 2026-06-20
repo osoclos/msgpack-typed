@@ -279,7 +279,7 @@ export class Str extends MpClassSubtyped<ValueStr, SubtypeStr>() {
             }
 
             case 4: {
-                const view = new DataView(chunk.buffer);
+                const view = new DataView(chunk.buffer, chunk.byteOffset);
 
                 len = view.getUint32(1);
                 break;

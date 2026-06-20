@@ -73,7 +73,7 @@ export class Flt extends MpClassSubtyped<ValueFlt, SubtypeFlt>() {
         const chunk = new Uint8Array(1 + len);
         chunk[0] = code;
 
-        const view = new DataView(chunk.buffer);
+        const view = new DataView(chunk.buffer, chunk.byteOffset);
 
         if (this.#subtype === "F32") view.setFloat32(1, this.#value);
         else view.setFloat64(1, this.#value);
