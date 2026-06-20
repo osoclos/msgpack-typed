@@ -1,4 +1,4 @@
-import { MpError } from "../utils";
+import { MpError } from "./MpError";
 
 export const MpClass = <V>() => class MpClass implements MpClassInterface<V> {
     constructor(value?: V);

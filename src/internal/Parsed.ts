@@ -1,4 +1,4 @@
-import type { MpClassInterface } from "../classes";
+import type { MpClassInterface } from "./MpClass";
 
 export type Parsed<T> =
     T extends MpClassInterface<infer V>
@@ -6,5 +6,9 @@ export type Parsed<T> =
     T extends readonly (infer I)[]
         ? Parsed<I>[] :
     T extends Map<infer K, infer V>
-        ? Map<K, Parsed<V>>
+        ? Map<Parsed<K>, Parsed<V>> :
+    T extends Record<infer K, infer T>
+        ? K extends symbol
+            ? never
+            : Record<K, Parsed<T>>
         : T;

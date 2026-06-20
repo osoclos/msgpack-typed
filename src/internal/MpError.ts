@@ -1,4 +1,4 @@
-import { type ConstructorChild } from "../utils";
+import { type ConstructorChild } from "./Constructor";
 
 export const MpError = {
     InvalidValue: class extends Error {

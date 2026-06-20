@@ -1,4 +1,5 @@
-import { ExtUtils, type Constructor } from "../utils";
+import { ExtUtils } from "../utils";
+import type { Constructor } from "../internal";
 
 /** A parser for custom classes, representing the `fixext` and `ext` format families in the MessagePack specification. */
 export abstract class Ext<T extends Constructor<unknown>, C extends number, S extends boolean = false> {
