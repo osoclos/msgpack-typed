@@ -232,6 +232,10 @@ export class Int extends
         throw new MpError.InvalidCode(this.name, "MAP_SUBTYPE", code);
     }
 
+    static override value2LenEncoded(value: ValueInt): number {
+        return this.subtype2LenEncoded(this.value2Subtype(value));
+    }
+
     static override subtype2LenEncoded(subtype: SubtypeInt): number {
         switch (subtype) {
             case "FIXINT": return 1;

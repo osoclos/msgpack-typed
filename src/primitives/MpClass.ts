@@ -20,7 +20,7 @@ export interface MpClassModule<V> {
 
     decode(chunk: Uint8Array): MpClassInterface<V>;
 
-    value2LenEncoded?(value?: V): number;
+    value2LenEncoded(value?: V): number;
 
     isValueValid(value: unknown): value is V;
 
