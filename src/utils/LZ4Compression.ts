@@ -85,7 +85,7 @@ export const LZ4Compression = {
 
         const subchunkExt = ExtUtils.encodeRaw(subchunksLengthsOrig, 0x62);
 
-        const subchunks: Uint8Array[] = Array(1 + blocks.length);
+        const subchunks = Array<Uint8Array>(1 + blocks.length);
         subchunks[0] = subchunkExt;
 
         let chunkBlocksLen: number = 0;

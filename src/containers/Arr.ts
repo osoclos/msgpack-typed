@@ -23,12 +23,14 @@ export const Arr = {
         const header = this.encodeHeader(arr);
 
         let subchunksLen: number = 0;
-        const subchunks: Uint8Array[] = [];
+        const subchunks = Array<Uint8Array>(arr.length);
 
-        for (const item of arr) {
+        for (let i: number = 0; i < arr.length; i++) {
+            const item = arr[i]!;
+
             const subchunk = encodeAny(item, exts);
 
-            subchunks.push(subchunk);
+            subchunks[i] = subchunk;
             subchunksLen += subchunk.byteLength;
         }
 
@@ -114,8 +116,11 @@ export const Arr = {
         const hasLenStartIdx = indices.length === 4;
         const iSubchunks = indices[1 + +hasLenStartIdx /* hasLenStartIdx ? 2 : 1 */] as number[];
 
-        const subchunks: Uint8Array[] = [];
-        for (const i of iSubchunks) subchunks.push(chunk.subarray(i));
+        const subchunks = Array<Uint8Array>(iSubchunks.length);
+        for (let i: number = 0; i < iSubchunks.length; i++) {
+            const iSubchunk = iSubchunks[i]!;
+            subchunks[i] = chunk.subarray(iSubchunk);
+        }
 
         return subchunks;
     },
@@ -184,11 +189,11 @@ export const Arr = {
             iPayloadStart = 1 + lenLen;
         }
 
-        const iPayloads: number[] = [];
+        const iPayloads = Array<number>(len);
         let iPayloadEnd = iPayloadStart;
 
         for (let i: number = 0; i < len; i++) {
-            iPayloads.push(iPayloadEnd);
+            iPayloads[i] = iPayloadEnd;
 
             const subchunk = chunk.subarray(iPayloadEnd);
 

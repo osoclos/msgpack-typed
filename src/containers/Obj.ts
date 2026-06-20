@@ -11,14 +11,18 @@ export const Obj = {
     parse<K, V>(obj: ValueObj<K, V>): Parsed<ValueObj<K, V>> {
         let canBeRecord: boolean = true;
 
-        const keys : Parsed<K>[] = [];
-        const items: Parsed<V>[] = [];
+        const entries = [...obj.entries()];
 
-        for (const entry of obj) {
-            for (let i: number = 0; i < 2; i++) {
-                const item = entry[i]!;
+        const keys  = Array<Parsed<K>>(entries.length);
+        const items = Array<Parsed<V>>(entries.length);
 
-                const isKey = i === 0;
+        for (let i: number = 0; i < entries.length; i++) {
+            const entry = entries[i]!;
+
+            for (let j: number = 0; j < 2; j++) {
+                const item = entry[j]!;
+
+                const isKey = j === 0;
                 const list = isKey ? keys : items;
 
                 if (item instanceof MpClass()) {
@@ -33,25 +37,25 @@ export const Obj = {
                         )
                     ) canBeRecord = false;
 
-                    list.push(value);
+                    list[i] = value;
                     continue;
                 }
 
                 if (Arr.isValueValid(item)) {
                     if (isKey) canBeRecord = false;
 
-                    list.push(Arr.parse(item) as any);
+                    list[i] = Arr.parse(item) as any;
                     continue;
                 }
 
                 if (Obj.isValueValid(item)) {
                     if (isKey) canBeRecord = false;
 
-                    list.push(Obj.parse(item) as any);
+                    list[i] = Obj.parse(item) as any;
                     continue;
                 }
 
-                list.push(item as any);
+                list[i] = item as any;
             }
         }
 
@@ -71,17 +75,21 @@ export const Obj = {
     encode<K, V>(obj: ValueObj<K, V>, exts: Ext<Constructor<unknown>, number, boolean>[] = []): Uint8Array {
         const header = this.encodeHeader(obj);
 
+        const entries = [...obj.entries()];
+
+        const subchunks = Array<Uint8Array>(entries.length);
         let subchunksLen: number = 0;
-        const subchunks: Uint8Array[] = [];
 
-        for (const [key, item] of obj) {
-            const subchunkKey  = encodeAny(key , exts);
-            const subchunkItem = encodeAny(item, exts);
+        for (let i: number = 0; i < entries.length; i++) {
+            const entry = entries[i]!;
 
-            subchunks.push(subchunkKey);
+            const subchunkKey  = encodeAny(entry[0]!, exts);
+            const subchunkItem = encodeAny(entry[1]!, exts);
+
+            subchunks[i] = subchunkKey;
             subchunksLen += subchunkKey.byteLength;
 
-            subchunks.push(subchunkItem);
+            subchunks[i] = subchunkItem;
             subchunksLen += subchunkItem.byteLength;
         }
 
@@ -177,12 +185,12 @@ export const Obj = {
         const iSubchunksKey  = iSubchunks[0];
         const iSubchunksItem = iSubchunks[1];
 
-        const subchunksKey : Uint8Array[] = [];
-        const subchunksItem: Uint8Array[] = [];
+        const subchunksKey  = Array<Uint8Array>(iSubchunksKey .length);
+        const subchunksItem = Array<Uint8Array>(iSubchunksItem.length);
 
         for (let i: number = 0; i < iSubchunksKey.length; i++) {
-            subchunksKey .push(chunk.subarray(iSubchunksKey [i]!));
-            subchunksItem.push(chunk.subarray(iSubchunksItem[i]!));
+            subchunksKey [i] = chunk.subarray(iSubchunksKey [i]!);
+            subchunksItem[i] = chunk.subarray(iSubchunksItem[i]!);
         }
 
         return [subchunksKey, subchunksItem];
@@ -261,15 +269,15 @@ export const Obj = {
             iPayloadStart = 1 + lenLen;
         }
 
-        const iPayloadsKey : number[] = [];
-        const iPayloadsItem: number[] = [];
+        const iPayloadsKey  = Array<number>(len);
+        const iPayloadsItem = Array<number>(len);
 
         let iPayloadEnd = iPayloadStart;
 
         for (let i: number = 0; i < len; i++) {
             for (let j: number = 0; j < 2; j++) {
-                if (j === 0) iPayloadsKey.push(iPayloadEnd);
-                else iPayloadsItem.push(iPayloadEnd);
+                if (j === 0) iPayloadsKey[i] = iPayloadEnd;
+                else iPayloadsItem[i] = iPayloadEnd;
 
                 const subchunk = chunk.subarray(iPayloadEnd);
 
