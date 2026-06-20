@@ -1,9 +1,6 @@
-import { MpClassSubtyped, MpError } from "../primitives";
+import { MpClassSubtyped, MpError } from "../internal";
 
-export class Bfr extends
-    // @ts-ignore
-    MpClassSubtyped<ValueBfr, SubtypeBfr>()
-{
+export class Bfr extends MpClassSubtyped<ValueBfr, SubtypeBfr>() {
     #value: ValueBfr;
     #subtype: SubtypeBfr;
 

@@ -1,9 +1,6 @@
-import { MpClassSubtyped, MpError } from "../primitives";
+import { MpClassSubtyped, MpError } from "../internal";
 
-export class Uint extends
-    // @ts-ignore
-    MpClassSubtyped<ValueUint, SubtypeUint>()
-{
+export class Uint extends MpClassSubtyped<ValueUint, SubtypeUint>() {
     #value: ValueUint;
     #subtype: SubtypeUint;
 

@@ -1,9 +1,6 @@
-import { MpClassSubtyped, MpError } from "../primitives";
+import { MpClassSubtyped, MpError } from "../internal";
 
-export class Int extends
-    // @ts-ignore
-    MpClassSubtyped<ValueInt, SubtypeInt>()
-{
+export class Int extends MpClassSubtyped<ValueInt, SubtypeInt>() {
     #value: ValueInt;
     #subtype: SubtypeInt;
 

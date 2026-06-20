@@ -1,55 +1,6 @@
-import { MpError } from "./MpError";
+import { MpError } from "../utils";
 
-export interface MpClassInterface<V> {
-    get value(): V;
-    set value(value: V);
-
-    encode(): Uint8Array;
-
-    get [Symbol.toStringTag](): string;
-}
-
-export interface MpClassInterfaceSubtyped<V, T extends string> extends MpClassInterface<V> {
-    get subtype(): T;
-    set subtype(subtype: T);
-};
-
-export interface MpClassModule<V> {
-    new (value?: V): MpClassInterface<V>;
-    new (bfr: Uint8Array): MpClassInterface<V>;
-
-    decode(chunk: Uint8Array): MpClassInterface<V>;
-
-    value2LenEncoded(value?: V): number;
-
-    isValueValid(value: unknown): value is V;
-
-    isCodeValid(code: number): boolean;
-    isChunkValid(chunk: Uint8Array): boolean;
-
-    deriveChunkIndices(chunk: Uint8Array): number[];
-}
-
-export interface MpClassModuleSubtyped<V, T extends string> extends MpClassModule<V> {
-    new (value?: V, subtype?: T): MpClassInterfaceSubtyped<V, T>;
-    new (bfr: Uint8Array, subtype?: T): MpClassInterfaceSubtyped<V, T>;
-
-    value2Subtype(value: V): T;
-    code2Subtype(code: number): T;
-
-    subtype2LenEncoded?(subtype: T): number;
-
-    isValueValid(value: unknown, subtype?: T): value is V;
-    isSubtypeValid(subtype: string): subtype is T;
-
-    isCodeValid(code: number): false;
-    isCodeValid(code: number): T | false;
-
-    isChunkValid(chunk: Uint8Array): false;
-    isChunkValid(chunk: Uint8Array): T | false;
-};
-
-export const MpClass = <V>(): MpClassModule<V> => class MpClass implements MpClassInterface<V> {
+export const MpClass = <V>() => class MpClass implements MpClassInterface<V> {
     constructor(value?: V);
     constructor(bfr: Uint8Array);
     constructor(_a?: V | Uint8Array) {}
@@ -70,7 +21,7 @@ export const MpClass = <V>(): MpClassModule<V> => class MpClass implements MpCla
         throw new MpError.NoImpl(this.name, "decode");
     }
 
-    static value2LenEncoded(): number {
+    static value2LenEncoded(_value: V): number {
         throw new MpError.NoImpl(this.name, "value2LenEncoded");
     }
 
@@ -93,12 +44,12 @@ export const MpClass = <V>(): MpClassModule<V> => class MpClass implements MpCla
     get [Symbol.toStringTag](): string {
         throw new MpError.NoImpl(this[Symbol.toStringTag], "Symbol.toStringTag");
     }
-};
+} satisfies MpClassModule<V>;
 
-export const MpClassSubtyped = <V, T extends string>(): MpClassModuleSubtyped<V, T> => class MpClassSubtyped extends MpClass<V>() implements MpClassInterfaceSubtyped<V, T> {
-    constructor(value?: V, subtype?: T | "ANY");
-    constructor(bfr: Uint8Array, subtype?: T | "ANY");
-    constructor(_a?: V | Uint8Array, _subtype?: T | "ANY") {
+export const MpClassSubtyped = <V, T extends string>() => class MpClassSubtyped extends MpClass<V>() implements MpClassInterfaceSubtyped<V, T> {
+    constructor(value?: V, subtype?: T);
+    constructor(bfr: Uint8Array, subtype?: T);
+    constructor(_a?: V | Uint8Array, _subtype?: T) {
         super(_a as V);
     }
 
@@ -118,7 +69,7 @@ export const MpClassSubtyped = <V, T extends string>(): MpClassModuleSubtyped<V,
         throw new MpError.NoImpl(this.name, "code2Subtype");
     }
 
-    static subtype2LenEncoded(): number {
+    static subtype2LenEncoded(_subtype: T): number {
         throw new MpError.NoImpl(this.name, "subtype2LenEncoded");
     }
 
@@ -137,4 +88,56 @@ export const MpClassSubtyped = <V, T extends string>(): MpClassModuleSubtyped<V,
     static override isChunkValid(_chunk: Uint8Array): T | false {
         throw new MpError.NoImpl(this.name, "isChunkValid");
     }
+} satisfies MpClassModuleSubtyped<V, T>;
+
+export type MpClass<V> = ReturnType<typeof MpClass<V>>;
+export type MpClassSubtyped<V, T extends string> = ReturnType<typeof MpClassSubtyped<V, T>>;
+
+export interface MpClassInterface<V> {
+    get value(): V;
+    set value(value: V);
+
+    encode(): Uint8Array;
+
+    get [Symbol.toStringTag](): string;
+}
+
+export interface MpClassInterfaceSubtyped<V, T extends string> extends MpClassInterface<V> {
+    get subtype(): T;
+    set subtype(subtype: T);
+};
+
+export interface MpClassModule<V> {
+    new (value?: V): MpClassInterface<V>;
+    new (bfr: Uint8Array): MpClassInterface<V>;
+
+    decode(chunk: Uint8Array): MpClassInterface<V>;
+
+    value2LenEncoded(value: V): number;
+
+    isValueValid(value: unknown): value is V;
+
+    isCodeValid(code: number): boolean;
+    isChunkValid(chunk: Uint8Array): boolean;
+
+    deriveChunkIndices(chunk: Uint8Array): number[];
+}
+
+export interface MpClassModuleSubtyped<V, T extends string> extends MpClassModule<V> {
+    new (value?: V, subtype?: T): MpClassInterfaceSubtyped<V, T>;
+    new (bfr: Uint8Array, subtype?: T): MpClassInterfaceSubtyped<V, T>;
+
+    value2Subtype(value: V): T;
+    code2Subtype(code: number): T;
+
+    subtype2LenEncoded(subtype: T): number;
+
+    isValueValid(value: unknown, subtype?: T): value is V;
+    isSubtypeValid(subtype: string): subtype is T;
+
+    isCodeValid(code: number): false;
+    isCodeValid(code: number): T | false;
+
+    isChunkValid(chunk: Uint8Array): false;
+    isChunkValid(chunk: Uint8Array): T | false;
 };

@@ -1,4 +1,4 @@
-import { MpClass, MpError } from "../primitives";
+import { MpClass, MpError } from "../internal";
 
 export class Bool extends MpClass<ValueBool>() {
     #value: ValueBool;

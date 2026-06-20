@@ -1,9 +1,6 @@
-import { MpClassSubtyped, MpError } from "../primitives";
+import { MpClassSubtyped, MpError } from "../internal";
 
-export class Str extends
-    // @ts-ignore
-    MpClassSubtyped<ValueStr, SubtypeStr>()
-{
+export class Str extends MpClassSubtyped<ValueStr, SubtypeStr>() {
     #value: Uint8Array;
     #subtype: SubtypeStr;
 
