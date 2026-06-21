@@ -206,7 +206,7 @@ export const LZ4Compression = {
             return bfrDecoded;
         }
 
-        throw new MpError.IncompatibleChunk("Ext", "DECODING");
+        throw new MpError.IncompatibleChunk("LZ4Compression", "DECODING");
     },
 
     /** Checks whether a MessagePack chunk can be decompressed using the LZ4 block algorithm. */
