@@ -98,15 +98,15 @@ export class Str extends MpClassSubtyped<ValueStr, SubtypeStr>() {
             case "FIXSTR": break;
 
             case "STR8": {
-                chunk[1] = lenLen;
+                chunk[1] = len;
                 break;
             }
 
             default: {
                 const view = new DataView(chunk.buffer);
 
-                if (this.#subtype === "STR16") view.setUint16(1, lenLen);
-                else view.setUint32(1, lenLen);
+                if (this.#subtype === "STR16") view.setUint16(1, len);
+                else view.setUint32(1, len);
             }
         }
 
@@ -208,7 +208,7 @@ export class Str extends MpClassSubtyped<ValueStr, SubtypeStr>() {
 
     static override isSubtypeValid(subtype: string): subtype is SubtypeStr {
         return (
-            subtype === "FIXINT" ||
+            subtype === "FIXSTR" ||
 
             subtype === "STR8"   ||
             subtype === "STR16"  ||
@@ -285,7 +285,7 @@ export class Str extends MpClassSubtyped<ValueStr, SubtypeStr>() {
                 break;
             }
 
-            default: throw new MpError.InvalidCode("ExtUtils", "UNSUPPORTED", code);
+            default: throw new MpError.InvalidCode("Str", "UNSUPPORTED", code);
         }
 
         return [

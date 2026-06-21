@@ -70,15 +70,15 @@ export class Bfr extends MpClassSubtyped<ValueBfr, SubtypeBfr>() {
 
         switch (this.#subtype) {
             case "BFR8": {
-                chunk[1] = lenLen;
+                chunk[1] = len;
                 break;
             }
 
             default: {
                 const view = new DataView(chunk.buffer);
 
-                if (this.#subtype === "BFR16") view.setUint16(1, lenLen);
-                else view.setUint32(1, lenLen);
+                if (this.#subtype === "BFR16") view.setUint16(1, len);
+                else view.setUint32(1, len);
             }
         }
 
