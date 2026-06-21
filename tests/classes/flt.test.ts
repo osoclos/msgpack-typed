@@ -46,7 +46,10 @@ describe("FLT", () => {
                     expect(Flt.isValueValid(value, subtype)).toBe(true);
                     expect(Flt.value2Subtype(value)).toBe(subtypeSrc);
 
-                    expect(Flt.decode(new Flt(value, subtypeSrc).encode()).value).toSatisfy((valueDecoded) => Number.isNaN(valueDecoded) || valueDecoded === value);
+                    const chunkEncoded = new Flt(value, subtypeSrc).encode();
+
+                    expect(Flt.isChunkValid(chunkEncoded)).toBe(subtypeSrc);
+                    expect(Flt.decode(chunkEncoded).value).toSatisfy((valueDecoded) => Number.isNaN(valueDecoded) || valueDecoded === value);
                 });
 
         for (const [subtypeSrc, values] of valuesAccepted.slice(iValues + 1))

@@ -57,7 +57,10 @@ describe("INT", () => {
                     expect(Int.isValueValid(value, subtype)).toBe(true);
                     expect(Int.value2Subtype(value)).toBe(subtypeSrc);
 
-                    expect(Int.decode(new Int(value, subtypeSrc).encode()).value).toSatisfy((valueDecoded) => valueDecoded === (typeof valueDecoded === "bigint" ? BigInt(value) : value));
+                    const chunkEncoded = new Int(value, subtypeSrc).encode();
+
+                    expect(Int.isChunkValid(chunkEncoded)).toBe(subtypeSrc);
+                    expect(Int.decode(chunkEncoded).value).toSatisfy((valueDecoded) => valueDecoded === (typeof valueDecoded === "bigint" ? BigInt(value) : value));
                 });
 
         for (const [subtypeSrc, values] of valuesAccepted.slice(iValues + 1))
