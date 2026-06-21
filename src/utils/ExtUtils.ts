@@ -5,14 +5,14 @@ import { MpError, type Constructor } from "../internal";
 export const ExtUtils = {
     /** Serialises data and converts it into a parsable MessagePack chunk using a specified extension that supports it. */
     encodeWith<T extends Constructor<unknown>>(ext: Ext<T, number, boolean>, value: T["prototype"]) {
-        if (!ext.isEncodable(value)) throw new MpError.InvalidValue("ExtUtils", "ENCODING");
+        if (!ext.isEncodable(value)) throw new MpError.InvalidValue(ext[Symbol.toStringTag], "ENCODING");
 
-        const [payload, extCode] = ext.encode(value);
-        return this.encodeRaw(payload, extCode);
+        const [payload, codeExt] = ext.encode(value);
+        return this.encodeRaw(payload, codeExt);
     },
 
     /** Converts a buffer containing data into a parsable MessagePack chunk given an extension code. Useful if you already have custom data in byte form. */
-    encodeRaw(payload: Uint8Array, extCode: number) {
+    encodeRaw(payload: Uint8Array, codeExt: number) {
         let code: number;
         let lenLen: number;
 
@@ -107,7 +107,7 @@ export const ExtUtils = {
             }
         }
 
-        chunk[1 + lenLen] = extCode;
+        chunk[1 + lenLen] = codeExt;
         chunk.set(payload, 1 + lenLen + 1);
 
         return chunk;
@@ -116,22 +116,12 @@ export const ExtUtils = {
     /** Converts a MessagePack chunk assumed to be in the `fixext`/`ext` format family and creates a class object using a specified extension that supports it. */
     decodeWith<T extends Constructor<unknown>, S extends boolean>(ext: Ext<T, number, S>, chunk: Uint8Array): T["prototype"] {
         const decodableRes = ext.isDecodable(chunk);
-        if (!decodableRes) throw new MpError.IncompatibleChunk("ExtUtils", "DECODING");
+        if (!decodableRes) throw new MpError.IncompatibleChunk(ext[Symbol.toStringTag], "DECODING");
 
-        let subChunk: Uint8Array;
-        if (Array.isArray(decodableRes)) {
-            const iStart = decodableRes[0];
-            const iEnd   = decodableRes[1];
+        const [payload, codeExt] = this.decodeRaw(chunk);
+        if (!ext.isCodeValid(codeExt)) throw new MpError.IncompatibleChunk(ext[Symbol.toStringTag], "INVALID_CODE");
 
-            subChunk = chunk.subarray(iStart, iEnd);
-        } else subChunk = chunk;
-
-        if (!ext.skipHeaderDecoding(subChunk)) return ext.decode(subChunk, null!);
-
-        const [payload, extCode] = this.decodeRaw(subChunk);
-        if (!ext.isCodeValid(extCode)) throw new MpError.IncompatibleChunk("ExtUtils", "INVALID_CODE");
-
-        return ext.decode(payload, extCode);
+        return ext.decode(payload, codeExt);
     },
 
     /** Converts a MessagePack chunk assumed to be in the `fixext`/`ext` format family and parses it as a pair of an extension code and the data buffer that came with the chunk. */
@@ -140,15 +130,15 @@ export const ExtUtils = {
 
         const hasLenStartIdx = indices.length === 5;
 
-        const iExtCode = indices[1 + +hasLenStartIdx /* hasLenStartIdx ? 2 : 1 */]!;
-        const extCode = chunk[iExtCode]!;
+        const iCodeExt = indices[1 + +hasLenStartIdx /* hasLenStartIdx ? 2 : 1 */]!;
+        const codeExt = chunk[iCodeExt]!;
 
         const iPayloadStart = indices[2 + +hasLenStartIdx /* hasLenStartIdx ? 3 : 2 */]!;
         const iPayloadEnd   = indices[3 + +hasLenStartIdx /* hasLenStartIdx ? 4 : 3 */]!;
 
         if (iPayloadEnd > chunk.byteLength) throw new MpError.TruncatedChunk("ExtUtils", "DECODING", iPayloadEnd, chunk.byteLength);
 
-        return [chunk.subarray(iPayloadStart, iPayloadEnd), extCode];
+        return [chunk.subarray(iPayloadStart, iPayloadEnd), codeExt];
     },
 
     /** Checks whether a chunk header code is supported by `Ext`. */
@@ -196,7 +186,7 @@ export const ExtUtils = {
             return [
                 0 /* iCode */,
 
-                1 /* iExtCode */,
+                1 /* iCodeExt */,
 
                 1 + 1 /* iPayloadStart */,
                 1 + 1 + len /* iPayloadEnd */
@@ -242,7 +232,7 @@ export const ExtUtils = {
 
             1 /* iLenStart */,
 
-            1 + lenLen /* iExtCode */,
+            1 + lenLen /* iCodeExt */,
 
             1 + lenLen + 1 /* iPayloadStart */,
             1 + lenLen + 1 + len /* iPayloadEnd */

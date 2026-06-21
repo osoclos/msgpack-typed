@@ -19,7 +19,7 @@ export abstract class Ext<T extends Constructor<unknown>, C extends number, S ex
     abstract isEncodable(value: unknown): value is T["prototype"];
 
     /** Checks whether a chunk can be decoded by this extension. */
-    isDecodable(chunk: Uint8Array): boolean | [number, number] {
+    isDecodable(chunk: Uint8Array): boolean {
         if (!ExtUtils.isChunkValid(chunk)) return false;
 
         const extCode = ExtUtils.decodeRaw(chunk)[1];
@@ -28,11 +28,10 @@ export abstract class Ext<T extends Constructor<unknown>, C extends number, S ex
 
     /** Checks whether a extension header code is supported by this extension. */
     isCodeValid(code: number): code is C {
-        return this.#codes.has(code as C);
+        return this.#codes.has(code << 24 >> 24 as C);
     }
 
-    /** Determines whether to treat the given chunk as raw buffer data and skip extension header decoding. Useful if you are dealing with raw buffer data instead of extension chunk data. */
-    skipHeaderDecoding(_chunk: Uint8Array): S {
-        return false as S;
+    get [Symbol.toStringTag](): string {
+        return this.constructor.name;
     }
 }
