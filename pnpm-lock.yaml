@@ -27,8 +27,8 @@ importers:
         specifier: ^6.0.3
         version: 6.0.3
       vite-plugin-wat2wasm:
-        specifier: ^2.2.1
-        version: 2.2.1(wabt@1.0.39)
+        specifier: ^2.2.2
+        version: 2.2.2(wabt@1.0.39)
       vitest:
         specifier: ^4.1.8
         version: 4.1.8(@types/node@25.9.3)(@vitest/browser-preview@4.1.8)(vite@8.0.16(@types/node@25.9.3)(jiti@2.7.0)(yaml@2.9.0))
@@ -816,8 +816,8 @@ packages:
   undici-types@7.24.6:
     resolution: {integrity: sha512-WRNW+sJgj5OBN4/0JpHFqtqzhpbnV0GuB+OozA9gCL7a993SmU+1JBZCzLNxYsbMfIeDL+lTsphD5jN5N+n0zg==}
 
-  vite-plugin-wat2wasm@2.2.1:
-    resolution: {integrity: sha512-JbnOwcH2kfoLEg/dGLH4027q0jCYYij2mI/JvxHiRf7MxnEodgL3fPKluGoGPxD0ewxpSsfaKWIiPFDgR+ytJA==}
+  vite-plugin-wat2wasm@2.2.2:
+    resolution: {integrity: sha512-wsU1NkbCNFkyuhxU+JpYsimp1YML+MAMtPg4l6duu+EDPNwWgizigmNSLxDsywuhoG3hNBWquaSIiaAZU5djLQ==}
     peerDependencies:
       wabt: ^1.0.39
 
@@ -1614,7 +1614,7 @@ snapshots:
 
   undici-types@7.24.6: {}
 
-  vite-plugin-wat2wasm@2.2.1(wabt@1.0.39):
+  vite-plugin-wat2wasm@2.2.2(wabt@1.0.39):
     dependencies:
       wabt: 1.0.39
 

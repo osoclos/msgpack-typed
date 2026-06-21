@@ -52,7 +52,7 @@
         "vitest": "^4.1.8",
         "@vitest/browser-preview": "^4.1.8",
 
-        "vite-plugin-wat2wasm": "^2.2.1",
+        "vite-plugin-wat2wasm": "^2.2.2",
 
         "typescript": "^6.0.3",
 
