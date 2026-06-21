@@ -46,7 +46,7 @@ export class Flt extends MpClassSubtyped<ValueFlt, SubtypeFlt>() {
     }
 
     override set subtype(subtype: SubtypeFlt) {
-        if (Flt.isSubtypeValid(subtype)) this.#subtype = subtype;
+        if (Flt.isValueValid(this.#value, subtype) && Flt.isSubtypeValid(subtype)) this.#subtype = subtype;
         else throw new MpError.InvalidSubtype(this[Symbol.toStringTag], "ASSIGNMENT", subtype);
     }
 

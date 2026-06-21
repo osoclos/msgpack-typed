@@ -32,7 +32,7 @@ export class Bfr extends MpClassSubtyped<ValueBfr, SubtypeBfr>() {
     }
 
     override set subtype(subtype: SubtypeBfr) {
-        if (Bfr.isSubtypeValid(subtype)) this.#subtype = subtype;
+        if (Bfr.isValueValid(this.#value, subtype) && Bfr.isSubtypeValid(subtype)) this.#subtype = subtype;
         else throw new MpError.InvalidSubtype(this[Symbol.toStringTag], "ASSIGNMENT", subtype);
     }
 

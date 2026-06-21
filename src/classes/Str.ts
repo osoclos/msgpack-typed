@@ -51,7 +51,7 @@ export class Str extends MpClassSubtyped<ValueStr, SubtypeStr>() {
     }
 
     override set subtype(subtype: SubtypeStr) {
-        if (Str.isSubtypeValid(subtype)) this.#subtype = subtype;
+        if (Str.isValueValid(this.#value, subtype) && Str.isSubtypeValid(subtype)) this.#subtype = subtype;
         else throw new MpError.InvalidSubtype(this[Symbol.toStringTag], "ASSIGNMENT", subtype);
     }
 

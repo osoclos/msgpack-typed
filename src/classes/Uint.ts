@@ -95,7 +95,7 @@ export class Uint extends MpClassSubtyped<ValueUint, SubtypeUint>() {
     }
 
     override set subtype(subtype: SubtypeUint) {
-        if (Uint.isSubtypeValid(subtype)) this.#subtype = subtype;
+        if (Uint.isValueValid(this.#value, subtype) && Uint.isSubtypeValid(subtype)) this.#subtype = subtype;
         else throw new MpError.InvalidSubtype(this[Symbol.toStringTag], "ASSIGNMENT", subtype);
     }
 

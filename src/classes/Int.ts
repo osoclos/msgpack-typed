@@ -97,7 +97,7 @@ export class Int extends MpClassSubtyped<ValueInt, SubtypeInt>() {
     }
 
     override set subtype(subtype: SubtypeInt) {
-        if (Int.isSubtypeValid(subtype)) this.#subtype = subtype;
+        if (Int.isValueValid(this.#value, subtype) && Int.isSubtypeValid(subtype)) this.#subtype = subtype;
         else throw new MpError.InvalidSubtype(this[Symbol.toStringTag], "ASSIGNMENT", subtype);
     }
 
