@@ -1,4 +1,4 @@
-import { Ext } from "../extensions";
+import type { Ext } from "../extensions";
 import { MpError, type Constructor } from "../internal";
 
 /** An object to handle any extension-related features and helper functions to ease extension development and usage. */
