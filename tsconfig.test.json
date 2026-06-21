@@ -5,7 +5,6 @@
     "compilerOptions": {
         // Modules
         "paths": { "@/*": ["./dist/*"] },
-        "types": ["vite/client"],
 
         // Emit
         "declaration": false,
