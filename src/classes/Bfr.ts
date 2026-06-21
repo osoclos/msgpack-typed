@@ -229,7 +229,7 @@ export class Bfr extends MpClassSubtyped<ValueBfr, SubtypeBfr>() {
                 break;
             }
 
-            default: throw new MpError.InvalidCode("ExtUtils", "UNSUPPORTED", code);
+            default: throw new MpError.InvalidCode("Bfr", "UNSUPPORTED", code);
         }
 
         return [
