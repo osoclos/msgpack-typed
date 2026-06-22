@@ -129,7 +129,7 @@ export const Obj = {
         const chunk = new Uint8Array(header.byteLength + subchunksLen);
         chunk.set(header, 0);
 
-        for (let iChunk: number = 0, iOffset: number = header.byteLength; iChunk < subchunks.length; iChunk++) {
+        for (let iChunk: number = 0, iOffset = header.byteLength; iChunk < subchunks.length; iChunk++) {
             const subchunk = subchunks[iChunk]!;
 
             chunk.set(subchunk, iOffset);
