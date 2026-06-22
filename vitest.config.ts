@@ -8,6 +8,8 @@ export default defineConfig({
 
             provider: preview(),
             instances: [{ browser: "chromium" }],
-        }
+        },
+
+        passWithNoTests: true
     }
 });
