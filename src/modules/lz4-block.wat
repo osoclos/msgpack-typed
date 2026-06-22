@@ -449,10 +449,10 @@
         (call $grow_to_fit_len (; _0_max_total_size ;))
     )
 
-    ;; func grow_pre_decode(len: i32) -> i32:
-    (func $grow_pre_decode (param $len i32) (result i32)
-        ;; _0_max_total_size = len + len
-        (i32.add (local.get $len) (local.get $len))
+    ;; func grow_pre_decode(len: i32, len_orig: i32) -> i32:
+    (func $grow_pre_decode (param $len i32) (param $len_orig i32) (result i32)
+        ;; _0_max_total_size = len + len_orig
+        (i32.add (local.get $len) (local.get $len_orig))
 
         ;; return grow_to_fit_len(len = _0_max_total_size)
         (call $grow_to_fit_len (; _0_max_total_size ;))

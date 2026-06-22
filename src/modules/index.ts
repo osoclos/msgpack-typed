@@ -49,7 +49,7 @@ export interface LZ4BlockModuleExports {
     decode(len: number): number;
 
     growPreEncode(len: number): number;
-    growPreDecode(len: number): number;
+    growPreDecode(len: number, lenOrig: number): number;
 
     memory: WebAssembly.Memory;
 }

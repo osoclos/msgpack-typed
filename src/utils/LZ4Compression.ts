@@ -129,8 +129,9 @@ export const LZ4Compression = {
             const block = payload.subarray(iBlockStart);
 
             const len = block.byteLength;
+            const lenOrig = Num.decode(payload).value as number;
 
-            lz4Block.growPreDecode(len);
+            lz4Block.growPreDecode(len, lenOrig);
 
             const bfr = new Uint8Array(lz4Block.memory.buffer);
             bfr.set(block);
@@ -139,8 +140,6 @@ export const LZ4Compression = {
             const iOutEnd   = lz4Block.decode(len);
 
             const lenUnpacked = iOutEnd - iOutStart;
-
-            const lenOrig = Num.decode(payload).value as number;
             if (lenUnpacked !== lenOrig) warn("MISMATCHED_LENGTH_CHECK", lenOrig, lenUnpacked)
 
             return bfr.slice(iOutStart, iOutEnd);
@@ -185,9 +184,12 @@ export const LZ4Compression = {
                 const subchunk = chunk.subarray(iSubchunks[iSubchunk]);
 
                 const bfr = Bfr.decode(subchunk).value;
-                const len = bfr.byteLength;
 
-                lz4Block.growPreDecode(len);
+                const len = bfr.byteLength;
+                const lenOrig = lengthsOrig[iSubchunk - 1]!;
+
+                lz4Block.growPreDecode(len, lenOrig);
+
                 if (memLz4.buffer !== lz4Block.memory.buffer) memLz4 = new Uint8Array(lz4Block.memory.buffer);
 
                 memLz4.set(bfr);
@@ -196,8 +198,6 @@ export const LZ4Compression = {
                 const iOutEnd   = lz4Block.decode(len);
 
                 const lenUnpacked = iOutEnd - iOutStart;
-
-                const lenOrig = lengthsOrig[iSubchunk - 1]!;
                 if (lenUnpacked !== lenOrig) warn("MISMATCHED_LENGTH_CHECK", lenOrig, lenUnpacked);
 
                 const block = memLz4.subarray(iOutStart, iOutEnd);
