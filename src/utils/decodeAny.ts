@@ -10,8 +10,8 @@ import { LZ4Compression } from "./LZ4Compression";
 
 export function decodeAny<T extends MpClassInterface<unknown> | null>(chunk: Uint8Array, doDecompression?: boolean): T | ValueArr<T>;
 export function decodeAny<T extends MpClassInterface<unknown> | null, C extends unknown>(chunk: Uint8Array, exts: Ext<Constructor<C>, number, boolean>[], doDecompression?: boolean): T | C | ValueArr<T | C>;
-export function decodeAny<K extends MpClassInterface<unknown> | null, V extends MpClassInterface<unknown> | null>(chunk: Uint8Array, doDecompression?: boolean): ValueObj<K, V>;
-export function decodeAny<K extends MpClassInterface<unknown> | null, V extends MpClassInterface<unknown> | null, C extends unknown>(chunk: Uint8Array, exts: Ext<Constructor<C>, number, boolean>[], doDecompression?: boolean): ValueObj<K | C, V | C>;
+export function decodeAny<K extends Exclude<PropertyKey, symbol> | MpClassInterface<unknown> | null, V extends MpClassInterface<unknown> | null>(chunk: Uint8Array, doDecompression?: boolean): ValueObj<K, V>;
+export function decodeAny<K extends Exclude<PropertyKey, symbol> | MpClassInterface<unknown> | null, V extends MpClassInterface<unknown> | null, C extends unknown>(chunk: Uint8Array, exts: Ext<Constructor<C>, number, boolean>[], doDecompression?: boolean): ValueObj<K | C, V | C>;
 export function decodeAny<C extends unknown>(chunk: Uint8Array, b?: boolean | Ext<Constructor<C>, number, boolean>[], c?: boolean): MpClassInterface<unknown> | null | C | ValueArr<MpClassInterface<unknown> | null | C> | ValueObj<MpClassInterface<unknown> | null | C, MpClassInterface<unknown> | null | C> {
     const code = chunk[0 /* iCode */]!;
 

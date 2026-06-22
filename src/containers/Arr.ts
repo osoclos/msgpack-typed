@@ -3,14 +3,25 @@ import type { Ext } from "../extensions";
 
 import { decodeAny, encodeAny, ExtUtils } from "../utils";
 
-import { CODE_NIL, MpClass, MpError, type Constructor, type MpClassInterface, type Parsed } from "../internal";
+import { CODE_NIL, MpError, type Constructor, type MpClassInterface, type Parsed } from "../internal";
 
 import { Obj } from "./Obj";
 
 export const Arr = {
     parse<T>(arr: ValueArr<T>): Parsed<ValueArr<T>> {
         return arr.map((item) => {
-            if (item instanceof MpClass()) return item.value;
+            if (
+                item instanceof Uint ||
+                item instanceof Int  ||
+                item instanceof Flt  ||
+
+                item instanceof Bool ||
+                item instanceof Str  ||
+
+                item instanceof Bfr
+            ) return item.value as any;
+
+            if (item instanceof Uint8Array) return item;
 
             if (Arr.isValueValid(item)) return Arr.parse(item);
             if (Obj.isValueValid(item)) return Obj.parse(item);

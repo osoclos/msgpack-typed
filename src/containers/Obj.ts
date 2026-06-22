@@ -3,13 +3,52 @@ import type { Ext } from "../extensions";
 
 import { decodeAny, encodeAny, ExtUtils } from "../utils";
 
-import { CODE_NIL, MpClass, MpError, type Constructor, type MpClassInterface, type Parsed } from "../internal";
+import { CODE_NIL, MpError, type Constructor, type MpClassInterface, type Parsed } from "../internal";
 
 import { Arr } from "./Arr";
 
 export const Obj = {
     parse<K, V>(obj: ValueObj<K, V>): Parsed<ValueObj<K, V>> {
-        let canBeRecord: boolean = true;
+        if (!(obj instanceof Map)) {
+            const parsed = {} as Record<K & Exclude<PropertyKey, symbol>, Parsed<V>>;
+
+            for (const key in obj as Record<K & Exclude<PropertyKey, symbol>, V>) {
+                const item = obj[key as keyof typeof obj];
+
+                if (
+                    item instanceof Uint ||
+                    item instanceof Int  ||
+                    item instanceof Flt  ||
+
+                    item instanceof Bool ||
+                    item instanceof Str  ||
+
+                    item instanceof Bfr
+                ) {
+                    parsed[key as keyof typeof parsed] = item.value as Parsed<V>;
+                    continue;
+                }
+
+                if (item instanceof Uint8Array) {
+                    parsed[key as keyof typeof parsed] = item as Parsed<V>;
+                    continue;
+                }
+
+                if (Arr.isValueValid(item)) {
+                    parsed[key as keyof typeof parsed] = Arr.parse(item) as Parsed<V>;
+                    continue;
+                }
+
+                if (Obj.isValueValid(item)) {
+                    parsed[key as keyof typeof parsed] = Obj.parse(item) as Parsed<V>;
+                    continue;
+                }
+
+                parsed[key as keyof typeof parsed] = item as Parsed<V>;
+            }
+
+            return parsed as Parsed<ValueObj<K, V>>;
+        }
 
         const entries = [...obj.entries()];
 
@@ -22,48 +61,42 @@ export const Obj = {
             for (let j: number = 0; j < 2; j++) {
                 const item = entry[j]!;
 
-                const isKey = j === 0;
-                const list = isKey ? keys : items;
+                const list = j === 0 ? keys : items;
+                let value: unknown = null;
 
-                if (item instanceof MpClass()) {
-                    const value = item.value;
+                if (
+                    item instanceof Uint ||
+                    item instanceof Int  ||
+                    item instanceof Flt  ||
 
-                    if (
-                        isKey &&
+                    item instanceof Bool ||
+                    item instanceof Str  ||
 
-                        (
-                            typeof value !== "string" &&
-                            typeof value !== "number"
-                        )
-                    ) canBeRecord = false;
+                    item instanceof Bfr
+                ) value = item.value;
 
-                    list[i] = value;
+                if (value !== null) {
+                    list[i] = value as Parsed<K | V>;
+                    continue;
+                }
+
+                if (item instanceof Uint8Array) {
+                    list[i] = item as Parsed<K | V>;
                     continue;
                 }
 
                 if (Arr.isValueValid(item)) {
-                    if (isKey) canBeRecord = false;
-
-                    list[i] = Arr.parse(item) as any;
+                    list[i] = Arr.parse(item) as Parsed<K | V>;
                     continue;
                 }
 
                 if (Obj.isValueValid(item)) {
-                    if (isKey) canBeRecord = false;
-
-                    list[i] = Obj.parse(item) as any;
+                    list[i] = Obj.parse(item) as Parsed<K | V>;
                     continue;
                 }
 
-                list[i] = item as any;
+                list[i] = item as Parsed<K | V>;
             }
-        }
-
-        if (canBeRecord) {
-            const parsed: Record<Exclude<PropertyKey, symbol>, Parsed<V>> = {};
-            for (let i: number = 0; i < keys.length; i++) parsed[keys[i] as Exclude<PropertyKey, symbol>] = items[i]!;
-
-            return parsed as unknown as Parsed<ValueObj<K, V>>;
         }
 
         const parsed = new Map<Parsed<K>, Parsed<V>>();
@@ -75,7 +108,7 @@ export const Obj = {
     encode<K, V>(obj: ValueObj<K, V>, exts: Ext<Constructor<unknown>, number, boolean>[] = []): Uint8Array {
         const header = this.encodeHeader(obj);
 
-        const entries = [...obj.entries()];
+        const entries = obj instanceof Map ? [...obj.entries()] : Object.entries(obj);
 
         const subchunks = Array<Uint8Array>(entries.length);
         let subchunksLen: number = 0;
@@ -86,10 +119,10 @@ export const Obj = {
             const subchunkKey  = encodeAny(entry[0]!, exts);
             const subchunkItem = encodeAny(entry[1]!, exts);
 
-            subchunks[i] = subchunkKey;
+            subchunks[i * 2 + 0] = subchunkKey;
             subchunksLen += subchunkKey.byteLength;
 
-            subchunks[i] = subchunkItem;
+            subchunks[i * 2 + 1] = subchunkItem;
             subchunksLen += subchunkItem.byteLength;
         }
 
@@ -109,7 +142,7 @@ export const Obj = {
     encodeHeader<K, V>(obj: ValueObj<K, V>): Uint8Array {
         if (!this.isValueValid(obj)) throw new MpError.InvalidValue("Obj", "ENCODING");
 
-        const len = obj.size;
+        const len = obj instanceof Map ? obj.size : Object.keys(obj).length;
 
         let code: number;
         let lenLen: number;
@@ -164,7 +197,7 @@ export const Obj = {
         return header;
     },
 
-    decode<K extends MpClassInterface<unknown> | null, V extends MpClassInterface<unknown> | null, C extends unknown>(chunk: Uint8Array, exts: Ext<Constructor<C>, number, boolean>[] = [], doDecompression: boolean = false): ValueObj<K | C, V | C> {
+    decode<K extends Exclude<PropertyKey, symbol> | MpClassInterface<unknown> | null, V extends MpClassInterface<unknown> | null, C extends unknown>(chunk: Uint8Array, exts: Ext<Constructor<C>, number, boolean>[] = [], doDecompression: boolean = false): ValueObj<K | C, V | C> {
         const subchunks = this.decodeHeader(chunk);
 
         const subchunksKey  = subchunks[0];
@@ -173,7 +206,7 @@ export const Obj = {
         const obj = new Map();
         for (let i: number = 0; i < subchunksKey.length; i++) obj.set(decodeAny(subchunksKey[i]!, exts, doDecompression), decodeAny(subchunksItem[i]!, exts, doDecompression));
 
-        return obj;
+        return obj as ValueObj<K | C, V | C>;
     },
 
     decodeHeader(chunk: Uint8Array): [Uint8Array[], Uint8Array[]] {
@@ -375,4 +408,4 @@ export const Obj = {
     }
 };
 
-export type ValueObj<K, V> = Map<K, V>;
+export type ValueObj<K, V> = Map<K, V> | (K extends Exclude<PropertyKey, symbol> ? Record<K, V> : {});
