@@ -80,7 +80,7 @@ describe("OBJ", () => {
     for (let iValues: number = 0; iValues < valuesAccepted.length; iValues++) {
         for (const [codeChunk, values] of valuesAccepted.slice(0, iValues + 1))
             for (const value of values)
-                it(`0x${codeChunk.toString(16).padStart(2, "0")} - length: ${value.size}`, () => {
+                it(`0x${codeChunk.toString(16).padStart(2, "0")} - length: ${(value as Map<unknown, unknown>).size}`, () => {
                     expect(Obj.isValueValid(value)).toBe(true);
 
                     const chunkEncoded = Obj.encode(value);
@@ -90,7 +90,7 @@ describe("OBJ", () => {
                     expect(Obj.isChunkValid(chunkEncoded)).toBe(true);
 
                     const obj = Obj.decode(chunkEncoded);
-                    expect(obj instanceof Map ? obj.size : Object.keys(obj).length).toBe(value.size);
+                    expect(obj instanceof Map ? obj.size : Object.keys(obj).length).toBe((value as Map<unknown, unknown>).size);
                 });
     }
 });
