@@ -11,7 +11,7 @@ let lz4Block = null as unknown as LZ4BlockModuleExports;
 /** An object to enable compression and decompression of MessagePack buffers. Used by this port and the most popular C# port of MessagePack. */
 export const LZ4Compression = {
     /** The maximum size for each uncompressed block of data when it is compressed */
-    maxBlockSize: 32768, // 2 ^ 15
+    maxBlockSize: 8192, // 2 ^ 13
 
     /** Checks whether the LZ4 block modules have been initialized. */
     get hasInitialized(): boolean {
@@ -35,13 +35,13 @@ export const LZ4Compression = {
         const blocks: Uint8Array[] = [];
         const lengthsOrig: number[] = [];
 
-        let memLz4 = new Uint8Array(lz4Block.memory.buffer);
+        let memLz4 = new Uint8Array();
 
         for (let i: number = 0, len = this.maxBlockSize; i < bfrDecoded.byteLength; i += len) {
             len = Math.min(len, bfrDecoded.byteLength - i);
 
-            const hasGrown = lz4Block.growPreEncode(len) !== 0;
-            if (hasGrown) memLz4 = new Uint8Array(lz4Block.memory.buffer);
+            lz4Block.growPreEncode(len);
+            if (memLz4.buffer !== lz4Block.memory.buffer) memLz4 = new Uint8Array(lz4Block.memory.buffer);
 
             memLz4.set(bfrDecoded.subarray(i, i + len));
 
@@ -52,14 +52,11 @@ export const LZ4Compression = {
             blocks.push(memLz4.slice(iOutStart, iOutEnd));
         }
 
-        let payloadLengthsLen: number = 0;
-        for (const len of lengthsOrig) payloadLengthsLen += Uint.value2LenEncoded(len);
-
         if (blocks.length === 1) {
             const block = blocks[0]!;
             const lenOrig = lengthsOrig[0]!;
 
-            const subchunkLen = new Int(lenOrig, "I32").encode();
+            const subchunkLen = new Uint(lenOrig, Uint.value2Subtype(lenOrig)).encode();
 
             const payload = new Uint8Array(subchunkLen.byteLength + block.byteLength);
 
@@ -71,16 +68,19 @@ export const LZ4Compression = {
             return chunk;
         }
 
+        let payloadLengthsLen: number = 0;
+        for (const len of lengthsOrig) payloadLengthsLen += Uint.value2LenEncoded(len);
+
         const subchunksLengthsOrig = new Uint8Array(payloadLengthsLen);
         for (let iPayload: number = 0, iLen: number = 0; iLen < lengthsOrig.length; iLen++) {
             const len = lengthsOrig[iLen]!;
 
-            const int = new Int(len, "I32");
+            const uint = new Uint(len, Uint.value2Subtype(len));
 
-            const bfrInt = int.encode();
-            subchunksLengthsOrig.set(bfrInt, iPayload);
+            const bfrUint = uint.encode();
+            subchunksLengthsOrig.set(bfrUint, iPayload);
 
-            iPayload += bfrInt.byteLength;
+            iPayload += bfrUint.byteLength;
         }
 
         const subchunkExt = ExtUtils.encodeRaw(subchunksLengthsOrig, 0x62);
@@ -104,7 +104,7 @@ export const LZ4Compression = {
         const chunk = new Uint8Array(header.byteLength + subchunkExt.byteLength + chunkBlocksLen);
         chunk.set(header, 0);
 
-        for (let iChunk: number = header.byteLength, iSubchunk: number = 0; iSubchunk < subchunks.length; iSubchunk++) {
+        for (let iChunk = header.byteLength, iSubchunk: number = 0; iSubchunk < subchunks.length; iSubchunk++) {
             const subchunk = subchunks[iSubchunk]!;
 
             chunk.set(subchunk, iChunk);
@@ -121,7 +121,9 @@ export const LZ4Compression = {
         if (ExtUtils.isChunkValid(chunk)) {
             const payload = ExtUtils.decodeRaw(chunk)[0];
 
-            const indices = Int.deriveChunkIndices(payload);
+            const Num = Uint.isChunkValid(payload) ? Uint : Int;
+
+            const indices = Num.deriveChunkIndices(payload);
 
             const iBlockStart = indices[indices.length - 1]!;
             const block = payload.subarray(iBlockStart);
@@ -138,7 +140,7 @@ export const LZ4Compression = {
 
             const lenUnpacked = iOutEnd - iOutStart;
 
-            const lenOrig = Int.decode(payload).value as number;
+            const lenOrig = Num.decode(payload).value as number;
             if (lenUnpacked !== lenOrig) warn("MISMATCHED_LENGTH_CHECK", lenOrig, lenUnpacked)
 
             return bfr.slice(iOutStart, iOutEnd);
@@ -161,11 +163,12 @@ export const LZ4Compression = {
             for (let i: number = 0; i < subchunksLengthsOrig.byteLength;) {
                 const subchunk = subchunksLengthsOrig.subarray(i);
 
-                const indices = Int.deriveChunkIndices(subchunk);
+                const Num = Uint.isChunkValid(subchunk) ? Uint : Int;
 
+                const indices = Num.deriveChunkIndices(subchunk);
                 const subchunkLen = indices[indices.length - 1]!;
 
-                const lenOrig = Int.decode(subchunk).value as number;
+                const lenOrig = Num.decode(subchunk).value as number;
                 lengthsOrig.push(lenOrig);
 
                 i += subchunkLen;
@@ -176,7 +179,7 @@ export const LZ4Compression = {
             if (nBlocks !== lengthsOrig.length) warn("MISMATCHED_DATA_BLOCK_COUNT", lengthsOrig.length, nBlocks);
 
             const bfrDecoded = new Uint8Array(bfrLen);
-            let memLz4 = new Uint8Array(lz4Block.memory.buffer);
+            let memLz4 = new Uint8Array();
 
             for (let iSubchunk: number = 1, iBfr: number = 0; iSubchunk < iSubchunks.length; iSubchunk++) {
                 const subchunk = chunk.subarray(iSubchunks[iSubchunk]);
@@ -184,8 +187,8 @@ export const LZ4Compression = {
                 const bfr = Bfr.decode(subchunk).value;
                 const len = bfr.byteLength;
 
-                const hasGrown = lz4Block.growPreDecode(len) !== 0;
-                if (hasGrown) memLz4 = new Uint8Array(lz4Block.memory.buffer);
+                lz4Block.growPreDecode(len);
+                if (memLz4.buffer !== lz4Block.memory.buffer) memLz4 = new Uint8Array(lz4Block.memory.buffer);
 
                 memLz4.set(bfr);
 
@@ -219,7 +222,7 @@ export const LZ4Compression = {
 
             const payload = resDecoded[0];
 
-            return Int.isChunkValid(payload);
+            return !!(Uint.isChunkValid(payload) || Int.isChunkValid(payload));
         }
 
         if (Arr.isChunkValid(chunk)) {
@@ -243,9 +246,12 @@ export const LZ4Compression = {
             for (let i: number = 0; i < subchunksLengthsUnpacked.byteLength;) {
                 const subchunkLen = subchunksLengthsUnpacked.subarray(i);
 
-                if (!Int.isChunkValid(subchunkLen)) return false;
+                const isUint = Uint.isChunkValid(subchunkLen);
+                if (!isUint && !Int.isChunkValid(subchunkLen)) return false;
 
-                const indices = Int.deriveChunkIndices(subchunkLen);
+                const Num = isUint ? Uint : Int;
+
+                const indices = Num.deriveChunkIndices(subchunkLen);
 
                 const lenLen = indices[indices.length - 1]!;
                 i += lenLen;
