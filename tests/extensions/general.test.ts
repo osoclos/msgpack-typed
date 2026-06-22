@@ -75,14 +75,16 @@ describe("EXT", () => {
     const ext = new ExtTest(0);
 
     for (let iPayload: number = 0; iPayload < payloads.length; iPayload++) {
-        for (const [codeChunkSrc, values] of payloads.slice(0, iPayload + 1))
+        for (const [codeChunk, values] of payloads.slice(0, iPayload + 1))
             for (const value of values)
-                it(`0x${codeChunkSrc.toString(16).padStart(2, "0")} - ${value}`, () => {
+                it(`0x${codeChunk.toString(16).padStart(2, "0")} - ${value}`, () => {
                     expect(ext.isEncodable(value)).toBe(true);
 
                     const chunkEncoded = ExtUtils.encodeWith(ext, value);
 
-                    expect(chunkEncoded[0]!).toBe(codeChunkSrc);
+                    expect(chunkEncoded[0]!).toBe(codeChunk);
+
+                    expect(ExtUtils.isChunkValid(chunkEncoded)).toBe(true);
                     expect(ExtUtils.decodeWith(ext, chunkEncoded)).toBe(value);
                 });
     }
