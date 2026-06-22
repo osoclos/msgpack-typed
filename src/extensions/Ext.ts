@@ -1,11 +1,19 @@
 import { ExtUtils } from "../utils";
-import type { Constructor } from "../internal";
+import { MpError, type Constructor } from "../internal";
 
 /** A parser for custom classes, representing the `fixext` and `ext` format families in the MessagePack specification. */
 export abstract class Ext<T extends Constructor<unknown>, C extends number, S extends boolean = false> {
     #codes: Set<C>;
 
     protected constructor(codes: C[]) {
+        for (const code of codes)
+            if (
+                code % 1.0 !== 0.0 ||
+
+                code < -0x80 ||
+                code > 0x7f
+            ) throw new MpError.InvalidCode("Ext", "UNSUPPORTED", code);
+
         this.#codes = new Set(codes);
     }
 

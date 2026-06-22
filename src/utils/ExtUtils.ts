@@ -131,7 +131,7 @@ export const ExtUtils = {
         const hasLenStartIdx = indices.length === 5;
 
         const iCodeExt = indices[1 + +hasLenStartIdx /* hasLenStartIdx ? 2 : 1 */]!;
-        const codeExt = chunk[iCodeExt]!;
+        const codeExt = chunk[iCodeExt]! << 24 >> 24;
 
         const iPayloadStart = indices[2 + +hasLenStartIdx /* hasLenStartIdx ? 3 : 2 */]!;
         const iPayloadEnd   = indices[3 + +hasLenStartIdx /* hasLenStartIdx ? 4 : 3 */]!;
