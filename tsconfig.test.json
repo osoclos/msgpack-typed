@@ -5,6 +5,7 @@
     "compilerOptions": {
         // Modules
         "paths": { "@/*": ["./dist/*"] },
+        "types": ["@types/node"],
 
         // Emit
         "declaration": false,
