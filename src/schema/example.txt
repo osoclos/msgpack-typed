@@ -1,9 +1,0 @@
-decodeWithSchema([] / {} / 0 / "" / false / null / Uint, new Uint()) // primtives and classes
-decodeWithSchema(t.obj(new Map() / [[a, b]] / {}).keys().values()) // maps
-decodeWithSchema(t.arr([]).union().len()) // arr
-decodeWithSchema(t.optional(Uint, true /* deep */) / t.required(Uint, true /* deep */) / t.union(Uint, Int) / t.any()) // utils
-decodeWithSchema(t.uint() / t.int() / t.float() / t.bool()) // class types
-decodeWithSchema(t.number() / t.integer()) // special number type
-encodeWithSchema(dataDecoded) // use typed decoded data as schema
-
-generated output: classes, collections (arrays, maps, records), if array has [Symbol("__UNION__")] key, treat it as a union instead of a collection.
