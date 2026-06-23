@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { server } from "vitest/browser";
 
-import { Arr, decodeAny, encodeAny, LZ4Compression, Obj, type ValueArr, type ValueObj } from "../../dist";
+import { Arr, decodeAny, decodeWithSchema, encodeAny, encodeWithSchema, generateSchema, LZ4Compression, Obj, type MpSchema, type ValueArr, type ValueObj } from "../../dist";
 
 describe("LZ4", async () => {
     await LZ4Compression.initModules();
@@ -17,12 +17,24 @@ describe("LZ4", async () => {
         expect(LZ4Compression.isUnpackable(chunk)).toBe(true);
 
         const decoded = decodeAny(chunk, true) as ValueArr<unknown>;
-        expect(() => void Arr.parse(decoded)).not.toThrow();
+        const parsed = Arr.parse(decoded);
+
+        let schema: any;
+        expect(() => void (schema = generateSchema(decoded) as unknown as MpSchema<unknown, any>)).not.toThrow();
 
         const chunkEncoded = encodeAny(decoded, true);
 
         expect(LZ4Compression.isUnpackable(chunkEncoded)).toBe(true);
+
         expect(decodeAny(chunkEncoded, true)).toStrictEqual(decoded);
+        expect(decodeWithSchema(schema, chunkEncoded, true)).toStrictEqual(decoded);
+
+        const chunkEncodedSchema = encodeWithSchema(schema, parsed, true);
+
+        expect(LZ4Compression.isUnpackable(chunkEncodedSchema)).toBe(true);
+
+        expect(decodeAny(chunkEncodedSchema, true)).toStrictEqual(decoded);
+        expect(decodeWithSchema(schema, chunkEncodedSchema, true)).toStrictEqual(decoded);
     });
 
     it("single obj", () => {
