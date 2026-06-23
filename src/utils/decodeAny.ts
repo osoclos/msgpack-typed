@@ -8,6 +8,8 @@ import { CODE_NIL, MpError, type Constructor, type MpClassInterface } from "../i
 import { ExtUtils } from "./ExtUtils";
 import { LZ4Compression } from "./LZ4Compression";
 
+export function decodeAny<T extends MpClassInterface<unknown> | null | C | ValueArr<MpClassInterface<unknown> | null | C> | ValueObj<MpClassInterface<unknown> | null | C, MpClassInterface<unknown> | null | C>, C extends unknown>(chunk: Uint8Array, doDecompression?: boolean): T;
+export function decodeAny<T extends MpClassInterface<unknown> | null | C | ValueArr<MpClassInterface<unknown> | null | C> | ValueObj<MpClassInterface<unknown> | null | C, MpClassInterface<unknown> | null | C>, C extends unknown>(chunk: Uint8Array, exts?: Ext<Constructor<C>, number, boolean>[], doDecompression?: boolean): T;
 export function decodeAny<T extends MpClassInterface<unknown> | null | C | ValueArr<MpClassInterface<unknown> | null | C> | ValueObj<MpClassInterface<unknown> | null | C, MpClassInterface<unknown> | null | C>, C extends unknown>(chunk: Uint8Array, b?: boolean | Ext<Constructor<C>, number, boolean>[], c?: boolean): T {
     const code = chunk[0 /* iCode */]!;
 
