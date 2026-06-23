@@ -29,11 +29,6 @@ export const Obj = {
                     continue;
                 }
 
-                if (item instanceof Uint8Array) {
-                    parsed[key as keyof typeof parsed] = item as Parsed<V>;
-                    continue;
-                }
-
                 if (Arr.isValueValid(item)) {
                     parsed[key as keyof typeof parsed] = Arr.parse(item) as Parsed<V>;
                     continue;
@@ -77,11 +72,6 @@ export const Obj = {
 
                 if (value !== null) {
                     list[i] = value as Parsed<K | V>;
-                    continue;
-                }
-
-                if (item instanceof Uint8Array) {
-                    list[i] = item as Parsed<K | V>;
                     continue;
                 }
 
@@ -237,7 +227,8 @@ export const Obj = {
                 typeof value === "object" &&
                 value !== null &&
 
-                !Array.isArray(value)
+                !Array.isArray(value) &&
+                !Bfr.isValueValid(value)
             )
         );
     },

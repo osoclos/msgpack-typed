@@ -45,11 +45,6 @@ export function encodeAny(value: unknown, b?: boolean | Ext<Constructor<unknown>
             break validation;
         }
 
-        if (value instanceof Uint8Array) {
-            chunk = new Bfr(value).encode();
-            break validation;
-        }
-
         if (Arr.isValueValid(value)) {
             chunk = Arr.encode(value, exts);
             break validation;
@@ -67,6 +62,16 @@ export function encodeAny(value: unknown, b?: boolean | Ext<Constructor<unknown>
 
         if (Int.isValueValid(value)) {
             chunk = new Int(value).encode();
+            break validation;
+        }
+
+        if (Uint.isValueValid(value, "U64")) {
+            chunk = new Uint(value, "U64").encode();
+            break validation;
+        }
+
+        if (Int.isValueValid(value, "I64")) {
+            chunk = new Int(value, "I64").encode();
             break validation;
         }
 

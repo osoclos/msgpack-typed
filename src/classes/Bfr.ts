@@ -154,7 +154,7 @@ export class Bfr extends MpClassSubtyped<ValueBfr, SubtypeBfr>() {
     }
 
     static override isValueValid(value: unknown, subtype: SubtypeBfr = "BFR32"): value is ValueBfr {
-        if (!(value instanceof Uint8Array)) throw new MpError.InvalidValue(this.name, "MAP_SUBTYPE");
+        if (!(value instanceof Uint8Array)) return false;
 
         const len = value.byteLength;
 

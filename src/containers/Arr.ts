@@ -118,7 +118,7 @@ export const Arr = {
 
     decode<T extends MpClassInterface<unknown> | null, C extends unknown>(chunk: Uint8Array, exts: Ext<Constructor<C>, number, boolean>[] = [], doDecompression: boolean = false): ValueArr<T | C> {
         const subchunks = this.decodeHeader(chunk);
-        return subchunks.map((subchunk) => decodeAny<T, C>(subchunk, exts, doDecompression)) as ValueArr<T | C>;
+        return subchunks.map((subchunk) => decodeAny(subchunk, exts, doDecompression));
     },
 
     decodeHeader(chunk: Uint8Array): Uint8Array[] {
