@@ -1,21 +1,21 @@
-import __initMathModule from "./math.wat";
-import __initHashTableModule from "./hash-table.wat";
+import watInitMathModule from "./math.wat";
+import watInitHashTableModule from "./hash-table.wat";
 
-import __initLz4BlockModule from "./lz4-block.wat";
+import watInitLz4BlockModule from "./lz4-block.wat";
 
 export async function initMathModule(): Promise<MathModuleExports> {
-    return __initMathModule<MathModuleExports>();
+    return watInitMathModule<MathModuleExports>();
 }
 
 export async function initHashTableModule(imports: HashTableModuleImports = {}): Promise<HashTableModuleExports> {
     imports.options ??= {};
     imports.options.nHashBits ??= 12;
 
-    return __initHashTableModule<HashTableModuleExports, Required<HashTableModuleImports>>(<Required<HashTableModuleImports>>imports);
+    return watInitHashTableModule<HashTableModuleExports, HashTableModuleImports>(imports);
 }
 
-export async function initLz4BlockModule(imports: Lz4BlockModuleImports): Promise<Lz4BlockModuleExports> {
-    return __initLz4BlockModule<Lz4BlockModuleExports, Required<Lz4BlockModuleImports>>(imports);
+export async function initLZ4BlockModule(imports: LZ4BlockModuleImports): Promise<LZ4BlockModuleExports> {
+    return watInitLz4BlockModule<LZ4BlockModuleExports, LZ4BlockModuleImports>(imports);
 }
 
 export interface MathModuleExports {
@@ -39,17 +39,17 @@ export interface HashTableModuleExports {
     fillMemory(byte: number): void;
 }
 
-export interface Lz4BlockModuleImports {
+export interface LZ4BlockModuleImports {
     math: MathModuleExports;
     hashTable: HashTableModuleExports;
 }
 
-export interface Lz4BlockModuleExports {
+export interface LZ4BlockModuleExports {
     encode(len: number): number;
     decode(len: number): number;
 
-    growPreEncode(len: number): void;
-    growPreDecode(len: number): void;
+    growPreEncode(len: number): number;
+    growPreDecode(len: number, lenOrig: number): number;
 
     memory: WebAssembly.Memory;
 }

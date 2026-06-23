@@ -1,112 +1,63 @@
-import { NIL_CODE } from "../internal";
-import { InvalidDataTypeError, InvalidHeaderCodeError, MissingHeaderCodeError, NullInRequiredError, warnTruncatedChunk } from "../utils";
+import { MpClassSubtyped, MpError } from "../internal";
 
-import { MpClassInterface, MpClassModule, MpResult } from "../types";
+export class Bfr extends MpClassSubtyped<ValueBfr, SubtypeBfr>() {
+    #value: ValueBfr;
+    #subtype: SubtypeBfr;
 
-/** A wrapper for buffers, representing the `bin` format families in the MessagePack specification. */
-export const Bfr: MpClassModule<BfrPrimitive, boolean> = class Bfr<N extends boolean> implements MpClassInterface<BfrPrimitive, N> {
-    #data: MpResult<BfrPrimitive, N>;
-    #isOptional: N;
+    constructor(value?: ValueBfr, subtype?: SubtypeBfr);
+    constructor(bfr: Uint8Array, subtype?: SubtypeBfr);
+    constructor(a: ValueBfr | Uint8Array = new Uint8Array(), subtype: SubtypeBfr = "BFR32") {
+        super(a as ValueBfr, subtype);
 
-    /** Wraps a native `Uint8Array`, copies it and makes it usable for MessagePack parsing, with an option to specify if it can be nullable. */
-    constructor(data?: BfrPrimitive, isOptional?: N);
+        if (Bfr.isSubtypeValid(subtype)) this.#subtype = subtype;
+        else throw new MpError.InvalidSubtype(this[Symbol.toStringTag], "CONSTRUCTOR", subtype);
 
-    /** Wraps `null` and makes it usable for MessagePack parsing, which can be promoted to a buffer. */
-    constructor(data: null, isOptional: true);
+        const value = a;
 
-    /** Interprets bytes in a buffer, copies it and makes it usable for MessagePack parsing, with an option to specify if it can be nullable. If the buffer is empty and marked as nullable, it will be assumed to be `null`. */
-    constructor(bfr: Uint8Array, isOptional?: N);
-    constructor(a?: unknown, isOptional: N = <N>false) {
-        this.#isOptional = isOptional;
-
-        if (!(a instanceof Uint8Array)) {
-            const data =
-                arguments.length === 0
-                    ? isOptional
-                        ? null
-                        : new Uint8Array()
-                    : a;
-
-            if (!this.isValid(data)) throw new InvalidDataTypeError(data);
-            this.#data = data;
-
-            return;
-        }
-
-        const bfr = a;
-
-        if (isOptional && bfr.byteLength === 0) {
-            this.#data = <any>null;
-            return;
-        }
-
-        this.#data = new Uint8Array(bfr);
+        if (Bfr.isValueValid(value, subtype)) this.#value = value;
+        else throw new MpError.InvalidValue(this[Symbol.toStringTag], "CONSTRUCTOR");
     }
 
-    /** Wraps a native `Uint8Array`, copies it and makes it usable for MessagePack parsing without allowing it to downgrade to `null`. */
-    static required(data: BfrPrimitive): Bfr<false>;
-
-    /** Interprets bytes in a buffer, copies it and makes it usable for MessagePack parsing without allowing it to downgrade to `null`, defaulting to `new Uint8Array([])` if the buffer is empty. */
-    static required(bfr: Uint8Array): Bfr<false>;
-    static required(a?: unknown): Bfr<false> {
-        return <any>new Bfr(<any>a, false);
+    override get value(): ValueBfr {
+        return this.#value;
     }
 
-    /** Wraps a native `Uint8Array`, or `null`, copies it and makes it usable for MessagePack parsing. If no argument is provided, it will default to `null`. */
-    static optional(data: BfrPrimitive | null): Bfr<true>;
-
-    /** Interprets bytes in a buffer, copies it and makes it usable for MessagePack parsing. If the buffer is empty, it will be assumed to be `null`. */
-    static optional(bfr: Uint8Array): Bfr<true>;
-    static optional(a?: unknown): Bfr<true> {
-        return <any>new Bfr(<any>a, true);
+    override set value(value: ValueBfr) {
+        if (Bfr.isValueValid(value)) this.#value = value;
+        else throw new MpError.InvalidValue(this[Symbol.toStringTag], "ASSIGNMENT");
     }
 
-    /** The raw value stored in the wrapper. */
-    get data(): MpResult<BfrPrimitive, N> {
-        return this.#data;
+    override get subtype(): SubtypeBfr {
+        return this.#subtype;
     }
 
-    set data(data: unknown) {
-        if (this.isValid(data)) this.#data = data === null ? data : new Uint8Array(data);
-        else if (data === null) throw new NullInRequiredError();
-        else throw new InvalidDataTypeError(data);
+    override set subtype(subtype: SubtypeBfr) {
+        if (Bfr.isValueValid(this.#value, subtype) && Bfr.isSubtypeValid(subtype)) this.#subtype = subtype;
+        else throw new MpError.InvalidSubtype(this[Symbol.toStringTag], "ASSIGNMENT", subtype);
     }
 
-    /* Whether this wrapper accepts `null` as a valid value. */
-    get isOptional(): N {
-        return this.#isOptional;
-    }
-
-    private set isOptional(isOptional: N) {
-        this.#isOptional = isOptional;
-    }
-
-    /* Transforms the raw value stored in the wrapper and converts it into a parsable MessagePack chunk. */
-    encode() {
-        if (this.#data === null) return new Uint8Array([NIL_CODE]);
-
-        const len = this.#data.byteLength;
+    override encode(): Uint8Array {
+        const len = this.#value.byteLength;
 
         let code: number;
         let lenLen: number;
 
-        switch (true) {
-            // bin
-            case len <= 0xff: {
+        switch (this.#subtype) {
+            case "BFR8": {
                 code = 0xc4;
                 lenLen = 1;
 
                 break;
             }
 
-            case len <= 0xffff: {
+            case "BFR16": {
                 code = 0xc5;
                 lenLen = 2;
 
                 break;
             }
 
-            default: {
+            case "BFR32": {
                 code = 0xc6;
                 lenLen = 4;
 
@@ -114,96 +65,187 @@ export const Bfr: MpClassModule<BfrPrimitive, boolean> = class Bfr<N extends boo
             }
         }
 
-        const iDataStart = 1 + lenLen;
-
-        const chunkLen = iDataStart + len;
-
-        const chunk = new Uint8Array(chunkLen);
+        const chunk = new Uint8Array(1 + lenLen + len);
         chunk[0] = code;
 
-        for (let i: number = 1, iByte: number = lenLen - 1; iByte >= 0; i++, iByte--)
-            chunk[i] = (len >>> (iByte * 8)) & 0xff;
+        switch (this.#subtype) {
+            case "BFR8": {
+                chunk[1] = len;
+                break;
+            }
 
-        chunk.set(this.#data, iDataStart);
+            default: {
+                const view = new DataView(chunk.buffer);
+
+                if (this.#subtype === "BFR16") view.setUint16(1, len);
+                else view.setUint32(1, len);
+            }
+        }
+
+        chunk.set(this.#value, 1 + lenLen);
 
         return chunk;
     }
 
-    /* Converts a MessagePack chunk assumed to be in the `bin` format family and creates a wrapper from it. If the chunk is in the `nil` format family, then a nullable wrapper is created, with its stored value set to `null`. */
-    static decode(chunk: Uint8Array): Bfr<false> {
-        const code = chunk[0];
-        if (code === undefined) throw new MissingHeaderCodeError();
+    static override decode(chunk: Uint8Array): Bfr {
+        const indices = this.deriveChunkIndices(chunk);
 
-        if (code === NIL_CODE) return new Bfr(null, true);
+        const hasLenIdx = indices.length === 4;
 
-        const indices = this.deriveIndices(chunk);
+        const iCode = indices[0];
 
-        const [, , iDataStart, iDataEnd] = indices;
-        if (iDataEnd > chunk.byteLength) warnTruncatedChunk();
+        const iValueStart = indices[1 + +hasLenIdx /* hasLenIdx ? 2 : 1 */]!;
+        const iValueEnd   = indices[2 + +hasLenIdx /* hasLenIdx ? 3 : 2 */]!;
 
-        return new Bfr(chunk.subarray(iDataStart, iDataEnd));
+        if (iValueEnd > chunk.byteLength) throw new MpError.TruncatedChunk(this.name, "DECODING", iValueEnd, chunk.byteLength);
+
+        const code = chunk[iCode]!;
+        const subtype = this.code2Subtype(code);
+
+        return new Bfr(chunk.subarray(iValueStart, iValueEnd), subtype);
     }
 
-    /* Resets the value of the wrapper to `new Uint8Array([])`, the non-nullable default value. If the wrapper is nullable, it will be instead resetted to `null`. */
-    reset() {
-        this.#data = this.#isOptional ? <any>null : new Uint8Array();
+    static override value2Subtype(value: ValueBfr): SubtypeBfr {
+        if (!(value instanceof Uint8Array)) throw new MpError.InvalidValue(this.name, "MAP_SUBTYPE");
+
+        const len = value.byteLength;
+
+        if (len <= 0xff) return "BFR8";
+        if (len <= 0xffff) return "BFR16";
+        if (len <= 0xffff_ffff) return "BFR32";
+
+        throw new MpError.InvalidValue(this.name, "MAP_SUBTYPE");
     }
 
-    /* Checks whether a value can be stored inside this wrapper. */
-    isValid(data: unknown): data is MpResult<BfrPrimitive, N>  {
-        return Bfr.isValid(data) || (this.isOptional && data === null);
+    static override code2Subtype(code: number): SubtypeBfr {
+        switch (code) {
+            case 0xc4: return "BFR8" ;
+            case 0xc5: return "BFR16";
+            case 0xc6: return "BFR32";
+        }
+
+        throw new MpError.InvalidCode(this.name, "MAP_SUBTYPE", code);
     }
 
-    /* Checks whether a value can be stored inside an instance of this wrapper. */
-    static isValid(data: unknown): data is BfrPrimitive {
-        return data instanceof Uint8Array;
+    static override value2LenEncoded(value: ValueBfr): number {
+        let lenEncoded: number;
+
+        const subtype = this.value2Subtype(value);
+        switch (subtype) {
+            case "BFR8": {
+                lenEncoded = 1 + 1;
+                break;
+            }
+
+            case "BFR16": {
+                lenEncoded = 1 + 2;
+                break;
+            }
+
+            case "BFR32": {
+                lenEncoded = 1 + 4;
+                break;
+            }
+        }
+
+        lenEncoded += value.byteLength;
+
+        return lenEncoded;
     }
 
-    /* Checks whether a chunk header code is supported by an instance of this wrapper. */
-    static isCodeValid(code: number): boolean {
+    static override isValueValid(value: unknown, subtype: SubtypeBfr = "BFR32"): value is ValueBfr {
+        if (!(value instanceof Uint8Array)) return false;
+
+        const len = value.byteLength;
+
+        switch (subtype) {
+            case "BFR8" : return len <= 0xff;
+            case "BFR16": return len <= 0xffff;
+            case "BFR32": return len <= 0xffff_ffff;
+        }
+    }
+
+    static override isSubtypeValid(subtype: string): subtype is SubtypeBfr {
         return (
-            code === 0xc4 ||
-            code === 0xc5 ||
-            code === 0xc6
+            subtype === "BFR8"   ||
+            subtype === "BFR16"  ||
+            subtype === "BFR32"
         );
     }
 
-    /* Checks whether a chunk is supported by an instance of this wrapper. */
-    static isChunkValid(chunk: Uint8Array): boolean {
-        const code = chunk[0];
-        if (code === undefined) throw new MissingHeaderCodeError();
+    static override isCodeValid(code: number): false;
+    static override isCodeValid(code: number): SubtypeBfr | false;
+    static override isCodeValid(code: number): SubtypeBfr | false {
+        switch (code) {
+            case 0xc4: return "BFR8";
+            case 0xc5: return "BFR16";
+            case 0xc6: return "BFR32";
+        }
+
+        return false;
+    }
+
+    static override isChunkValid(chunk: Uint8Array): false;
+    static override isChunkValid(chunk: Uint8Array): SubtypeBfr | false;
+    static override isChunkValid(chunk: Uint8Array): SubtypeBfr | false {
+        const code = chunk[0 /* iCode */];
+        if (code === undefined) throw new MpError.MissingCode(this.name, "VALIDATE_CHUNK");
 
         return this.isCodeValid(code);
     }
 
-    /* Computes the index of the chunk header code, the starting index of the data containing the length, the starting index of the data containing the raw value, as well as the final exclusive index of the chunk. */
-    static deriveIndices(chunk: Uint8Array): [number, number, number, number] {
-        const iCode: number = 0;
-        const code = chunk[iCode]!;
+    static override deriveChunkIndices(chunk: Uint8Array): [number, number, number, number] {
+        const code = chunk[0 /* iCode */]!; // ignore undefined since it is checked by isChunkValid
 
-        if (!this.isChunkValid(chunk)) throw new InvalidHeaderCodeError(code);
+        const subtype = this.isChunkValid(chunk);
+        if (!subtype) throw new MpError.InvalidCode(this.name, "UNSUPPORTED", code);
 
         /* match code:
-         *     case 0xc4: lenLen = 1
-         *     case 0xc5: lenLen = 2
-         *     case 0xc6: lenLen = 4
+         *     case 0xc4: lenLen = 1 // BFR8
+         *     case 0xc5: lenLen = 2 // BFR16
+         *     case 0xc6: lenLen = 4 // BFR32
          */
         const lenLen = 0b1 << (code - 0xc4);
-        const maxLenLen = chunk.byteLength < lenLen ? chunk.byteLength : lenLen;
 
-        const iLenStart = iCode + 1;
+        let len: number;
+        switch (lenLen) {
+            case 1: {
+                len = chunk[1]!;
+                break;
+            }
 
-        let len: number = 0;
-        for (let i: number = iLenStart, iByte: number = 0; iByte < maxLenLen; i++, iByte++) {
-            len <<= 8;
-            len |= chunk[i]!;
+            case 2: {
+                len =
+                    (chunk[1]!    << 8) |
+                     chunk[2]! /* << 0 */;
+
+                break;
+            }
+
+            case 4: {
+                const view = new DataView(chunk.buffer, chunk.byteOffset);
+
+                len = view.getUint32(1);
+                break;
+            }
+
+            default: throw new MpError.InvalidCode("Bfr", "UNSUPPORTED", code);
         }
 
-        const iDataStart = iLenStart + lenLen;
-        const iDataEnd = iDataStart + len;
+        return [
+            0 /* iCode */,
 
-        return [iCode, iLenStart, iDataStart, iDataEnd];
+            1 /* iLenStart */,
+
+            1 + lenLen /* iValueStart */,
+            1 + lenLen + len /* iValueEnd */
+        ];
     }
-} satisfies MpClassModule<BfrPrimitive, boolean>;
 
-export type BfrPrimitive = Uint8Array;
+    override get [Symbol.toStringTag](): string {
+        return Bfr.constructor.name;
+    }
+}
+
+export type ValueBfr = Uint8Array;
+export type SubtypeBfr = "BFR8" | "BFR16" | "BFR32";

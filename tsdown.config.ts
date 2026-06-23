@@ -19,7 +19,31 @@ export default defineConfig({
     sourcemap: true,
 
     clean: true,
-    minify: true,
+    minify: {
+        mangle: {
+            keepNames: true,
+            toplevel: false
+        },
+
+        compress: {
+            target: ["es2023"],
+
+            sequences: true,
+            joinVars: true,
+
+            unused: "keep_assign",
+
+            keepNames: {
+                function: true,
+                class: true
+            },
+
+            dropConsole: false,
+            dropDebugger: true
+        },
+
+        codegen: { removeWhitespace: true }
+    },
 
     unbundle: true,
 

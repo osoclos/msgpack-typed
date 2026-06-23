@@ -1,233 +1,304 @@
-import { Bfr, Bool, Ext, Flt, Int, Str, Uint } from "../classes";
+import { Bfr, Bool, Flt, Int, Str, Uint } from "../classes";
+import type { Ext } from "../extensions";
 
-import { NIL_CODE, RawClass, ToParsed  } from "../internal";
-import { MP_CLASS_LIST, MP_CONTAINER_LIST, MpContainer, MpClassUnion } from "../types";
+import { decodeAny, encodeAny, ExtUtils } from "../utils";
 
-import { decodeGeneric, encodeGeneric, ExtUtils, InvalidDataTypeError, InvalidHeaderCodeError, MissingHeaderCodeError, TruncationCannotProceedError } from "../utils";
+import { CODE_NIL, MpError, type Constructor, type MpClassInterface, type Parsed } from "../internal";
 
-/** An object to parse arrays, representing the `fixarray` and `array` format families in the MessagePack specification. */
+import { Obj } from "./Obj";
+
 export const Arr = {
-    /** Parses any wrappers in the array, retrieves their raw values and correspondingly replaces them in-place. Any non-wrapper items inside the array are ignored and left as-is. */
-    parse<T>(arr: T[]): ToParsed<T>[] {
-        const parsed: ToParsed<T>[] = [];
-
-        parseEachItem: for (let item of arr) {
+    parse<T>(arr: ValueArr<T>): Parsed<ValueArr<T>> {
+        return arr.map((item) => {
             if (
                 item instanceof Uint ||
                 item instanceof Int  ||
-
                 item instanceof Flt  ||
 
                 item instanceof Bool ||
-
                 item instanceof Str  ||
+
                 item instanceof Bfr
-            ) {
-                parsed.push(<ToParsed<T>>item.data);
-                continue parseEachItem;
-            }
+            ) return item.value as any;
 
-            for (const Container of MP_CONTAINER_LIST) {
-                if (Container.isValid(item)) {
-                    parsed.push((<any>Container.parse)(item));
-                    continue parseEachItem;
-                }
-            }
+            if (item instanceof Uint8Array) return item;
 
-            parsed.push(<ToParsed<T>>item);
-        }
+            if (Arr.isValueValid(item)) return Arr.parse(item);
+            if (Obj.isValueValid(item)) return Obj.parse(item);
 
-        return parsed;
+            return item;
+        });
     },
 
-    /** Serialises any data stored inside wrappers in the array and implicitly converts any other items into a wrapper-appropriate for its type before converting it into a parsable MessagePack chunk. */
-    encode(arr: ArrPrimitive, exts: Ext<RawClass<unknown>, number, boolean> | Ext<RawClass<unknown>, number, boolean>[] = []) {
+    encode<T>(arr: ValueArr<T>, exts: Ext<Constructor<unknown>, number, boolean>[] = []): Uint8Array {
         const header = this.encodeHeader(arr);
 
-        const buffers: Uint8Array[] = [header];
-        for (const item of arr) buffers.push(encodeGeneric(item, exts));
+        let subchunksLen: number = 0;
+        const subchunks = Array<Uint8Array>(arr.length);
 
-        const chunkLen = buffers.reduce((a, b) => a + b.length, 0);
+        for (let i: number = 0; i < arr.length; i++) {
+            const item = arr[i]!;
 
-        const chunk = new Uint8Array(chunkLen);
-        for (let i: number = 0, offset: number = 0; i < buffers.length; offset += buffers[i]!.length, i++) chunk.set(buffers[i]!, offset);
+            const subchunk = encodeAny(item, exts);
+
+            subchunks[i] = subchunk;
+            subchunksLen += subchunk.byteLength;
+        }
+
+        const chunk = new Uint8Array(header.byteLength + subchunksLen);
+        chunk.set(header, 0);
+
+        for (let iChunk: number = 0, iOffset = header.byteLength; iChunk < subchunks.length; iChunk++) {
+            const subchunk = subchunks[iChunk]!;
+
+            chunk.set(subchunk, iOffset);
+            iOffset += subchunk.byteLength;
+        }
 
         return chunk;
     },
 
-    /** Produces the metadata header of `fixarray` and `array` format families from a native array. Useful if you want more precise control over the generation of MessagePack chunks in an array. */
-    encodeHeader(arr: ArrPrimitive) {
-        if (!this.isValid(arr)) throw new InvalidDataTypeError(arr);
+    encodeHeader<T>(arr: ValueArr<T>): Uint8Array {
+        if (!this.isValueValid(arr)) throw new MpError.InvalidValue("Arr", "ENCODING");
 
         const len = arr.length;
 
         let code: number;
         let lenLen: number;
 
-        switch (true) {
-            // fixarr
-            case len <= 0x0f: {
+        lenCheck: {
+            // FIXARR
+            if (len <= 0x0f) {
                 code = 0x90 | len;
                 lenLen = 0;
 
-                break;
+                break lenCheck;
             }
 
-            // arr
-            case len <= 0xffff: {
+            // ARR
+
+            if (len <= 0xffff) {
                 code = 0xdc;
                 lenLen = 2;
 
+                break lenCheck;
+            }
+
+            if (len <= 0xffff_ffff) {
+                code = 0xdd;
+                lenLen = 4;
+
+                break lenCheck;
+            }
+
+            throw new MpError.InvalidValue("Arr", "ENCODING");
+        }
+
+        const header = new Uint8Array(1 + lenLen);
+        header[0] = code;
+
+        switch (lenLen) {
+            case 2: {
+                header[1] = (len    >>> 8)   & 0xff;
+                header[2] =  len /* >>> 0 */ & 0xff;
+
                 break;
             }
 
-            default: {
-                code = 0xdd;
-                lenLen = 4;
+            case 4: {
+                const view = new DataView(header.buffer);
+                view.setUint32(1, len);
 
                 break;
             }
         }
 
-        const iDataStart = 1 + lenLen;
-
-        const header = new Uint8Array(iDataStart);
-        header[0] = code;
-
-        for (let i: number = 1, iByte: number = lenLen - 1; iByte >= 0; i++, iByte--)
-            header[i] = (len >>> (iByte * 8)) & 0xff;
-
         return header;
     },
 
-    decode,
+    decode<T extends MpClassInterface<unknown> | null, C extends unknown>(chunk: Uint8Array, exts: Ext<Constructor<C>, number, boolean>[] = [], doDecompression: boolean = false): ValueArr<T | C> {
+        const subchunks = this.decodeHeader(chunk);
+        return subchunks.map((subchunk) => decodeAny(subchunk, exts, doDecompression));
+    },
 
-    /** Converts a MessagePack chunk assumed to be in the `fixarray`/`array` format family and parses it into an array of sub-buffers. Useful if you want more precise control over the parsing of MessagePack chunks in an array. */
     decodeHeader(chunk: Uint8Array): Uint8Array[] {
-        const indices = Arr.deriveIndices(chunk);
+        const indices = this.deriveChunkIndices(chunk);
 
         const hasLenStartIdx = indices.length === 4;
+        const iSubchunks = indices[1 + +hasLenStartIdx /* hasLenStartIdx ? 2 : 1 */] as number[];
 
-        const arr: Uint8Array[] = [];
+        const subchunks = Array<Uint8Array>(iSubchunks.length);
+        for (let i: number = 0; i < iSubchunks.length; i++) {
+            const iSubchunk = iSubchunks[i]!;
+            subchunks[i] = chunk.subarray(iSubchunk);
+        }
 
-        const dataIndices = <number[]>indices[<typeof hasLenStartIdx extends true ? 2 : 1>(1 + +hasLenStartIdx)];
-        for (const i of dataIndices) arr.push(chunk.subarray(i));
-
-        return arr;
+        return subchunks;
     },
 
-    /** Checks whether a value can be used on `Arr`. */
-    isValid(data: unknown): data is ArrPrimitive {
-        return Array.isArray(data);
+    isValueValid<T>(value: unknown): value is ValueArr<T> {
+        return Array.isArray(value);
     },
 
-    /** Checks whether a chunk header code is supported by `Arr`. */
     isCodeValid(code: number): boolean {
         return (
-            // fixarr
+            // FIXARR
             (code & 0xf0) === 0x90 ||
 
-            // arr
+            // ARR
             code === 0xdc ||
             code === 0xdd
         );
     },
 
-    /** Checks whether a chunk is supported by `Arr`. */
     isChunkValid(chunk: Uint8Array): boolean {
         const code = chunk[0];
-        if (code === undefined) throw new MissingHeaderCodeError();
+        if (code === undefined) throw new MpError.MissingCode("Arr", "VALIDATE_CHUNK");
 
         return this.isCodeValid(code);
     },
 
-    /** Computes the index of the chunk header code, the starting index of the data containing the length (will not appear if the chunk in the positive `fixarray` format family), the starting indices of the data containing nested chunks, as well as the final exclusive index of the chunk. */
-    deriveIndices(chunk: Uint8Array): [number, number[], number] | [number, number, number[], number] {
-        const iCode: number = 0;
-        const code = chunk[iCode]!;
+    deriveChunkIndices(chunk: Uint8Array): [number, number[], number] | [number, number, number[], number] {
+        const code = chunk[0 /* iCode */]!;
 
-        if (!this.isChunkValid(chunk)) throw new InvalidHeaderCodeError(code);
-
-        const headerIndices: [number] | [number, number] = [iCode];
+        if (!this.isChunkValid(chunk)) throw new MpError.InvalidCode("Arr", "UNSUPPORTED", code);
 
         let len: number;
-        let iDataStart: number;
+        let iPayloadStart: number;
 
-        // fixarr
-        if ((code & 0xf0) === 0x90) {
+        const isFixarr = (code & 0xf0) === 0x90;
+
+        if (isFixarr) {
             len = code & 0x0f;
-            iDataStart = iCode + 1;
+            iPayloadStart = 1;
         } else {
-            // arr
-
             /* match code:
              *     case 0xdc: lenLen = 2
              *     case 0xdd: lenLen = 4
              */
             const lenLen = 0b10 << (code - 0xdc);
-            const maxLenLen = chunk.byteLength < lenLen ? chunk.byteLength : lenLen;
 
-            const iLenStart = iCode + 1;
-            headerIndices.push(iLenStart);
+            switch (lenLen) {
+                case 2: {
+                    len =
+                        (chunk[1]!    << 8) |
+                        chunk[2]! /* << 0 */;
 
-            len = 0;
-            for (let i: number = iLenStart, iByte: number = 0; iByte < maxLenLen; i++, iByte++) {
-                len <<= 8;
-                len |= chunk[i]!;
+                    break;
+                }
+
+                case 4: {
+                    const view = new DataView(chunk.buffer, chunk.byteOffset);
+
+                    len = view.getUint32(1);
+                    break;
+                }
+
+                default: throw new MpError.InvalidCode("Arr", "UNSUPPORTED", code);
             }
 
-            iDataStart = iLenStart + lenLen;
+            iPayloadStart = 1 + lenLen;
         }
 
-        const dataIndices: number[] = [];
+        const iPayloads = Array<number>(len);
+        let iPayloadEnd = iPayloadStart;
 
-        let iDataEnd = iDataStart;
+        for (let i: number = 0; i < len; i++) {
+            iPayloads[i] = iPayloadEnd;
 
-        getEachSubIndex: for (let i: number = 0, offset = iDataEnd; i < len; i++, iDataEnd += offset) {
-            dataIndices.push(iDataEnd);
+            const subchunk = chunk.subarray(iPayloadEnd);
 
-            chunk = chunk.subarray(offset);
+            const code = subchunk[0];
+            if (code === undefined) throw new MpError.TruncatedChunk("Arr", "DECODING", iPayloadEnd, chunk.byteLength);
 
-            const iCode: number = 0;
-            const code = chunk[iCode];
-
-            if (code === undefined) throw new TruncationCannotProceedError();
-
-            if (code === NIL_CODE) {
-                offset = 1;
-                continue getEachSubIndex;
+            if (code === CODE_NIL) {
+                iPayloadEnd += 1;
+                continue;
             }
 
-            for (const Cls of MP_CLASS_LIST) {
-                if (Cls.isChunkValid(chunk)) {
-                    offset = Cls.deriveIndices(chunk).slice(-1)[0]!;
-                    continue getEachSubIndex;
-                }
+            if (Uint.isCodeValid(code)) {
+                const indices = Uint.deriveChunkIndices(subchunk);
+
+                iPayloadEnd += indices[indices.length - 1]!;
+                continue;
             }
 
-            for (const Container of MP_CONTAINER_LIST) {
-                if (Container.isChunkValid(chunk)) {
-                    offset = <number>Container.deriveIndices(chunk).slice(-1)[0]!;
-                    continue getEachSubIndex;
-                }
+            if (Int.isCodeValid(code)) {
+                const indices = Int.deriveChunkIndices(subchunk);
+
+                iPayloadEnd += indices[indices.length - 1]!;
+                continue;
             }
 
-            if (ExtUtils.isChunkValid(chunk)) offset = ExtUtils.deriveIndices(chunk).slice(-1)[0]!;
-            else throw new InvalidHeaderCodeError(code);
+            if (Flt.isCodeValid(code)) {
+                const indices = Flt.deriveChunkIndices(subchunk);
+
+                iPayloadEnd += indices[indices.length - 1]!;
+                continue;
+            }
+
+            if (Bool.isCodeValid(code)) {
+                const indices = Bool.deriveChunkIndices(subchunk);
+
+                iPayloadEnd += indices[indices.length - 1]!;
+                continue;
+            }
+
+            if (Str.isCodeValid(code)) {
+                const indices = Str.deriveChunkIndices(subchunk);
+
+                iPayloadEnd += indices[indices.length - 1]!;
+                continue;
+            }
+
+            if (Bfr.isCodeValid(code)) {
+                const indices = Bfr.deriveChunkIndices(subchunk);
+
+                iPayloadEnd += indices[indices.length - 1]!;
+                continue;
+            }
+
+            if (Arr.isCodeValid(code)) {
+                const indices = Arr.deriveChunkIndices(subchunk);
+
+                iPayloadEnd += indices[indices.length - 1] as number;
+                continue;
+            }
+
+            if (Obj.isCodeValid(code)) {
+                const indices = Obj.deriveChunkIndices(subchunk);
+
+                iPayloadEnd += indices[indices.length - 1] as number;
+                continue;
+            }
+
+            if (ExtUtils.isCodeValid(code)) {
+                const indices = ExtUtils.deriveChunkIndices(subchunk);
+
+                iPayloadEnd += indices[indices.length - 1] as number;
+                continue;
+            }
+
+            throw new MpError.InvalidCode("Arr", "UNSUPPORTED", code);
         }
 
-        return [...headerIndices, dataIndices, iDataEnd];
+        return (
+            isFixarr
+                ? [
+                    0 /* iCode */,
+
+                    iPayloads,
+                    iPayloadEnd
+                ] : [
+                    0 /* iCode */,
+
+                    1 /* iLenStart */,
+
+                    iPayloads,
+                    iPayloadEnd
+                ]
+        );
     }
-} satisfies MpContainer<ArrPrimitive, unknown, Uint8Array[]>;
+};
 
-export type ArrPrimitive = unknown[];
-
-/** Converts a MessagePack chunk assumed to be in the `fixarray`/`array` format family and parses it into an array of wrappers, `null`s and nested arrays and maps. */
-function decode<T extends MpClassUnion | null>(chunk: Uint8Array): T[];
-
-/** Converts a MessagePack chunk assumed to be in the `fixarray`/`array` format family and parses it into an array of wrappers into `null`s and nested arrays and maps, as well as specifiable extensions to decode custom extension chunks. */
-function decode<T extends MpClassUnion | RawClass<unknown> | null>(chunk: Uint8Array, exts: Ext<Extract<T, RawClass<unknown>>, number, boolean> | Ext<Extract<T, RawClass<unknown>>, number, boolean>[], doDecompression?: boolean): (Extract<T, MpClassUnion | null> | Extract<T, RawClass<unknown>>["prototype"])[];
-function decode<T extends MpClassUnion | RawClass<unknown> | null>(chunk: Uint8Array, exts: Ext<Extract<T, RawClass<unknown>>, number, boolean> | Ext<Extract<T, RawClass<unknown>>, number, boolean>[] = [], doDecompression: boolean = false): (Extract<T, MpClassUnion | null> | Extract<T, RawClass<unknown>>["prototype"])[] {
-    const subChunks = Arr.decodeHeader(chunk);
-    return <any>subChunks.map<T>((chunk) => <T>decodeGeneric(chunk, exts, doDecompression));
-}
+export type ValueArr<T> = T[];

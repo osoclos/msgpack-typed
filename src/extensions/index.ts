@@ -1,1 +1,2 @@
-export * from "./TimestampExt";
+export * from "./Ext";
+export * from "./ExtTimestamp";

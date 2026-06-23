@@ -1,0 +1,2 @@
+minimumReleaseAgeExclude:
+  - vite-plugin-wat2wasm
