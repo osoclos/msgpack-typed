@@ -1,254 +1,402 @@
-import { Bfr, Bool, Ext, Flt, Int, Str, Uint } from "../classes";
+import { Bfr, Bool, Flt, Int, Str, Uint } from "../classes";
+import type { Ext } from "../extensions";
 
-import { NIL_CODE, RawClass, ToParsed } from "../internal";
-import { MP_CLASS_LIST, MP_CONTAINER_LIST, MpContainer, MpClassUnion } from "../types";
+import { decodeAny, encodeAny, ExtUtils } from "../utils";
 
-import { decodeGeneric, encodeGeneric, ExtUtils, InvalidDataTypeError, InvalidHeaderCodeError, MissingHeaderCodeError, TruncationCannotProceedError } from "../utils";
+import { CODE_NIL, MpError, type Constructor, type MpClassInterface, type Parsed } from "../internal";
 
-/** An object to parse maps and records, representing the `fixmap` and `map` format families in the MessagePack specification. */
+import { Arr } from "./Arr";
+
 export const Obj = {
-    parse,
+    parse<K, V>(obj: ValueObj<K, V>): Parsed<ValueObj<K, V>> {
+        if (!(obj instanceof Map)) {
+            const parsed = {} as Record<K & Exclude<PropertyKey, symbol>, Parsed<V>>;
 
-    /** Serialises any data stored inside wrappers in the map/record and implicitly converts any other items into a wrapper-appropriate for its type before converting it into a parsable MessagePack chunk. */
-    encode(obj: ObjPrimitive, exts: Ext<RawClass<unknown>, number, boolean> | Ext<RawClass<unknown>, number, boolean>[] = []): Uint8Array {
-        const header = Obj.encodeHeader(obj);
+            for (const key in obj as Record<K & Exclude<PropertyKey, symbol>, V>) {
+                const item = obj[key as keyof typeof obj];
 
-        const buffers: Uint8Array[] = [header];
-        for (const [key, item] of obj instanceof Map ? obj : Object.entries(obj)) buffers.push(encodeGeneric(key, exts), encodeGeneric(item, exts));
+                if (
+                    item instanceof Uint ||
+                    item instanceof Int  ||
+                    item instanceof Flt  ||
 
-        const chunkLen = buffers.reduce((a, b) => a + b.length, 0);
+                    item instanceof Bool ||
+                    item instanceof Str  ||
 
-        const chunk = new Uint8Array(chunkLen);
-        for (let i: number = 0, offset: number = 0; i < buffers.length; offset += buffers[i]!.length, i++) chunk.set(buffers[i]!, offset);
+                    item instanceof Bfr
+                ) {
+                    parsed[key as keyof typeof parsed] = item.value as Parsed<V>;
+                    continue;
+                }
+
+                if (Arr.isValueValid(item)) {
+                    parsed[key as keyof typeof parsed] = Arr.parse(item) as Parsed<V>;
+                    continue;
+                }
+
+                if (Obj.isValueValid(item)) {
+                    parsed[key as keyof typeof parsed] = Obj.parse(item) as Parsed<V>;
+                    continue;
+                }
+
+                parsed[key as keyof typeof parsed] = item as Parsed<V>;
+            }
+
+            return parsed as Parsed<ValueObj<K, V>>;
+        }
+
+        const entries = [...obj.entries()];
+
+        const keys  = Array<Parsed<K>>(entries.length);
+        const items = Array<Parsed<V>>(entries.length);
+
+        for (let i: number = 0; i < entries.length; i++) {
+            const entry = entries[i]!;
+
+            for (let j: number = 0; j < 2; j++) {
+                const item = entry[j]!;
+
+                const list = j === 0 ? keys : items;
+                let value: unknown = null;
+
+                if (
+                    item instanceof Uint ||
+                    item instanceof Int  ||
+                    item instanceof Flt  ||
+
+                    item instanceof Bool ||
+                    item instanceof Str  ||
+
+                    item instanceof Bfr
+                ) value = item.value;
+
+                if (value !== null) {
+                    list[i] = value as Parsed<K | V>;
+                    continue;
+                }
+
+                if (Arr.isValueValid(item)) {
+                    list[i] = Arr.parse(item) as Parsed<K | V>;
+                    continue;
+                }
+
+                if (Obj.isValueValid(item)) {
+                    list[i] = Obj.parse(item) as Parsed<K | V>;
+                    continue;
+                }
+
+                list[i] = item as Parsed<K | V>;
+            }
+        }
+
+        const parsed = new Map<Parsed<K>, Parsed<V>>();
+        for (let i: number = 0; i < keys.length; i++) parsed.set(keys[i]!, items[i]!);
+
+        return parsed as Parsed<ValueObj<K, V>>;
+    },
+
+    encode<K, V>(obj: ValueObj<K, V>, exts: Ext<Constructor<unknown>, number, boolean>[] = []): Uint8Array {
+        const header = this.encodeHeader(obj);
+
+        const entries = obj instanceof Map ? [...obj.entries()] : Object.entries(obj);
+
+        const subchunks = Array<Uint8Array>(entries.length);
+        let subchunksLen: number = 0;
+
+        for (let i: number = 0; i < entries.length; i++) {
+            const entry = entries[i]!;
+
+            const subchunkKey  = encodeAny(entry[0]!, exts);
+            const subchunkItem = encodeAny(entry[1]!, exts);
+
+            subchunks[i * 2 + 0] = subchunkKey;
+            subchunksLen += subchunkKey.byteLength;
+
+            subchunks[i * 2 + 1] = subchunkItem;
+            subchunksLen += subchunkItem.byteLength;
+        }
+
+        const chunk = new Uint8Array(header.byteLength + subchunksLen);
+        chunk.set(header, 0);
+
+        for (let iChunk: number = 0, iOffset = header.byteLength; iChunk < subchunks.length; iChunk++) {
+            const subchunk = subchunks[iChunk]!;
+
+            chunk.set(subchunk, iOffset);
+            iOffset += subchunk.byteLength;
+        }
 
         return chunk;
     },
 
-    /** Produces the metadata header of `fixmap` and `map` format families from a native map/record. Useful if you want more precise control over the generation of MessagePack chunks in an array. */
-    encodeHeader(obj: ObjPrimitive): Uint8Array {
-        if (!this.isValid(obj)) throw new InvalidDataTypeError(obj);
+    encodeHeader<K, V>(obj: ValueObj<K, V>): Uint8Array {
+        if (!this.isValueValid(obj)) throw new MpError.InvalidValue("Obj", "ENCODING");
 
         const len = obj instanceof Map ? obj.size : Object.keys(obj).length;
 
         let code: number;
         let lenLen: number;
 
-        switch (true) {
-            // fixmap
-            case len <= 0x0f: {
+        lenCheck: {
+            // FIXMAP
+            if (len <= 0x0f) {
                 code = 0x80 | len;
                 lenLen = 0;
 
-                break;
+                break lenCheck;
             }
 
-            // map
-            case len <= 0xffff: {
+            // MAP
+
+            if (len <= 0xffff) {
                 code = 0xde;
                 lenLen = 2;
 
+                break lenCheck;
+            }
+
+            if (len <= 0xffff_ffff) {
+                code = 0xdf;
+                lenLen = 4;
+
+                break lenCheck;
+            }
+
+            throw new MpError.InvalidValue("Obj", "ENCODING");
+        }
+
+        const header = new Uint8Array(1 + lenLen);
+        header[0] = code;
+
+        switch (lenLen) {
+            case 2: {
+                header[1] = (len    >>> 8)   & 0xff;
+                header[2] =  len /* >>> 0 */ & 0xff;
+
                 break;
             }
 
-            default: {
-                code = 0xdf;
-                lenLen = 4;
+            case 4: {
+                const view = new DataView(header.buffer);
+                view.setUint32(1, len);
 
                 break;
             }
         }
 
-        const iDataStart = 1 + lenLen;
-
-        const header = new Uint8Array(iDataStart);
-        header[0] = code;
-
-        for (let i: number = 1, iByte: number = lenLen - 1; iByte >= 0; i++, iByte--)
-            header[i] = (len >>> (iByte * 8)) & 0xff;
-
         return header;
     },
 
-    decode,
+    decode<K extends Exclude<PropertyKey, symbol> | MpClassInterface<unknown> | null, V extends MpClassInterface<unknown> | null, C extends unknown>(chunk: Uint8Array, exts: Ext<Constructor<C>, number, boolean>[] = [], doDecompression: boolean = false): ValueObj<K | C, V | C> {
+        const subchunks = this.decodeHeader(chunk);
 
-    /** Converts a MessagePack chunk assumed to be in the `fixmap`/`map` format family and parses it into an array of sub-buffers. Useful if you want more precise control over the parsing of MessagePack chunks in an array. */
-    decodeHeader(chunk: Uint8Array): [Uint8Array, Uint8Array][] {
-        const indices = Obj.deriveIndices(chunk);
+        const subchunksKey  = subchunks[0];
+        const subchunksItem = subchunks[1];
+
+        const obj = new Map();
+        for (let i: number = 0; i < subchunksKey.length; i++) obj.set(decodeAny(subchunksKey[i]!, exts, doDecompression), decodeAny(subchunksItem[i]!, exts, doDecompression));
+
+        return obj as ValueObj<K | C, V | C>;
+    },
+
+    decodeHeader(chunk: Uint8Array): [Uint8Array[], Uint8Array[]] {
+        const indices = this.deriveChunkIndices(chunk);
 
         const hasLenStartIdx = indices.length === 4;
+        const iSubchunks = indices[1 + +hasLenStartIdx /* hasLenStartIdx ? 2 : 1 */] as [number[], number[]];
 
-        const obj: [Uint8Array, Uint8Array][] = [];
+        const iSubchunksKey  = iSubchunks[0];
+        const iSubchunksItem = iSubchunks[1];
 
-        const dataIndices = <[number, number][]>indices[<typeof hasLenStartIdx extends true ? 2 : 1>(1 + +hasLenStartIdx)];
-        for (const [iKey, iItem] of dataIndices) obj.push([chunk.subarray(iKey), chunk.subarray(iItem)]);
+        const subchunksKey  = Array<Uint8Array>(iSubchunksKey .length);
+        const subchunksItem = Array<Uint8Array>(iSubchunksItem.length);
 
-        return obj;
+        for (let i: number = 0; i < iSubchunksKey.length; i++) {
+            subchunksKey [i] = chunk.subarray(iSubchunksKey [i]!);
+            subchunksItem[i] = chunk.subarray(iSubchunksItem[i]!);
+        }
+
+        return [subchunksKey, subchunksItem];
     },
 
-    /** Checks whether a value can be used on `Obj`. */
-    isValid(data: unknown): data is ObjPrimitive {
-        return data instanceof Map || (data !== null && typeof data === "object" && !Array.isArray(data));
+    isValueValid<K, V>(value: unknown): value is ValueObj<K, V> {
+        return (
+            value instanceof Map ||
+
+            (
+                typeof value === "object" &&
+                value !== null &&
+
+                !Array.isArray(value) &&
+                !Bfr.isValueValid(value)
+            )
+        );
     },
 
-    /** Checks whether a chunk header code is supported by `Obj`. */
     isCodeValid(code: number): boolean {
         return (
-            // fixmap
+            // FIXMAP
             (code & 0xf0) === 0x80 ||
 
-            // map
+            // MAP
             code === 0xde ||
             code === 0xdf
         );
     },
 
-    /** Checks whether a chunk is supported by `Obj`. */
     isChunkValid(chunk: Uint8Array): boolean {
         const code = chunk[0];
-        if (code === undefined) throw new MissingHeaderCodeError();
+        if (code === undefined) throw new MpError.MissingCode("Obj", "VALIDATE_CHUNK");
 
         return this.isCodeValid(code);
     },
 
-    /** Computes the index of the chunk header code, the starting index of the data containing the length (will not appear if the chunk in the positive `fixmap` format family), the starting indices of the data containing nested chunks, as well as the final exclusive index of the chunk. */
-    deriveIndices(chunk: Uint8Array): [number, [number, number][], number] | [number, number, [number, number][], number] {
-        const iCode: number = 0;
-        const code = chunk[iCode]!;
+    deriveChunkIndices(chunk: Uint8Array): [number, [number[], number[]], number] | [number, number, [number[], number[]], number] {
+        const code = chunk[0 /* iCode */]!;
 
-        if (!this.isChunkValid(chunk)) throw new InvalidHeaderCodeError(code);
-
-        const headerIndices: [number] | [number, number] = [iCode];
+        if (!this.isChunkValid(chunk)) throw new MpError.InvalidCode("Obj", "UNSUPPORTED", code);
 
         let len: number;
-        let iDataStart: number;
+        let iPayloadStart: number;
 
-        // fixmap
-        if ((code & 0xf0) === 0x80) {
+        const isFixmap = (code & 0xf0) === 0x80;
+
+        if (isFixmap) {
             len = code & 0x0f;
-            iDataStart = iCode + 1;
+            iPayloadStart = 1;
         } else {
-            // map
-
             /* match code:
              *     case 0xde: lenLen = 2
              *     case 0xdf: lenLen = 4
              */
             const lenLen = 0b10 << (code - 0xde);
-            const maxLenLen = chunk.byteLength < lenLen ? chunk.byteLength : lenLen;
 
-            const iLenStart = iCode + 1;
-            headerIndices.push(iLenStart);
+            switch (lenLen) {
+                case 2: {
+                    len =
+                        (chunk[1]!    << 8) |
+                        chunk[2]! /* << 0 */;
 
-            len = 0;
-            for (let i: number = iLenStart, iByte: number = 0; iByte < maxLenLen; i++, iByte++) {
-                len <<= 8;
-                len |= chunk[i]!;
+                    break;
+                }
+
+                case 4: {
+                    const view = new DataView(chunk.buffer, chunk.byteOffset);
+
+                    len = view.getUint32(1);
+                    break;
+                }
+
+                default: throw new MpError.InvalidCode("Obj", "UNSUPPORTED", code);
             }
 
-            iDataStart = iLenStart + lenLen;
+            iPayloadStart = 1 + lenLen;
         }
 
-        const dataIndices: [number, number][] = [];
+        const iPayloadsKey  = Array<number>(len);
+        const iPayloadsItem = Array<number>(len);
 
-        let iDataEnd = iDataStart;
+        let iPayloadEnd = iPayloadStart;
 
-        for (let i: number = 0, offset: number = iDataEnd; i < len; i++) {
-            const subIndices: [number, number] = <[number, number]><unknown>[];
+        for (let i: number = 0; i < len; i++) {
+            for (let j: number = 0; j < 2; j++) {
+                if (j === 0) iPayloadsKey[i] = iPayloadEnd;
+                else iPayloadsItem[i] = iPayloadEnd;
 
-            getEachSubIndex: for (let j: number = 0; j < 2; j++, iDataEnd += offset) {
-                subIndices.push(iDataEnd);
+                const subchunk = chunk.subarray(iPayloadEnd);
 
-                chunk = chunk.subarray(offset);
+                const code = subchunk[0];
+                if (code === undefined) throw new MpError.TruncatedChunk("Obj", "DECODING", iPayloadEnd, chunk.byteLength);
 
-                const iCode: number = 0;
-                const code = chunk[iCode];
-
-                if (code === undefined) throw new TruncationCannotProceedError();
-
-                if (code === NIL_CODE) {
-                    offset = 1;
-                    continue getEachSubIndex;
+                if (code === CODE_NIL) {
+                    iPayloadEnd += 1;
+                    continue;
                 }
 
-                for (const Cls of MP_CLASS_LIST) {
-                    if (Cls.isChunkValid(chunk)) {
-                        offset = Cls.deriveIndices(chunk).slice(-1)[0]!;
-                        continue getEachSubIndex;
-                    }
+                if (Uint.isCodeValid(code)) {
+                    const indices = Uint.deriveChunkIndices(subchunk);
+
+                    iPayloadEnd += indices[indices.length - 1]!;
+                    continue;
                 }
 
-                for (const Container of MP_CONTAINER_LIST) {
-                    if (Container.isChunkValid(chunk)) {
-                        offset = <number>Container.deriveIndices(chunk).slice(-1)[0]!;
-                        continue getEachSubIndex;
-                    }
+                if (Int.isCodeValid(code)) {
+                    const indices = Int.deriveChunkIndices(subchunk);
+
+                    iPayloadEnd += indices[indices.length - 1]!;
+                    continue;
                 }
 
-                if (ExtUtils.isChunkValid(chunk)) offset = ExtUtils.deriveIndices(chunk).slice(-1)[0]!;
-                else throw new InvalidHeaderCodeError(code);
+                if (Flt.isCodeValid(code)) {
+                    const indices = Flt.deriveChunkIndices(subchunk);
+
+                    iPayloadEnd += indices[indices.length - 1]!;
+                    continue;
+                }
+
+                if (Bool.isCodeValid(code)) {
+                    const indices = Bool.deriveChunkIndices(subchunk);
+
+                    iPayloadEnd += indices[indices.length - 1]!;
+                    continue;
+                }
+
+                if (Str.isCodeValid(code)) {
+                    const indices = Str.deriveChunkIndices(subchunk);
+
+                    iPayloadEnd += indices[indices.length - 1]!;
+                    continue;
+                }
+
+                if (Bfr.isCodeValid(code)) {
+                    const indices = Bfr.deriveChunkIndices(subchunk);
+
+                    iPayloadEnd += indices[indices.length - 1]!;
+                    continue;
+                }
+
+                if (Arr.isCodeValid(code)) {
+                    const indices = Arr.deriveChunkIndices(subchunk);
+
+                    iPayloadEnd += indices[indices.length - 1] as number;
+                    continue;
+                }
+
+                if (Obj.isCodeValid(code)) {
+                    const indices = Obj.deriveChunkIndices(subchunk);
+
+                    iPayloadEnd += indices[indices.length - 1] as number;
+                    continue;
+                }
+
+                if (ExtUtils.isCodeValid(code)) {
+                    const indices = ExtUtils.deriveChunkIndices(subchunk);
+
+                    iPayloadEnd += indices[indices.length - 1] as number;
+                    continue;
+                }
+
+                throw new MpError.InvalidCode("Obj", "UNSUPPORTED", code);
             }
-
-            dataIndices.push(subIndices);
         }
 
-        return [...headerIndices, dataIndices, iDataEnd]
+        return (
+            isFixmap
+                ? [
+                    0 /* iCode */,
+
+                    [iPayloadsKey, iPayloadsItem],
+                    iPayloadEnd
+                ] : [
+                    0 /* iCode */,
+
+                    1 /* iLenStart */,
+
+                    [iPayloadsKey, iPayloadsItem],
+                    iPayloadEnd
+                ]
+        );
     }
-} satisfies MpContainer<ObjPrimitive, unknown, [Uint8Array, Uint8Array][]>;
+};
 
-export type ObjPrimitive = Map<unknown, unknown> | Record<Exclude<keyof any, symbol>, unknown>
-
-/** Parses any wrappers in the map, retrieves their raw values and correspondingly replaces them in-place. Any non-wrapper items inside the array are ignored and left as-is. */
-function parse<K, V>(obj: Map<K, V>): Map<ToParsed<K>, ToParsed<V>>;
-/** Parses any wrappers in the record, retrieves their raw values and correspondingly replaces them in-place. Any non-wrapper items inside the array are ignored and left as-is. */
-function parse<K extends Exclude<keyof any, symbol>, V>(obj: Record<K, V>): Record<ToParsed<K>, ToParsed<V>>;
-function parse<K, V>(obj: Map<K, V> | Record<Extract<K, Exclude<keyof any, symbol>>, V>): Map<ToParsed<K>, ToParsed<V>> | Record<ToParsed<Extract<K, Exclude<keyof any, symbol>>>, ToParsed<V>> {
-    const parsed = new Map<ToParsed<K>, ToParsed<V>>();
-
-    for (const pair of obj instanceof Map ? obj : Object.entries(obj)) {
-        const parsedPair: [ToParsed<K>, ToParsed<V>] = <[ToParsed<K>, ToParsed<V>]><unknown>[];
-
-        parseEachPair: for (const item of pair) {
-            if (
-                item instanceof Uint ||
-                item instanceof Int  ||
-
-                item instanceof Flt  ||
-
-                item instanceof Bool ||
-
-                item instanceof Str  ||
-                item instanceof Bfr
-            ) {
-                parsedPair.push(<ToParsed<K | V>>item.data);
-                continue parseEachPair;
-            }
-
-            for (const Container of MP_CONTAINER_LIST) {
-                if (Container.isValid(item)) {
-                    parsedPair.push((<any>Container.parse)(item));
-                    continue parseEachPair;
-                }
-            }
-
-            parsedPair.push(<ToParsed<K | V>>item);
-        }
-
-        parsed.set(<ToParsed<K>>parsedPair[0], <ToParsed<V>>parsedPair[1]);
-    }
-
-    return obj instanceof Map ? parsed : Object.fromEntries(parsed);
-}
-
-/** Converts a MessagePack chunk assumed to be in the `fixarray`/`array` format family and parses it into a map of wrappers, `null`s and nested arrays and maps. */
-function decode<K extends MpClassUnion, V extends MpClassUnion>(chunk: Uint8Array): Map<K, V>;
-
-/** Converts a MessagePack chunk assumed to be in the `fixarray`/`array` format family and parses it into a map of wrappers, `null`s and nested arrays and maps, as well as specifiable extensions to decode custom extension chunks. */
-function decode<K extends MpClassUnion | RawClass<unknown>, V extends MpClassUnion | RawClass<unknown>>(chunk: Uint8Array, exts: Ext<Extract<K | V, RawClass<unknown>>, number, boolean> | Ext<Extract<K | V, RawClass<unknown>>, number, boolean>[], doDecompression?: boolean): Map<Extract<K, MpClassUnion> | Extract<K, RawClass<unknown>>["prototype"], Extract<V, MpClassUnion> | Extract<V, RawClass<unknown>>["prototype"]>;
-function decode<K extends MpClassUnion | RawClass<unknown>, V extends MpClassUnion | RawClass<unknown>>(chunk: Uint8Array, exts: Ext<Extract<K | V, RawClass<unknown>>, number, boolean> | Ext<Extract<K | V, RawClass<unknown>>, number, boolean>[] = [], doDecompression: boolean = false): Map<Extract<K, MpClassUnion> | Extract<K, RawClass<unknown>>["prototype"], Extract<V, MpClassUnion> | Extract<V, RawClass<unknown>>["prototype"]> {
-    const subChunks = Obj.decodeHeader(chunk);
-
-    const obj = new Map();
-    for (const [keyChunk, itemChunk] of subChunks) obj.set(decodeGeneric(keyChunk, exts, doDecompression), decodeGeneric(itemChunk, exts, doDecompression));
-
-    return obj;
-}
+export type ValueObj<K, V> = Map<K, V> | (K extends Exclude<PropertyKey, symbol> ? Record<K, V> : {});

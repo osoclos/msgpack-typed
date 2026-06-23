@@ -1,295 +1,349 @@
-import { NIL_CODE } from "../internal";
-import { InvalidDataTypeError, InvalidHeaderCodeError, MissingHeaderCodeError, NullInRequiredError, warnTruncatedChunk } from "../utils";
+import { MpClassSubtyped, MpError } from "../internal";
 
-import { MpClassInterface, MpClassModule, MpResult } from "../types";
+export class Uint extends MpClassSubtyped<ValueUint, SubtypeUint>() {
+    #value: ValueUint;
+    #subtype: SubtypeUint;
 
-/** A wrapper for unsigned integers, representing the positive `fixint` and unsigned `int` format families in the MessagePack specification. */
-export const Uint = class Uint<N extends boolean> implements MpClassInterface<UintPrimitive, N> {
-    #data: MpResult<UintPrimitive, N>;
-    #isOptional: N;
+    constructor(value?: ValueUint, subtype?: SubtypeUint);
+    constructor(bfr: Uint8Array, subtype?: SubtypeUint);
+    constructor(a: ValueUint | Uint8Array = 0, subtype: SubtypeUint = "U32") {
+        super(a as ValueUint, subtype);
 
-    /** Wraps a native `number` or `bigint` and makes it usable for MessagePack parsing, with an option to specify if it can be nullable. */
-    constructor(data?: UintPrimitive, isOptional?: N);
+        if (Uint.isSubtypeValid(subtype)) this.#subtype = subtype;
+        else throw new MpError.InvalidSubtype(this[Symbol.toStringTag], "CONSTRUCTOR", subtype);
 
-    /** Wraps `null` and makes it usable for MessagePack parsing, which can be promoted to an unsigned integer. */
-    constructor(data: null, isOptional: true);
+        if (
+            typeof a === "number" ||
+            typeof a === "bigint"
+        ) {
+            const value = a;
 
-    /** Interprets bytes in a buffer as a big-endian unsigned integer and makes it usable for MessagePack parsing, with an option to specify if it can be nullable. If the buffer is empty and marked as nullable, it will be assumed to be `null`. */
-    constructor(bfr: Uint8Array, isOptional?: N);
-    constructor(a?: unknown, isOptional: N = <N>false) {
-        this.#isOptional = isOptional;
-
-        if (!(a instanceof Uint8Array)) {
-            const data =
-                arguments.length === 0
-                    ? isOptional
-                        ? null
-                        : 0
-                    : a;
-
-            if (!this.isValid(data)) throw new InvalidDataTypeError(data);
-            this.#data = data;
+            if (Uint.isValueValid(value, subtype)) this.#value = value;
+            else throw new MpError.InvalidValue(this[Symbol.toStringTag], "CONSTRUCTOR");
 
             return;
         }
 
         const bfr = a;
+        const len = bfr.byteLength;
 
-        if (isOptional && bfr.byteLength === 0) {
-            this.#data = <any>null;
-            return;
-        }
+        let value: ValueUint;
 
-        const nBytes = Math.min(bfr.byteLength, 8);
-        if (nBytes > 4) {
-            this.#data = 0n;
-            for (let i: number = 0; i < nBytes; i++) {
-                (<bigint>this.#data) <<= 8n;
-                (<bigint>this.#data) |= BigInt(bfr[i]!);
+        switch (len) {
+            case 0: {
+                value = 0;
+                break;
             }
 
-            return;
+            case 1: {
+                value = bfr[0]!;
+                break;
+            }
+
+            case 2: {
+                value =
+                    (bfr[0]!    << 8) |
+                     bfr[1]! /* << 0 */;
+
+                break;
+            }
+
+            case 3: {
+                value =
+                    (bfr[0]!    << 16) |
+                    (bfr[1]!    <<  8) |
+                     bfr[2]! /* <<  0 */;
+
+                break;
+            }
+
+            default: {
+                const view = new DataView(bfr.buffer, bfr.byteOffset);
+
+                if (len === 4) {
+                    value = view.getUint32(0);
+                    break;
+                }
+
+                if (len >= 8) {
+                    value = view.getBigUint64(0);
+                    break;
+                }
+
+                value = 0n;
+                for (let i: number = 0; i < len; i++) value = (value << 8n) | BigInt(bfr[i]!);
+
+                break;
+            }
         }
 
-        this.#data = 0;
-        for (let i: number = 0; i < nBytes; i++) {
-            (<number>this.#data) <<= 8;
-            (<number>this.#data) |= bfr[i]!;
-        }
+        if (Uint.isValueValid(value, subtype)) this.#value = value;
+        else throw new MpError.InvalidValue(this[Symbol.toStringTag], "CONSTRUCTOR");
     }
 
-    /** Wraps a native `number` or `bigint` and makes it usable for MessagePack parsing without allowing it to downgrade to `null`. */
-    static required(data: UintPrimitive): Uint<false>;
-
-    /** Interprets bytes in a buffer as a big-endian unsigned integer and makes it usable for MessagePack parsing without allowing it to downgrade to `null`, defaulting to `0` if the buffer is empty. */
-    static required(bfr: Uint8Array): Uint<false>;
-    static required(a?: unknown): Uint<false> {
-        return <any>new Uint(<any>a, false);
+    override get value(): ValueUint {
+        return this.#value;
     }
 
-    /** Wraps a native `number` or `bigint`, or `null` and makes it usable for MessagePack parsing. If no argument is provided, it will default to `null`. */
-    static optional(data: UintPrimitive | null): Uint<true>;
-
-    /** Interprets bytes in a buffer as a big-endian unsigned integer and makes it usable for MessagePack parsing. If the buffer is empty, it will be assumed to be `null`. */
-    static optional(bfr: Uint8Array): Uint<true>;
-    static optional(a?: unknown): Uint<true> {
-        return <any>new Uint(<any>a, true);
+    override set value(value: ValueUint) {
+        if (Uint.isValueValid(value)) this.#value = value;
+        else throw new MpError.InvalidValue(this[Symbol.toStringTag], "ASSIGNMENT");
     }
 
-    /** The raw value stored in the wrapper. */
-    get data(): MpResult<UintPrimitive, N> {
-        return this.#data;
+    override get subtype(): SubtypeUint {
+        return this.#subtype;
     }
 
-    set data(data: unknown) {
-        if (this.isValid(data)) this.#data = data;
-        else if (data === null) throw new NullInRequiredError();
-        else throw new InvalidDataTypeError(data);
+    override set subtype(subtype: SubtypeUint) {
+        if (Uint.isValueValid(this.#value, subtype) && Uint.isSubtypeValid(subtype)) this.#subtype = subtype;
+        else throw new MpError.InvalidSubtype(this[Symbol.toStringTag], "ASSIGNMENT", subtype);
     }
 
-    /* Whether this wrapper accepts `null` as a valid value. */
-    get isOptional(): N {
-        return this.#isOptional;
-    }
-
-    private set isOptional(isOptional: N) {
-        this.#isOptional = isOptional;
-    }
-
-    /* Transforms the raw value stored in the wrapper and converts it into a parsable MessagePack chunk. */
-    encode() {
-        if (this.#data === null) return new Uint8Array([NIL_CODE]);
-
-        const isNum = typeof this.#data === "number";
+    override encode(): Uint8Array {
+        if (this.#subtype === "FIXINT") return new Uint8Array([Number(this.#value) /* code */]);
 
         let code: number;
         let len: number;
 
-        if (isNum) {
-            switch (true) {
-                // positive fixint
-                case this.#data <= 0x7f: {
-                    code = <number>this.#data;
-                    len = 0;
+        switch (this.#subtype) {
+            case "U8": {
+                code = 0xcc;
+                len = 1;
 
-                    break;
-                }
-
-                // unsigned int
-                case this.#data <= 0xff: {
-                    code = 0xcc;
-                    len = 1;
-
-                    break;
-                }
-
-                case this.#data <= 0xffff: {
-                    code = 0xcd;
-                    len = 2;
-
-                    break;
-                }
-
-                case this.#data <= 0xffff_ffff: {
-                    code = 0xce;
-                    len = 4;
-
-                    break;
-                }
-
-                default: {
-                    code = 0xcf;
-                    len = 8;
-
-                    break;
-                }
+                break;
             }
-        } else {
-            switch (true) {
-                // positive fixint
-                case this.#data <= 0x7fn: {
-                    code = Number(this.#data);
-                    len = 0;
 
-                    break;
-                }
+            case "U16": {
+                code = 0xcd;
+                len = 2;
 
-                // unsigned int
-                case this.#data <= 0xffn: {
-                    code = 0xcc;
-                    len = 1;
+                break;
+            }
 
-                    break;
-                }
+            case "U32": {
+                code = 0xce;
+                len = 4;
 
-                case this.#data <= 0xffffn: {
-                    code = 0xcd;
-                    len = 2;
+                break;
+            }
 
-                    break;
-                }
+            case "U64": {
+                code = 0xcf;
+                len = 8;
 
-                case this.#data <= 0xffff_ffffn: {
-                    code = 0xce;
-                    len = 4;
-
-                    break;
-                }
-
-                default: {
-                    code = 0xcf;
-                    len = 8;
-
-                    break;
-                }
+                break;
             }
         }
 
-        const chunkLen = 1 + len;
-
-        const chunk = new Uint8Array(chunkLen);
+        const chunk = new Uint8Array(1 + len);
         chunk[0] = code;
 
-        // positive fixint
-        if (len === 0) return chunk;
+        if (this.#subtype === "U8") {
+            chunk[1] = Number(this.#value);
+            return chunk;
+        }
 
-        // unsigned int
+        const view = new DataView(chunk.buffer, chunk.byteOffset);
 
-        if (isNum)
-            for (let i: number = 1, iByte: number = len - 1; iByte >= 0; i++, iByte--)
-                chunk[i] = (<number>this.#data >>> (iByte * 8)) & 0xff;
-        else
-            for (let i: number = 1, iByte = BigInt(len - 1); iByte >= 0n; i++, iByte--)
-                chunk[i] = Number((<bigint>this.#data >> (iByte * 8n)) & 0xffn);
+        switch (this.#subtype) {
+            case "U16": {
+                view.setUint16(1, Number(this.#value));
+                break;
+            }
+
+            case "U32": {
+                view.setUint32(1, Number(this.#value));
+                break;
+            }
+
+            case "U64": {
+                view.setBigUint64(1, BigInt(this.#value));
+                break;
+            }
+        }
 
         return chunk;
     }
 
-    /* Converts a MessagePack chunk assumed to be in the positive `fixint`/unsigned `int` format family and creates a wrapper from it. If the chunk is in the `nil` format family, then a nullable wrapper is created, with its stored value set to `null`. */
-    static decode(chunk: Uint8Array): Uint<false> {
-        const code = chunk[0];
-        if (code === undefined) throw new MissingHeaderCodeError();
+    static override decode(chunk: Uint8Array): Uint {
+        const indices = this.deriveChunkIndices(chunk);
 
-        if (code === NIL_CODE) return new Uint(null, true);
+        const iCode = indices[0];
 
-        const indices = this.deriveIndices(chunk);
+        // FIXINT
         if (indices.length === 2) {
-            const code = chunk[indices[0]]!;
-            return new Uint(code);
+            const value = chunk[iCode]!;
+            return new Uint(value, "FIXINT");
         }
 
-        const [, iDataStart, iDataEnd] = indices;
-        if (iDataEnd > chunk.byteLength) warnTruncatedChunk();
+        const iValueStart = indices[1];
+        const iValueEnd   = indices[2];
 
-        return new Uint(chunk.slice(iDataStart, iDataEnd));
+        if (iValueEnd > chunk.byteLength) throw new MpError.TruncatedChunk(this.name, "DECODING", iValueEnd, chunk.byteLength);
+
+        const code = chunk[iCode]!;
+        const subtype = this.code2Subtype(code);
+
+        return new Uint(chunk.subarray(iValueStart, iValueEnd), subtype);
     }
 
-    /* Resets the value of the wrapper to `0`, the non-nullable default value. If the wrapper is nullable, it will be instead resetted to `null`. */
-    reset() {
-        this.#data = this.#isOptional ? <any>null : 0;
+    static override value2Subtype(value: ValueUint): SubtypeUint {
+        if (typeof value === "number") {
+            if (value < 0 || value % 1.0 !== 0.0) throw new MpError.InvalidValue(this.name, "MAP_SUBTYPE");
+
+            if (value <= 0x7f) return "FIXINT";
+
+            if (value <= 0xff) return "U8";
+            if (value <= 0xffff) return "U16";
+            if (value <= 0xffff_ffff) return "U32";
+            if (
+                value <= Number.MAX_SAFE_INTEGER ||
+                BigInt(value) <= 0xffff_ffff_ffff_ffffn
+            ) return "U64";
+        }
+
+        if (typeof value === "bigint") {
+            if (value < 0n) throw new MpError.InvalidValue(this.name, "MAP_SUBTYPE");
+
+            if (value <= 0x7fn) return "FIXINT";
+
+            if (value <= 0xffn) return "U8";
+            if (value <= 0xffffn) return "U16";
+            if (value <= 0xffff_ffffn) return "U32";
+            if (value <= 0xffff_ffff_ffff_ffffn) return "U64";
+        }
+
+        throw new MpError.InvalidValue(this.name, "MAP_SUBTYPE");
     }
 
-    /* Checks whether a value can be stored inside this wrapper. */
-    isValid(data: unknown): data is MpResult<UintPrimitive, N>  {
-        return Uint.isValid(data) || (this.isOptional && data === null);
+    static override code2Subtype(code: number): SubtypeUint {
+        if (code <= 0x7f) return "FIXINT";
+
+        switch (code) {
+            case 0xcc: return "U8" ;
+            case 0xcd: return "U16";
+            case 0xce: return "U32";
+            case 0xcf: return "U64";
+        }
+
+        throw new MpError.InvalidCode(this.name, "MAP_SUBTYPE", code);
     }
 
-    /* Checks whether a value can be stored inside an instance of this wrapper. */
-    static isValid(data: unknown): data is UintPrimitive {
-        if (typeof data === "number" && Number.isInteger(data)) data = BigInt(data);
-        return typeof data === "bigint" ? data >= 0n && data <= 0xffff_ffff_ffff_ffffn : false;
+    static override value2LenEncoded(value: ValueUint): number {
+        return this.subtype2LenEncoded(this.value2Subtype(value));
     }
 
-    /* Checks whether a chunk header code is supported by an instance of this wrapper. */
-    static isCodeValid(code: number): boolean {
+    static override subtype2LenEncoded(subtype: SubtypeUint): number {
+        switch (subtype) {
+            case "FIXINT": return 1;
+
+            case "U8": return 1 + 1;
+            case "U16": return 1 + 2;
+            case "U32": return 1 + 4;
+            case "U64": return 1 + 8;
+        }
+    }
+
+    static override isValueValid(value: unknown, subtype: SubtypeUint = "U32"): value is ValueUint {
+        if (typeof value === "number") {
+            if (value < 0 || value % 1.0 !== 0.0) return false;
+
+            switch (subtype) {
+                case "FIXINT": return value <= 0x7f;
+
+                case "U8" : return value <= 0xff;
+                case "U16": return value <= 0xffff;
+                case "U32": return value <= 0xffff_ffff;
+                case "U64": return (
+                    value <= Number.MAX_SAFE_INTEGER ||
+                    BigInt(value) <= 0xffff_ffff_ffff_ffffn
+                );
+            }
+        }
+
+        if (typeof value === "bigint") {
+            if (value < 0n) return false;
+
+            switch (subtype) {
+                case "FIXINT": return value <= 0x7fn;
+
+                case "U8" : return value <= 0xffn;
+                case "U16": return value <= 0xffffn;
+                case "U32": return value <= 0xffff_ffffn;
+                case "U64": return value <= 0xffff_ffff_ffff_ffffn;
+            }
+        }
+
+        return false;
+    }
+
+    static override isSubtypeValid(subtype: string): subtype is SubtypeUint {
         return (
-            // positive fixint
-            code <=  0x7f ||
+            subtype === "FIXINT" ||
 
-            // unsigned int
-            code === 0xcc ||
-            code === 0xcd ||
-            code === 0xce ||
-            code === 0xcf
+            subtype === "U8"     ||
+            subtype === "U16"    ||
+            subtype === "U32"    ||
+            subtype === "U64"
         );
     }
 
-    /* Checks whether a chunk is supported by an instance of this wrapper. */
-    static isChunkValid(chunk: Uint8Array): boolean {
-        const code = chunk[0];
-        if (code === undefined) throw new MissingHeaderCodeError();
+    static override isCodeValid(code: number): false;
+    static override isCodeValid(code: number): SubtypeUint | false;
+    static override isCodeValid(code: number): SubtypeUint | false {
+        if (code <= 0x7f) return "FIXINT";
+
+        switch (code) {
+            case 0xcc: return "U8";
+            case 0xcd: return "U16";
+            case 0xce: return "U32";
+            case 0xcf: return "U64";
+        }
+
+        return false;
+    }
+
+    static override isChunkValid(chunk: Uint8Array): false;
+    static override isChunkValid(chunk: Uint8Array): SubtypeUint | false;
+    static override isChunkValid(chunk: Uint8Array): SubtypeUint | false {
+        const code = chunk[0 /* iCode */];
+        if (code === undefined) throw new MpError.MissingCode(this.name, "VALIDATE_CHUNK");
 
         return this.isCodeValid(code);
     }
 
-    /* Computes the index of the chunk header code, the starting index of the data containing the raw value (will not appear if the chunk is in the positive `fixint` format family), as well as the final exclusive index of the chunk. */
-    static deriveIndices(chunk: Uint8Array): [number, number] | [number, number, number] {
-        const iCode: number = 0;
-        const code = chunk[iCode]!;
+    static override deriveChunkIndices(chunk: Uint8Array): [number, number] | [number, number, number] {
+        const code = chunk[0 /* iCode */]!; // ignore undefined since it is checked by isChunkValid
 
-        if (!this.isChunkValid(chunk)) throw new InvalidHeaderCodeError(code);
+        const subtype = this.isChunkValid(chunk);
+        if (!subtype) throw new MpError.InvalidCode(this.name, "UNSUPPORTED", code);
 
-        // positive fixint
-        if (code <= 0x7f) {
-            const iChunkEnd = iCode + 1;
-            return [iCode, iChunkEnd];
-        }
-
-        // unsigned int
+        if (subtype === "FIXINT")
+            return [
+                0 /* iCode */,
+                1 /* iChunkEnd */
+            ];
 
         /* match code:
-         *     case 0xcc: len = 1
-         *     case 0xcd: len = 2
-         *     case 0xce: len = 4
-         *     case 0xcf: len = 8
+         *     case 0xcc: len = 1 // U8
+         *     case 0xcd: len = 2 // U16
+         *     case 0xce: len = 4 // U32
+         *     case 0xcf: len = 8 // U64
          */
         const len = 0b1 << (code - 0xcc);
 
-        const iDataStart = iCode + 1;
-        const iDataEnd   = iDataStart + len;
+        return [
+            0 /* iCode */,
 
-        return [iCode, iDataStart, iDataEnd];
+            1 /* iValueStart */,
+            1 + len /* iValueEnd */
+        ];
     }
-} satisfies MpClassModule<UintPrimitive, boolean>;
 
-export type UintPrimitive = number | bigint;
+    override get [Symbol.toStringTag](): string {
+        return this.constructor.name;
+    }
+}
+
+export type ValueUint = number | bigint;
+export type SubtypeUint = "FIXINT" | "U8" | "U16" | "U32" | "U64";
