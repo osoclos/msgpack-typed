@@ -1,5 +1,6 @@
 import { MpClassSubtyped, MpError } from "../internal";
 
+/** A wrapper class for encoding and decoding chunks from the signed variants from the `str` MessagePack family. */
 export class Str extends MpClassSubtyped<ValueStr, SubtypeStr>() {
     #value: Uint8Array;
     #subtype: SubtypeStr;
@@ -7,8 +8,24 @@ export class Str extends MpClassSubtyped<ValueStr, SubtypeStr>() {
     static #encoder: TextEncoder;
     static #decoder: TextDecoder;
 
+    /**
+      * Create a wrapper with a single value.
+      *
+      * @param value the number to specify @default `""`
+      * @param subtype the tag used to derive the code for encoding and decoding chunks @default `"STR32"`
+      *
+      */
     constructor(value?: ValueStr, subtype?: SubtypeStr);
+
+    /**
+      * Create a wrapper accepting a value encoded in a buffer.
+      *
+      * @param bfr the buffer that contains the value
+      * @param subtype the tag used to derive the code for encoding and decoding chunks @default `"STR32"`
+      *
+      */
     constructor(bfr: Uint8Array, subtype?: SubtypeStr);
+
     constructor(a: ValueStr | Uint8Array = "", subtype: SubtypeStr = "STR32") {
         super(a as ValueStr, subtype);
 
@@ -37,6 +54,7 @@ export class Str extends MpClassSubtyped<ValueStr, SubtypeStr>() {
         this.#decoder = new TextDecoder("utf-8", { fatal: true });
     }
 
+    /** The raw value contained in the wrapper. */
     override get value(): ValueStr {
         return Str.#decoder.decode(this.#value);
     }
@@ -46,6 +64,7 @@ export class Str extends MpClassSubtyped<ValueStr, SubtypeStr>() {
         else throw new MpError.InvalidValue(this[Symbol.toStringTag], "ASSIGNMENT");
     }
 
+    /** The string tag for locking values to certain ranges and for encoding chunks. */
     override get subtype(): SubtypeStr {
         return this.#subtype;
     }
@@ -55,6 +74,11 @@ export class Str extends MpClassSubtyped<ValueStr, SubtypeStr>() {
         else throw new MpError.InvalidSubtype(this[Symbol.toStringTag], "ASSIGNMENT", subtype);
     }
 
+    /**
+      * Encodes the value contained within the wrapper and converts it into a MessagePack chunk.
+      * @return the encoded MessagePack chunk
+      *
+      */
     override encode(): Uint8Array {
         const len = this.#value.byteLength;
 
@@ -115,6 +139,13 @@ export class Str extends MpClassSubtyped<ValueStr, SubtypeStr>() {
         return chunk;
     }
 
+    /**
+      * Decodes an appropriate MessagePack chunk and wraps the decoded value.
+      *
+      * @param chunk the encoded MessagePack chunk
+      * @return the wrapped value
+      *
+      */
     static override decode(chunk: Uint8Array): Str {
         const indices = this.deriveChunkIndices(chunk);
 
@@ -133,6 +164,13 @@ export class Str extends MpClassSubtyped<ValueStr, SubtypeStr>() {
         return new Str(chunk.subarray(iValueStart, iValueEnd), subtype);
     }
 
+    /**
+      * Converts a valid value to an appropriate subtype for the wrapper.
+      *
+      * @param value the specified value
+      * @return the subtype for the wrapper
+      *
+      */
     static override value2Subtype(value: ValueStr): SubtypeStr {
         if (typeof value !== "string") throw new MpError.InvalidValue(this.name, "MAP_SUBTYPE");
 
@@ -148,6 +186,13 @@ export class Str extends MpClassSubtyped<ValueStr, SubtypeStr>() {
         throw new MpError.InvalidValue(this.name, "MAP_SUBTYPE");
     }
 
+    /**
+      * Converts a supported MessagePack chunk header code to the subtype used by the wrapper.
+      *
+      * @param code the MessagePack chunk header code
+      * @return the subtype for the wrapper
+      *
+      */
     static override code2Subtype(code: number): SubtypeStr {
         if ((code & 0xe0) === 0xa0) return "FIXSTR";
 
@@ -160,6 +205,13 @@ export class Str extends MpClassSubtyped<ValueStr, SubtypeStr>() {
         throw new MpError.InvalidCode(this.name, "MAP_SUBTYPE", code);
     }
 
+    /**
+      * Computes the encoded MessagePack chunk length from a valid value.
+      *
+      * @param value the specified value
+      * @return the length of the MessagePack chunk
+      *
+      */
     static override value2LenEncoded(value: SubtypeStr): number {
         let lenEncoded: number;
 
@@ -191,6 +243,15 @@ export class Str extends MpClassSubtyped<ValueStr, SubtypeStr>() {
         return lenEncoded;
     }
 
+    /**
+      * Checks if a value is valid and can be wrapped.
+      *
+      * @param value the value to check
+      * @param subtype the subtype which the value should be valid @default `"STR32"`
+      *
+      * @return whether the value can be wrapped
+      *
+      */
     static override isValueValid(value: unknown, subtype: SubtypeStr = "STR32"): value is ValueStr {
         if (typeof value !== "string") return false;
 
@@ -206,6 +267,13 @@ export class Str extends MpClassSubtyped<ValueStr, SubtypeStr>() {
         }
     }
 
+    /**
+      * Checks if a subtype is valid and is used by the wrapper class.
+      *
+      * @param subtype the subtype to check
+      * @return whether the subtype is used
+      *
+      */
     static override isSubtypeValid(subtype: string): subtype is SubtypeStr {
         return (
             subtype === "FIXSTR" ||
@@ -216,8 +284,24 @@ export class Str extends MpClassSubtyped<ValueStr, SubtypeStr>() {
         );
     }
 
+    /**
+      * Checks if a MessagePack chunk header code is supported by the wrapper class.
+      *
+      * @param code the code to check
+      * @return whether the code is supported
+      *
+      */
     static override isCodeValid(code: number): false;
-    static override isCodeValid(code: number): SubtypeStr | false;
+
+    /**
+      * Checks if a MessagePack chunk header code is supported by the wrapper class.
+      *
+      * @param code the code to check
+      * @return the subtype that is derived from the code
+      *
+      */
+    static override isCodeValid(code: number): SubtypeStr;
+
     static override isCodeValid(code: number): SubtypeStr | false {
         if ((code & 0xe0) === 0xa0) return "FIXSTR";
 
@@ -230,8 +314,24 @@ export class Str extends MpClassSubtyped<ValueStr, SubtypeStr>() {
         return false;
     }
 
+    /**
+      * Checks if a MessagePack chunk can be decoded by the wrapper class.
+      *
+      * @param chunk the chunk to check
+      * @return whether the chunk can be decoded
+      *
+      */
     static override isChunkValid(chunk: Uint8Array): false;
-    static override isChunkValid(chunk: Uint8Array): SubtypeStr | false;
+
+    /**
+      * Checks if a MessagePack chunk can be decoded by the wrapper class.
+      *
+      * @param chunk the chunk to check
+      * @return the subtype that is derived by the chunk
+      *
+      */
+    static override isChunkValid(chunk: Uint8Array): SubtypeStr;
+
     static override isChunkValid(chunk: Uint8Array): SubtypeStr | false {
         const code = chunk[0 /* iCode */];
         if (code === undefined) throw new MpError.MissingCode(this.name, "VALIDATE_CHUNK");
@@ -239,6 +339,13 @@ export class Str extends MpClassSubtyped<ValueStr, SubtypeStr>() {
         return this.isCodeValid(code);
     }
 
+    /**
+      * Retrieves and computes the indices of a supported MessagePack chunk used for decoding by the wrapper class.
+      *
+      * @param chunk the MessagePack chunk to derive from
+      * @return the indices of each section within the chunk
+      *
+      */
     static override deriveChunkIndices(chunk: Uint8Array): [number, number, number] | [number, number, number, number] {
         const code = chunk[0 /* iCode */]!; // ignore undefined since it is checked by isChunkValid
 

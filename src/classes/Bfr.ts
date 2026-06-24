@@ -1,12 +1,29 @@
 import { MpClassSubtyped, MpError } from "../internal";
 
+/** A wrapper class for encoding and decoding chunks from the signed variants from the `bin` MessagePack family. */
 export class Bfr extends MpClassSubtyped<ValueBfr, SubtypeBfr>() {
     #value: ValueBfr;
     #subtype: SubtypeBfr;
 
+    /**
+      * Create a wrapper with a single value.
+      *
+      * @param value the number to specify @default `new Uint8Array(0)`
+      * @param subtype the tag used to derive the code for encoding and decoding chunks @default `"BFR32"`
+      *
+      */
     constructor(value?: ValueBfr, subtype?: SubtypeBfr);
+
+    /**
+      * Create a wrapper accepting a value encoded in a buffer.
+      *
+      * @param bfr the buffer that contains the value
+      * @param subtype the tag used to derive the code for encoding and decoding chunks @default `"BFR32"`
+      *
+      */
     constructor(bfr: Uint8Array, subtype?: SubtypeBfr);
-    constructor(a: ValueBfr | Uint8Array = new Uint8Array(), subtype: SubtypeBfr = "BFR32") {
+
+    constructor(a: ValueBfr | Uint8Array = new Uint8Array(0), subtype: SubtypeBfr = "BFR32") {
         super(a as ValueBfr, subtype);
 
         if (Bfr.isSubtypeValid(subtype)) this.#subtype = subtype;
@@ -18,6 +35,7 @@ export class Bfr extends MpClassSubtyped<ValueBfr, SubtypeBfr>() {
         else throw new MpError.InvalidValue(this[Symbol.toStringTag], "CONSTRUCTOR");
     }
 
+    /** The raw value contained in the wrapper. */
     override get value(): ValueBfr {
         return this.#value;
     }
@@ -27,6 +45,7 @@ export class Bfr extends MpClassSubtyped<ValueBfr, SubtypeBfr>() {
         else throw new MpError.InvalidValue(this[Symbol.toStringTag], "ASSIGNMENT");
     }
 
+    /** The string tag for locking values to certain ranges and for encoding chunks. */
     override get subtype(): SubtypeBfr {
         return this.#subtype;
     }
@@ -36,6 +55,11 @@ export class Bfr extends MpClassSubtyped<ValueBfr, SubtypeBfr>() {
         else throw new MpError.InvalidSubtype(this[Symbol.toStringTag], "ASSIGNMENT", subtype);
     }
 
+    /**
+      * Encodes the value contained within the wrapper and converts it into a MessagePack chunk.
+      * @return the encoded MessagePack chunk
+      *
+      */
     override encode(): Uint8Array {
         const len = this.#value.byteLength;
 
@@ -87,6 +111,13 @@ export class Bfr extends MpClassSubtyped<ValueBfr, SubtypeBfr>() {
         return chunk;
     }
 
+    /**
+      * Decodes an appropriate MessagePack chunk and wraps the decoded value.
+      *
+      * @param chunk the encoded MessagePack chunk
+      * @return the wrapped value
+      *
+      */
     static override decode(chunk: Uint8Array): Bfr {
         const indices = this.deriveChunkIndices(chunk);
 
@@ -105,6 +136,13 @@ export class Bfr extends MpClassSubtyped<ValueBfr, SubtypeBfr>() {
         return new Bfr(chunk.subarray(iValueStart, iValueEnd), subtype);
     }
 
+    /**
+      * Converts a valid value to an appropriate subtype for the wrapper.
+      *
+      * @param value the specified value
+      * @return the subtype for the wrapper
+      *
+      */
     static override value2Subtype(value: ValueBfr): SubtypeBfr {
         if (!(value instanceof Uint8Array)) throw new MpError.InvalidValue(this.name, "MAP_SUBTYPE");
 
@@ -117,6 +155,13 @@ export class Bfr extends MpClassSubtyped<ValueBfr, SubtypeBfr>() {
         throw new MpError.InvalidValue(this.name, "MAP_SUBTYPE");
     }
 
+    /**
+      * Converts a supported MessagePack chunk header code to the subtype used by the wrapper.
+      *
+      * @param code the MessagePack chunk header code
+      * @return the subtype for the wrapper
+      *
+      */
     static override code2Subtype(code: number): SubtypeBfr {
         switch (code) {
             case 0xc4: return "BFR8" ;
@@ -127,6 +172,13 @@ export class Bfr extends MpClassSubtyped<ValueBfr, SubtypeBfr>() {
         throw new MpError.InvalidCode(this.name, "MAP_SUBTYPE", code);
     }
 
+    /**
+      * Computes the encoded MessagePack chunk length from a valid value.
+      *
+      * @param value the specified value
+      * @return the length of the MessagePack chunk
+      *
+      */
     static override value2LenEncoded(value: ValueBfr): number {
         let lenEncoded: number;
 
@@ -153,6 +205,15 @@ export class Bfr extends MpClassSubtyped<ValueBfr, SubtypeBfr>() {
         return lenEncoded;
     }
 
+    /**
+      * Checks if a value is valid and can be wrapped.
+      *
+      * @param value the value to check
+      * @param subtype the subtype which the value should be valid @default `"BFR32"`
+      *
+      * @return whether the value can be wrapped
+      *
+      */
     static override isValueValid(value: unknown, subtype: SubtypeBfr = "BFR32"): value is ValueBfr {
         if (!(value instanceof Uint8Array)) return false;
 
@@ -165,6 +226,13 @@ export class Bfr extends MpClassSubtyped<ValueBfr, SubtypeBfr>() {
         }
     }
 
+    /**
+      * Checks if a subtype is valid and is used by the wrapper class.
+      *
+      * @param subtype the subtype to check
+      * @return whether the subtype is used
+      *
+      */
     static override isSubtypeValid(subtype: string): subtype is SubtypeBfr {
         return (
             subtype === "BFR8"   ||
@@ -173,8 +241,24 @@ export class Bfr extends MpClassSubtyped<ValueBfr, SubtypeBfr>() {
         );
     }
 
+    /**
+      * Checks if a MessagePack chunk header code is supported by the wrapper class.
+      *
+      * @param code the code to check
+      * @return whether the code is supported
+      *
+      */
     static override isCodeValid(code: number): false;
-    static override isCodeValid(code: number): SubtypeBfr | false;
+
+    /**
+      * Checks if a MessagePack chunk header code is supported by the wrapper class.
+      *
+      * @param code the code to check
+      * @return the subtype that is derived from the code
+      *
+      */
+    static override isCodeValid(code: number): SubtypeBfr;
+
     static override isCodeValid(code: number): SubtypeBfr | false {
         switch (code) {
             case 0xc4: return "BFR8";
@@ -185,8 +269,24 @@ export class Bfr extends MpClassSubtyped<ValueBfr, SubtypeBfr>() {
         return false;
     }
 
+    /**
+      * Checks if a MessagePack chunk can be decoded by the wrapper class.
+      *
+      * @param chunk the chunk to check
+      * @return whether the chunk can be decoded
+      *
+      */
     static override isChunkValid(chunk: Uint8Array): false;
-    static override isChunkValid(chunk: Uint8Array): SubtypeBfr | false;
+
+    /**
+      * Checks if a MessagePack chunk can be decoded by the wrapper class.
+      *
+      * @param chunk the chunk to check
+      * @return the subtype that is derived by the chunk
+      *
+      */
+    static override isChunkValid(chunk: Uint8Array): SubtypeBfr;
+
     static override isChunkValid(chunk: Uint8Array): SubtypeBfr | false {
         const code = chunk[0 /* iCode */];
         if (code === undefined) throw new MpError.MissingCode(this.name, "VALIDATE_CHUNK");
@@ -194,6 +294,13 @@ export class Bfr extends MpClassSubtyped<ValueBfr, SubtypeBfr>() {
         return this.isCodeValid(code);
     }
 
+    /**
+      * Retrieves and computes the indices of a supported MessagePack chunk used for decoding by the wrapper class.
+      *
+      * @param chunk the MessagePack chunk to derive from
+      * @return the indices of each section within the chunk
+      *
+      */
     static override deriveChunkIndices(chunk: Uint8Array): [number, number, number, number] {
         const code = chunk[0 /* iCode */]!; // ignore undefined since it is checked by isChunkValid
 

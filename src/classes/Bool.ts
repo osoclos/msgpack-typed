@@ -1,10 +1,23 @@
 import { MpClass, MpError } from "../internal";
 
+/** A wrapper class for encoding and decoding chunks from the signed variants from the `bool` MessagePack family. */
 export class Bool extends MpClass<ValueBool>() {
     #value: ValueBool;
 
+    /**
+      * Create a wrapper with a single value.
+      * @param value the number to specify @default `false`
+      *
+      */
     constructor(value?: ValueBool);
+
+    /**
+      * Create a wrapper accepting a value encoded in a buffer.
+      * @param bfr the buffer that contains the value
+      *
+      */
     constructor(bfr: Uint8Array);
+
     constructor(a: ValueBool | Uint8Array = false) {
         super(a as ValueBool);
 
@@ -25,6 +38,7 @@ export class Bool extends MpClass<ValueBool>() {
         else throw new MpError.InvalidValue(this[Symbol.toStringTag], "CONSTRUCTOR");
     }
 
+    /** The raw value contained in the wrapper. */
     override get value(): ValueBool {
         return this.#value;
     }
@@ -34,10 +48,22 @@ export class Bool extends MpClass<ValueBool>() {
         else throw new MpError.InvalidValue(this[Symbol.toStringTag], "ASSIGNMENT");
     }
 
+    /**
+      * Encodes the value contained within the wrapper and converts it into a MessagePack chunk.
+      * @return the encoded MessagePack chunk
+      *
+      */
     override encode(): Uint8Array {
         return new Uint8Array([0xc2 + +this.#value /* this.#value ? 0xc3 : 0xc2 */])
     }
 
+    /**
+      * Decodes an appropriate MessagePack chunk and wraps the decoded value.
+      *
+      * @param chunk the encoded MessagePack chunk
+      * @return the wrapped value
+      *
+      */
     static override decode(chunk: Uint8Array): Bool {
         const indices = this.deriveChunkIndices(chunk);
 
@@ -52,14 +78,35 @@ export class Bool extends MpClass<ValueBool>() {
         return new Bool(value);
     }
 
+    /**
+      * Computes the encoded MessagePack chunk length from a valid value.
+      *
+      * @param value the specified value
+      * @return the length of the MessagePack chunk
+      *
+      */
     static override value2LenEncoded(): number {
         return 1;
     }
 
+    /**
+      * Checks if a value is valid and can be wrapped.
+      *
+      * @param value the value to check
+      * @return whether the value can be wrapped
+      *
+      */
     static override isValueValid(value: unknown): value is ValueBool {
         return typeof value === "boolean";
     }
 
+    /**
+      * Checks if a MessagePack chunk header code is supported by the wrapper class.
+      *
+      * @param code the code to check
+      * @return whether the code is supported
+      *
+      */
     static override isCodeValid(code: number): boolean {
         return (
             code === 0xc2 ||
@@ -67,6 +114,13 @@ export class Bool extends MpClass<ValueBool>() {
         );
     }
 
+    /**
+      * Checks if a MessagePack chunk can be decoded by the wrapper class.
+      *
+      * @param chunk the chunk to check
+      * @return whether the chunk can be decoded
+      *
+      */
     static override isChunkValid(chunk: Uint8Array): boolean {
         const code = chunk[0 /* iCode */];
         if (code === undefined) throw new MpError.MissingCode(this.name, "VALIDATE_CHUNK");
@@ -74,6 +128,13 @@ export class Bool extends MpClass<ValueBool>() {
         return this.isCodeValid(code);
     }
 
+    /**
+      * Retrieves and computes the indices of a supported MessagePack chunk used for decoding by the wrapper class.
+      *
+      * @param chunk the MessagePack chunk to derive from
+      * @return the indices of each section within the chunk
+      *
+      */
     static override deriveChunkIndices(chunk: Uint8Array): [number, number] {
         const code = chunk[0 /* iCode */]!; // ignore undefined since it is checked by isChunkValid
 

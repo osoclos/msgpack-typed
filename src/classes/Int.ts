@@ -1,11 +1,28 @@
 import { MpClassSubtyped, MpError } from "../internal";
 
+/** A wrapper class for encoding and decoding chunks from the signed variants from the `int` MessagePack family. */
 export class Int extends MpClassSubtyped<ValueInt, SubtypeInt>() {
     #value: ValueInt;
     #subtype: SubtypeInt;
 
+    /**
+      * Create a wrapper with a single value.
+      *
+      * @param value the number to specify @default `0`
+      * @param subtype the tag used to derive the code for encoding and decoding chunks @default `"I32"`
+      *
+      */
     constructor(value?: ValueInt, subtype?: SubtypeInt);
+
+    /**
+      * Create a wrapper accepting a value encoded in a buffer.
+      *
+      * @param bfr the buffer that contains the value
+      * @param subtype the tag used to derive the code for encoding and decoding chunks @default `"I32"`
+      *
+      */
     constructor(bfr: Uint8Array, subtype?: SubtypeInt);
+
     constructor(a: ValueInt | Uint8Array = 0, subtype: SubtypeInt = "I32") {
         super(a as ValueInt, subtype);
 
@@ -83,6 +100,7 @@ export class Int extends MpClassSubtyped<ValueInt, SubtypeInt>() {
         else throw new MpError.InvalidValue(this[Symbol.toStringTag], "CONSTRUCTOR");
     }
 
+    /** The raw value contained in the wrapper. */
     override get value(): ValueInt {
         return this.#value;
     }
@@ -92,6 +110,7 @@ export class Int extends MpClassSubtyped<ValueInt, SubtypeInt>() {
         else throw new MpError.InvalidValue(this[Symbol.toStringTag], "ASSIGNMENT");
     }
 
+    /** The string tag for locking values to certain ranges and for encoding chunks. */
     override get subtype(): SubtypeInt {
         return this.#subtype;
     }
@@ -101,6 +120,11 @@ export class Int extends MpClassSubtyped<ValueInt, SubtypeInt>() {
         else throw new MpError.InvalidSubtype(this[Symbol.toStringTag], "ASSIGNMENT", subtype);
     }
 
+    /**
+      * Encodes the value contained within the wrapper and converts it into a MessagePack chunk.
+      * @return the encoded MessagePack chunk
+      *
+      */
     override encode(): Uint8Array {
         if (this.#subtype === "FIXINT") return new Uint8Array([Number(this.#value) + 0x100 /* code */]);
 
@@ -167,6 +191,13 @@ export class Int extends MpClassSubtyped<ValueInt, SubtypeInt>() {
         return chunk;
     }
 
+    /**
+      * Decodes an appropriate MessagePack chunk and wraps the decoded value.
+      *
+      * @param chunk the encoded MessagePack chunk
+      * @return the wrapped value
+      *
+      */
     static override decode(chunk: Uint8Array): Int {
         const indices = this.deriveChunkIndices(chunk);
 
@@ -189,6 +220,13 @@ export class Int extends MpClassSubtyped<ValueInt, SubtypeInt>() {
         return new Int(chunk.subarray(iValueStart, iValueEnd), subtype);
     }
 
+    /**
+      * Converts a valid value to an appropriate subtype for the wrapper.
+      *
+      * @param value the specified value
+      * @return the subtype for the wrapper
+      *
+      */
     static override value2Subtype(value: ValueInt): SubtypeInt {
         if (typeof value === "number") {
             if (value % 1.0 !== 0.0) throw new MpError.InvalidValue(this.name, "MAP_SUBTYPE");
@@ -216,6 +254,13 @@ export class Int extends MpClassSubtyped<ValueInt, SubtypeInt>() {
         throw new MpError.InvalidValue(this.name, "MAP_SUBTYPE");
     }
 
+    /**
+      * Converts a supported MessagePack chunk header code to the subtype used by the wrapper.
+      *
+      * @param code the MessagePack chunk header code
+      * @return the subtype for the wrapper
+      *
+      */
     static override code2Subtype(code: number): SubtypeInt {
         if (code >= 0xe0) return "FIXINT";
 
@@ -229,10 +274,24 @@ export class Int extends MpClassSubtyped<ValueInt, SubtypeInt>() {
         throw new MpError.InvalidCode(this.name, "MAP_SUBTYPE", code);
     }
 
+    /**
+      * Computes the encoded MessagePack chunk length from a valid value.
+      *
+      * @param value the specified value
+      * @return the length of the MessagePack chunk
+      *
+      */
     static override value2LenEncoded(value: ValueInt): number {
         return this.subtype2LenEncoded(this.value2Subtype(value));
     }
 
+    /**
+      * Computes the encoded MessagePack chunk length from a subtype.
+      *
+      * @param subtype the specified subtype
+      * @return the length of the MessagePack chunk
+      *
+      */
     static override subtype2LenEncoded(subtype: SubtypeInt): number {
         switch (subtype) {
             case "FIXINT": return 1;
@@ -244,6 +303,15 @@ export class Int extends MpClassSubtyped<ValueInt, SubtypeInt>() {
         }
     }
 
+    /**
+      * Checks if a value is valid and can be wrapped.
+      *
+      * @param value the value to check
+      * @param subtype the subtype which the value should be valid @default `"I32"`
+      *
+      * @return whether the value can be wrapped
+      *
+      */
     static override isValueValid(value: unknown, subtype: SubtypeInt = "I32"): value is ValueInt {
         if (typeof value === "number") {
             if (value % 1.0 !== 0.0) return false;
@@ -275,6 +343,13 @@ export class Int extends MpClassSubtyped<ValueInt, SubtypeInt>() {
         return false;
     }
 
+    /**
+      * Checks if a subtype is valid and is used by the wrapper class.
+      *
+      * @param subtype the subtype to check
+      * @return whether the subtype is used
+      *
+      */
     static override isSubtypeValid(subtype: string): subtype is SubtypeInt {
         return (
             subtype === "FIXINT" ||
@@ -286,8 +361,24 @@ export class Int extends MpClassSubtyped<ValueInt, SubtypeInt>() {
         );
     }
 
+    /**
+      * Checks if a MessagePack chunk header code is supported by the wrapper class.
+      *
+      * @param code the code to check
+      * @return whether the code is supported
+      *
+      */
     static override isCodeValid(code: number): false;
-    static override isCodeValid(code: number): SubtypeInt | false;
+
+    /**
+      * Checks if a MessagePack chunk header code is supported by the wrapper class.
+      *
+      * @param code the code to check
+      * @return the subtype that is derived from the code
+      *
+      */
+    static override isCodeValid(code: number): SubtypeInt;
+
     static override isCodeValid(code: number): SubtypeInt | false {
         if (code >= 0xe0) return "FIXINT";
 
@@ -301,8 +392,24 @@ export class Int extends MpClassSubtyped<ValueInt, SubtypeInt>() {
         return false;
     }
 
+    /**
+      * Checks if a MessagePack chunk can be decoded by the wrapper class.
+      *
+      * @param chunk the chunk to check
+      * @return whether the chunk can be decoded
+      *
+      */
     static override isChunkValid(chunk: Uint8Array): false;
-    static override isChunkValid(chunk: Uint8Array): SubtypeInt | false;
+
+    /**
+      * Checks if a MessagePack chunk can be decoded by the wrapper class.
+      *
+      * @param chunk the chunk to check
+      * @return the subtype that is derived by the chunk
+      *
+      */
+    static override isChunkValid(chunk: Uint8Array): SubtypeInt;
+
     static override isChunkValid(chunk: Uint8Array): SubtypeInt | false {
         const code = chunk[0 /* iCode */];
         if (code === undefined) throw new MpError.MissingCode(this.name, "VALIDATE_CHUNK");
@@ -310,6 +417,13 @@ export class Int extends MpClassSubtyped<ValueInt, SubtypeInt>() {
         return this.isCodeValid(code);
     }
 
+    /**
+      * Retrieves and computes the indices of a supported MessagePack chunk used for decoding by the wrapper class.
+      *
+      * @param chunk the MessagePack chunk to derive from
+      * @return the indices of each section within the chunk
+      *
+      */
     static override deriveChunkIndices(chunk: Uint8Array): [number, number] | [number, number, number] {
         const code = chunk[0 /* iCode */]!; // ignore undefined since it is checked by isChunkValid
 
