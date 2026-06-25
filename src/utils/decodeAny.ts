@@ -8,8 +8,30 @@ import { CODE_NIL, MpError, type Constructor, type MpClassInterface } from "../i
 import { ExtUtils } from "./ExtUtils";
 import { LZ4Compression } from "./LZ4Compression";
 
+/**
+  * Decodes a MessagePack chunk into a parser object or container with an option to inflate it using LZ4 compression.
+  *
+  * @param chunk the MessagePack chunk to decode
+  * @param doDeompression whether to decompress any deflated MessagePack chunks
+  *
+  * @return the parser object or container inhabiting the decoded values
+  *
+  */
 export function decodeAny<T extends MpClassInterface<unknown> | null | C | ValueArr<MpClassInterface<unknown> | null | C> | ValueObj<MpClassInterface<unknown> | null | C, MpClassInterface<unknown> | null | C>, C extends unknown>(chunk: Uint8Array, doDecompression?: boolean): T;
+
+/**
+  * Decodes a MessagePack chunk into a parser object or container with an option to inflate using LZ4 compression.
+  *
+  * @param chunk the MessagePack chunk to decode
+  * @param exts the extensions used to properly decode the MessagePack chunk into their corresponding custom class objects
+  *
+  * @param doDeompression whether to decompress any deflated MessagePack chunks
+  *
+  * @return the parser object or container inhabiting the decoded values
+  *
+  */
 export function decodeAny<T extends MpClassInterface<unknown> | null | C | ValueArr<MpClassInterface<unknown> | null | C> | ValueObj<MpClassInterface<unknown> | null | C, MpClassInterface<unknown> | null | C>, C extends unknown>(chunk: Uint8Array, exts?: Ext<Constructor<C>, number, boolean>[], doDecompression?: boolean): T;
+
 export function decodeAny<T extends MpClassInterface<unknown> | null | C | ValueArr<MpClassInterface<unknown> | null | C> | ValueObj<MpClassInterface<unknown> | null | C, MpClassInterface<unknown> | null | C>, C extends unknown>(chunk: Uint8Array, b?: boolean | Ext<Constructor<C>, number, boolean>[], c?: boolean): T {
     const code = chunk[0 /* iCode */]!;
 
