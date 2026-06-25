@@ -7,7 +7,15 @@ import { CODE_NIL, MpError, type Constructor, type MpClassInterface, type Parsed
 
 import { Obj } from "./Obj";
 
+/** An object containing methods to encode and decode chunks from the `array` MessagePack family. */
 export const Arr = {
+    /**
+      * Parses the container and extracts the raw value from any parser objects inside.
+      *
+      * @param arr the container to parse
+      * @return a copy of the container with parsed values
+      *
+      */
     parse<T>(arr: ValueArr<T>): Parsed<ValueArr<T>> {
         return arr.map((item) => {
             if (
@@ -30,6 +38,15 @@ export const Arr = {
         });
     },
 
+    /**
+      * Encodes the container and any values and parsers contained within it and converts it into a MessagePack chunk.
+      *
+      * @param arr the specified container
+      * @param exts the extensions used to encode certain class objects in the container @default `[]`
+      *
+      * @return the encoded MessagePack chunk
+      *
+      */
     encode<T>(arr: ValueArr<T>, exts: Ext<Constructor<unknown>, number, boolean>[] = []): Uint8Array {
         const header = this.encodeHeader(arr);
 
@@ -58,6 +75,13 @@ export const Arr = {
         return chunk;
     },
 
+    /**
+      * Generates an encoded header of the container MessagePack chunk based on the provided container.
+      *
+      * @param arr the specified container
+      * @return the encoded header for a container MessagePack chunk
+      *
+      */
     encodeHeader<T>(arr: ValueArr<T>): Uint8Array {
         if (!this.isValueValid(arr)) throw new MpError.InvalidValue("Arr", "ENCODING");
 
@@ -116,11 +140,29 @@ export const Arr = {
         return header;
     },
 
+    /**
+      * Decodes an appropriate MessagePack chunk and parses the decoded values inside the container.
+      *
+      * @param chunk the encoded MessagePack chunk
+      *
+      * @param exts the extensions encoded in the MessagePack chunk @default `[]`
+      * @param doDecompression decode any LZ4-compressed chunks @default `false`
+      *
+      * @return a container with corresponding parser objects
+      *
+      */
     decode<T extends MpClassInterface<unknown> | null, C extends unknown>(chunk: Uint8Array, exts: Ext<Constructor<C>, number, boolean>[] = [], doDecompression: boolean = false): ValueArr<T | C> {
         const subchunks = this.decodeHeader(chunk);
         return subchunks.map((subchunk) => decodeAny(subchunk, exts, doDecompression));
     },
 
+    /**
+      * Decodes an appropriate container MessagePack chunk and returns the subchunks stored within said chunk.
+      *
+      * @param chunk the encoded MessagePack chunk
+      * @return the subchunks that each can be decoded separately
+      *
+      */
     decodeHeader(chunk: Uint8Array): Uint8Array[] {
         const indices = this.deriveChunkIndices(chunk);
 
@@ -136,10 +178,24 @@ export const Arr = {
         return subchunks;
     },
 
+    /**
+      * Checks if a value is valid and can be parsed.
+      *
+      * @param value the value to check
+      * @return whether the value can be parsed
+      *
+      */
     isValueValid<T>(value: unknown): value is ValueArr<T> {
         return Array.isArray(value);
     },
 
+    /**
+      * Checks if a MessagePack chunk header code is supported by the container.
+      *
+      * @param code the code to check
+      * @return whether the code is supported
+      *
+      */
     isCodeValid(code: number): boolean {
         return (
             // FIXARR
@@ -151,6 +207,13 @@ export const Arr = {
         );
     },
 
+    /**
+      * Checks if a MessagePack chunk can be decoded by the container.
+      *
+      * @param chunk the chunk to check
+      * @return whether the chunk can be decoded
+      *
+      */
     isChunkValid(chunk: Uint8Array): boolean {
         const code = chunk[0];
         if (code === undefined) throw new MpError.MissingCode("Arr", "VALIDATE_CHUNK");
@@ -158,6 +221,13 @@ export const Arr = {
         return this.isCodeValid(code);
     },
 
+    /**
+      * Retrieves and computes the indices of a supported MessagePack chunk used for decoding by the container.
+      *
+      * @param chunk the MessagePack chunk to derive from
+      * @return the indices of each section within the chunk
+      *
+      */
     deriveChunkIndices(chunk: Uint8Array): [number, number[], number] | [number, number, number[], number] {
         const code = chunk[0 /* iCode */]!;
 

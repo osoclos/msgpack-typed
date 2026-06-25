@@ -7,7 +7,15 @@ import { CODE_NIL, MpError, type Constructor, type MpClassInterface, type Parsed
 
 import { Arr } from "./Arr";
 
+/** An object containing methods to encode and decode chunks from the `map` MessagePack family. */
 export const Obj = {
+    /**
+      * Parses the container and extracts the raw value from any parser objects inside.
+      *
+      * @param obj the container to parse
+      * @return a copy of the container with parsed values
+      *
+      */
     parse<K, V>(obj: ValueObj<K, V>): Parsed<ValueObj<K, V>> {
         if (!(obj instanceof Map)) {
             const parsed = {} as Record<K & Exclude<PropertyKey, symbol>, Parsed<V>>;
@@ -95,6 +103,15 @@ export const Obj = {
         return parsed as Parsed<ValueObj<K, V>>;
     },
 
+    /**
+      * Encodes the container and any values and parsers contained within it and converts it into a MessagePack chunk.
+      *
+      * @param obj the specified container
+      * @param exts the extensions used to encode certain class objects in the container @default `[]`
+      *
+      * @return the encoded MessagePack chunk
+      *
+      */
     encode<K, V>(obj: ValueObj<K, V>, exts: Ext<Constructor<unknown>, number, boolean>[] = []): Uint8Array {
         const header = this.encodeHeader(obj);
 
@@ -129,6 +146,13 @@ export const Obj = {
         return chunk;
     },
 
+    /**
+      * Generates an encoded header of the container MessagePack chunk based on the provided container.
+      *
+      * @param obj the specified container
+      * @return the encoded header for a container MessagePack chunk
+      *
+      */
     encodeHeader<K, V>(obj: ValueObj<K, V>): Uint8Array {
         if (!this.isValueValid(obj)) throw new MpError.InvalidValue("Obj", "ENCODING");
 
@@ -187,6 +211,17 @@ export const Obj = {
         return header;
     },
 
+    /**
+      * Decodes an appropriate MessagePack chunk and parses the decoded values inside the container.
+      *
+      * @param chunk the encoded MessagePack chunk
+      *
+      * @param exts the extensions encoded in the MessagePack chunk @default `[]`
+      * @param doDecompression decode any LZ4-compressed chunks @default `false`
+      *
+      * @return a container with corresponding parser objects
+      *
+      */
     decode<K extends Exclude<PropertyKey, symbol> | MpClassInterface<unknown> | null, V extends MpClassInterface<unknown> | null, C extends unknown>(chunk: Uint8Array, exts: Ext<Constructor<C>, number, boolean>[] = [], doDecompression: boolean = false): ValueObj<K | C, V | C> {
         const subchunks = this.decodeHeader(chunk);
 
@@ -199,6 +234,13 @@ export const Obj = {
         return obj as ValueObj<K | C, V | C>;
     },
 
+    /**
+      * Decodes an appropriate container MessagePack chunk and returns the subchunks stored within said chunk.
+      *
+      * @param chunk the encoded MessagePack chunk
+      * @return the subchunks that each can be decoded separately
+      *
+      */
     decodeHeader(chunk: Uint8Array): [Uint8Array[], Uint8Array[]] {
         const indices = this.deriveChunkIndices(chunk);
 
@@ -219,6 +261,13 @@ export const Obj = {
         return [subchunksKey, subchunksItem];
     },
 
+    /**
+      * Checks if a value is valid and can be parsed.
+      *
+      * @param value the value to check
+      * @return whether the value can be parsed
+      *
+      */
     isValueValid<K, V>(value: unknown): value is ValueObj<K, V> {
         return (
             value instanceof Map ||
@@ -233,6 +282,13 @@ export const Obj = {
         );
     },
 
+    /**
+      * Checks if a MessagePack chunk header code is supported by the container.
+      *
+      * @param code the code to check
+      * @return whether the code is supported
+      *
+      */
     isCodeValid(code: number): boolean {
         return (
             // FIXMAP
@@ -244,6 +300,13 @@ export const Obj = {
         );
     },
 
+    /**
+      * Checks if a MessagePack chunk can be decoded by the container.
+      *
+      * @param chunk the chunk to check
+      * @return whether the chunk can be decoded
+      *
+      */
     isChunkValid(chunk: Uint8Array): boolean {
         const code = chunk[0];
         if (code === undefined) throw new MpError.MissingCode("Obj", "VALIDATE_CHUNK");
@@ -251,6 +314,13 @@ export const Obj = {
         return this.isCodeValid(code);
     },
 
+    /**
+      * Retrieves and computes the indices of a supported MessagePack chunk used for decoding by the container.
+      *
+      * @param chunk the MessagePack chunk to derive from
+      * @return the indices of each section within the chunk
+      *
+      */
     deriveChunkIndices(chunk: Uint8Array): [number, [number[], number[]], number] | [number, number, [number[], number[]], number] {
         const code = chunk[0 /* iCode */]!;
 
