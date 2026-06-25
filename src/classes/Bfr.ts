@@ -1,12 +1,12 @@
 import { MpClassSubtyped, MpError } from "../internal";
 
-/** A wrapper class for encoding and decoding chunks from the signed variants from the `bin` MessagePack family. */
+/** A parser class for encoding and decoding chunks from the signed variants from the `bin` MessagePack family. */
 export class Bfr extends MpClassSubtyped<ValueBfr, SubtypeBfr>() {
     #value: ValueBfr;
     #subtype: SubtypeBfr;
 
     /**
-      * Create a wrapper with a single value.
+      * Create a parser with a single value.
       *
       * @param value the number to specify @default `new Uint8Array(0)`
       * @param subtype the tag used to derive the code for encoding and decoding chunks @default `"BFR32"`
@@ -15,7 +15,7 @@ export class Bfr extends MpClassSubtyped<ValueBfr, SubtypeBfr>() {
     constructor(value?: ValueBfr, subtype?: SubtypeBfr);
 
     /**
-      * Create a wrapper accepting a value encoded in a buffer.
+      * Create a parser accepting a value encoded in a buffer.
       *
       * @param bfr the buffer that contains the value
       * @param subtype the tag used to derive the code for encoding and decoding chunks @default `"BFR32"`
@@ -35,7 +35,7 @@ export class Bfr extends MpClassSubtyped<ValueBfr, SubtypeBfr>() {
         else throw new MpError.InvalidValue(this[Symbol.toStringTag], "CONSTRUCTOR");
     }
 
-    /** The raw value contained in the wrapper. */
+    /** The raw value contained in the parser. */
     override get value(): ValueBfr {
         return this.#value;
     }
@@ -56,7 +56,7 @@ export class Bfr extends MpClassSubtyped<ValueBfr, SubtypeBfr>() {
     }
 
     /**
-      * Encodes the value contained within the wrapper and converts it into a MessagePack chunk.
+      * Encodes the value contained within the parser and converts it into a MessagePack chunk.
       * @return the encoded MessagePack chunk
       *
       */
@@ -112,10 +112,10 @@ export class Bfr extends MpClassSubtyped<ValueBfr, SubtypeBfr>() {
     }
 
     /**
-      * Decodes an appropriate MessagePack chunk and wraps the decoded value.
+      * Decodes an appropriate MessagePack chunk and parses the decoded value.
       *
       * @param chunk the encoded MessagePack chunk
-      * @return the wrapped value
+      * @return a parser instance containing the decoded value
       *
       */
     static override decode(chunk: Uint8Array): Bfr {
@@ -137,10 +137,10 @@ export class Bfr extends MpClassSubtyped<ValueBfr, SubtypeBfr>() {
     }
 
     /**
-      * Converts a valid value to an appropriate subtype for the wrapper.
+      * Converts a valid value to an appropriate subtype for the parser.
       *
       * @param value the specified value
-      * @return the subtype for the wrapper
+      * @return the subtype for the parser
       *
       */
     static override value2Subtype(value: ValueBfr): SubtypeBfr {
@@ -156,10 +156,10 @@ export class Bfr extends MpClassSubtyped<ValueBfr, SubtypeBfr>() {
     }
 
     /**
-      * Converts a supported MessagePack chunk header code to the subtype used by the wrapper.
+      * Converts a supported MessagePack chunk header code to the subtype used by the parser.
       *
       * @param code the MessagePack chunk header code
-      * @return the subtype for the wrapper
+      * @return the subtype for the parser
       *
       */
     static override code2Subtype(code: number): SubtypeBfr {
@@ -206,12 +206,12 @@ export class Bfr extends MpClassSubtyped<ValueBfr, SubtypeBfr>() {
     }
 
     /**
-      * Checks if a value is valid and can be wrapped.
+      * Checks if a value is valid and can be parsed.
       *
       * @param value the value to check
       * @param subtype the subtype which the value should be valid @default `"BFR32"`
       *
-      * @return whether the value can be wrapped
+      * @return whether the value can be parsed
       *
       */
     static override isValueValid(value: unknown, subtype: SubtypeBfr = "BFR32"): value is ValueBfr {
@@ -227,7 +227,7 @@ export class Bfr extends MpClassSubtyped<ValueBfr, SubtypeBfr>() {
     }
 
     /**
-      * Checks if a subtype is valid and is used by the wrapper class.
+      * Checks if a subtype is valid and is used by the parser class.
       *
       * @param subtype the subtype to check
       * @return whether the subtype is used
@@ -242,7 +242,7 @@ export class Bfr extends MpClassSubtyped<ValueBfr, SubtypeBfr>() {
     }
 
     /**
-      * Checks if a MessagePack chunk header code is supported by the wrapper class.
+      * Checks if a MessagePack chunk header code is supported by the parser class.
       *
       * @param code the code to check
       * @return whether the code is supported
@@ -251,7 +251,7 @@ export class Bfr extends MpClassSubtyped<ValueBfr, SubtypeBfr>() {
     static override isCodeValid(code: number): false;
 
     /**
-      * Checks if a MessagePack chunk header code is supported by the wrapper class.
+      * Checks if a MessagePack chunk header code is supported by the parser class.
       *
       * @param code the code to check
       * @return the subtype that is derived from the code
@@ -270,7 +270,7 @@ export class Bfr extends MpClassSubtyped<ValueBfr, SubtypeBfr>() {
     }
 
     /**
-      * Checks if a MessagePack chunk can be decoded by the wrapper class.
+      * Checks if a MessagePack chunk can be decoded by the parser class.
       *
       * @param chunk the chunk to check
       * @return whether the chunk can be decoded
@@ -279,7 +279,7 @@ export class Bfr extends MpClassSubtyped<ValueBfr, SubtypeBfr>() {
     static override isChunkValid(chunk: Uint8Array): false;
 
     /**
-      * Checks if a MessagePack chunk can be decoded by the wrapper class.
+      * Checks if a MessagePack chunk can be decoded by the parser class.
       *
       * @param chunk the chunk to check
       * @return the subtype that is derived by the chunk
@@ -295,7 +295,7 @@ export class Bfr extends MpClassSubtyped<ValueBfr, SubtypeBfr>() {
     }
 
     /**
-      * Retrieves and computes the indices of a supported MessagePack chunk used for decoding by the wrapper class.
+      * Retrieves and computes the indices of a supported MessagePack chunk used for decoding by the parser class.
       *
       * @param chunk the MessagePack chunk to derive from
       * @return the indices of each section within the chunk
