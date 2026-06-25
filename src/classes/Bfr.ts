@@ -1,6 +1,6 @@
 import { MpClassSubtyped, MpError } from "../internal";
 
-/** A parser class for encoding and decoding chunks from the signed variants from the `bin` MessagePack family. */
+/** A parser for encoding and decoding chunks from the `bin` MessagePack family. */
 export class Bfr extends MpClassSubtyped<ValueBfr, SubtypeBfr>() {
     #value: ValueBfr;
     #subtype: SubtypeBfr;
@@ -227,7 +227,7 @@ export class Bfr extends MpClassSubtyped<ValueBfr, SubtypeBfr>() {
     }
 
     /**
-      * Checks if a subtype is valid and is used by the parser class.
+      * Checks if a subtype is valid and is used by the parser.
       *
       * @param subtype the subtype to check
       * @return whether the subtype is used
@@ -242,7 +242,7 @@ export class Bfr extends MpClassSubtyped<ValueBfr, SubtypeBfr>() {
     }
 
     /**
-      * Checks if a MessagePack chunk header code is supported by the parser class.
+      * Checks if a MessagePack chunk header code is supported by the parser.
       *
       * @param code the code to check
       * @return whether the code is supported
@@ -251,7 +251,7 @@ export class Bfr extends MpClassSubtyped<ValueBfr, SubtypeBfr>() {
     static override isCodeValid(code: number): false;
 
     /**
-      * Checks if a MessagePack chunk header code is supported by the parser class.
+      * Checks if a MessagePack chunk header code is supported by the parser.
       *
       * @param code the code to check
       * @return the subtype that is derived from the code
@@ -270,7 +270,7 @@ export class Bfr extends MpClassSubtyped<ValueBfr, SubtypeBfr>() {
     }
 
     /**
-      * Checks if a MessagePack chunk can be decoded by the parser class.
+      * Checks if a MessagePack chunk can be decoded by the parser.
       *
       * @param chunk the chunk to check
       * @return whether the chunk can be decoded
@@ -279,7 +279,7 @@ export class Bfr extends MpClassSubtyped<ValueBfr, SubtypeBfr>() {
     static override isChunkValid(chunk: Uint8Array): false;
 
     /**
-      * Checks if a MessagePack chunk can be decoded by the parser class.
+      * Checks if a MessagePack chunk can be decoded by the parser.
       *
       * @param chunk the chunk to check
       * @return the subtype that is derived by the chunk
@@ -295,7 +295,7 @@ export class Bfr extends MpClassSubtyped<ValueBfr, SubtypeBfr>() {
     }
 
     /**
-      * Retrieves and computes the indices of a supported MessagePack chunk used for decoding by the parser class.
+      * Retrieves and computes the indices of a supported MessagePack chunk used for decoding by the parser.
       *
       * @param chunk the MessagePack chunk to derive from
       * @return the indices of each section within the chunk

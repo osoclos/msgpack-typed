@@ -1,6 +1,6 @@
 import { MpClassSubtyped, MpError } from "../internal";
 
-/** A parser class for encoding and decoding chunks from the signed variants from the `float` MessagePack family. */
+/** A parser for encoding and decoding chunks from the `float` MessagePack family. */
 export class Flt extends MpClassSubtyped<ValueFlt, SubtypeFlt>() {
     #value: ValueFlt;
     #subtype: SubtypeFlt;
@@ -196,7 +196,7 @@ export class Flt extends MpClassSubtyped<ValueFlt, SubtypeFlt>() {
     }
 
     /**
-      * Checks if a subtype is valid and is used by the parser class.
+      * Checks if a subtype is valid and is used by the parser.
       *
       * @param subtype the subtype to check
       * @return whether the subtype is used
@@ -210,7 +210,7 @@ export class Flt extends MpClassSubtyped<ValueFlt, SubtypeFlt>() {
     }
 
     /**
-      * Checks if a MessagePack chunk header code is supported by the parser class.
+      * Checks if a MessagePack chunk header code is supported by the parser.
       *
       * @param code the code to check
       * @return whether the code is supported
@@ -219,7 +219,7 @@ export class Flt extends MpClassSubtyped<ValueFlt, SubtypeFlt>() {
     static override isCodeValid(code: number): false;
 
     /**
-      * Checks if a MessagePack chunk header code is supported by the parser class.
+      * Checks if a MessagePack chunk header code is supported by the parser.
       *
       * @param code the code to check
       * @return the subtype that is derived from the code
@@ -237,7 +237,7 @@ export class Flt extends MpClassSubtyped<ValueFlt, SubtypeFlt>() {
     }
 
     /**
-      * Checks if a MessagePack chunk can be decoded by the parser class.
+      * Checks if a MessagePack chunk can be decoded by the parser.
       *
       * @param chunk the chunk to check
       * @return whether the chunk can be decoded
@@ -246,7 +246,7 @@ export class Flt extends MpClassSubtyped<ValueFlt, SubtypeFlt>() {
     static override isChunkValid(chunk: Uint8Array): false;
 
     /**
-      * Checks if a MessagePack chunk can be decoded by the parser class.
+      * Checks if a MessagePack chunk can be decoded by the parser.
       *
       * @param chunk the chunk to check
       * @return the subtype that is derived by the chunk
@@ -262,7 +262,7 @@ export class Flt extends MpClassSubtyped<ValueFlt, SubtypeFlt>() {
     }
 
     /**
-      * Retrieves and computes the indices of a supported MessagePack chunk used for decoding by the parser class.
+      * Retrieves and computes the indices of a supported MessagePack chunk used for decoding by the parser.
       *
       * @param chunk the MessagePack chunk to derive from
       * @return the indices of each section within the chunk

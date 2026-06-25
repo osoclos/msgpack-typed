@@ -1,6 +1,6 @@
 import { MpClass, MpError } from "../internal";
 
-/** A parser class for encoding and decoding chunks from the signed variants from the `bool` MessagePack family. */
+/** A parser for encoding and decoding chunks from the `bool` MessagePack family. */
 export class Bool extends MpClass<ValueBool>() {
     #value: ValueBool;
 
@@ -101,7 +101,7 @@ export class Bool extends MpClass<ValueBool>() {
     }
 
     /**
-      * Checks if a MessagePack chunk header code is supported by the parser class.
+      * Checks if a MessagePack chunk header code is supported by the parser.
       *
       * @param code the code to check
       * @return whether the code is supported
@@ -115,7 +115,7 @@ export class Bool extends MpClass<ValueBool>() {
     }
 
     /**
-      * Checks if a MessagePack chunk can be decoded by the parser class.
+      * Checks if a MessagePack chunk can be decoded by the parser.
       *
       * @param chunk the chunk to check
       * @return whether the chunk can be decoded
@@ -129,7 +129,7 @@ export class Bool extends MpClass<ValueBool>() {
     }
 
     /**
-      * Retrieves and computes the indices of a supported MessagePack chunk used for decoding by the parser class.
+      * Retrieves and computes the indices of a supported MessagePack chunk used for decoding by the parser.
       *
       * @param chunk the MessagePack chunk to derive from
       * @return the indices of each section within the chunk
