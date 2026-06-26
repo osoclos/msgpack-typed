@@ -2,6 +2,12 @@
 
 This file details the changes that happen in `msgpack-typed`.
 
+## v0.2.1 (26/06/26 - 10:30pm|UTC+8)
+
+- Additions
+
+- - Added documentation to classes.
+
 ## v0.2.0 (23/06/26 - 10:54pm|UTC+8)
 
 - Additions
