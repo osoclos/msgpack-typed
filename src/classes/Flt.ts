@@ -1,11 +1,28 @@
 import { MpClassSubtyped, MpError } from "../internal";
 
+/** A parser for encoding and decoding chunks from the `float` MessagePack family. */
 export class Flt extends MpClassSubtyped<ValueFlt, SubtypeFlt>() {
     #value: ValueFlt;
     #subtype: SubtypeFlt;
 
+    /**
+      * Create a parser with a single value.
+      *
+      * @param value the number to specify @default `0.0`
+      * @param subtype the tag used to derive the code for encoding and decoding chunks @default `"F64"`
+      *
+      */
     constructor(value?: ValueFlt, subtype?: SubtypeFlt);
+
+    /**
+      * Create a parser accepting a value encoded in a buffer.
+      *
+      * @param bfr the buffer that contains the value
+      * @param subtype the tag used to derive the code for encoding and decoding chunks @default `"F64"`
+      *
+      */
     constructor(bfr: Uint8Array, subtype?: SubtypeFlt);
+
     constructor(a: ValueFlt | Uint8Array = 0.0, subtype: SubtypeFlt = "F64") {
         super(a as ValueFlt, subtype);
 
@@ -32,6 +49,7 @@ export class Flt extends MpClassSubtyped<ValueFlt, SubtypeFlt>() {
         else throw new MpError.InvalidValue(this[Symbol.toStringTag], "CONSTRUCTOR");
     }
 
+    /** The raw value contained in the parser. */
     override get value(): ValueFlt {
         return this.#value;
     }
@@ -41,6 +59,7 @@ export class Flt extends MpClassSubtyped<ValueFlt, SubtypeFlt>() {
         else throw new MpError.InvalidValue(this[Symbol.toStringTag], "ASSIGNMENT");
     }
 
+    /** The string tag for locking values to certain ranges and for encoding chunks. */
     override get subtype(): SubtypeFlt {
         return this.#subtype;
     }
@@ -50,6 +69,11 @@ export class Flt extends MpClassSubtyped<ValueFlt, SubtypeFlt>() {
         else throw new MpError.InvalidSubtype(this[Symbol.toStringTag], "ASSIGNMENT", subtype);
     }
 
+    /**
+      * Encodes the value contained within the parser and converts it into a MessagePack chunk.
+      * @return the encoded MessagePack chunk
+      *
+      */
     override encode(): Uint8Array {
         let code: number;
         let len: number;
@@ -81,6 +105,13 @@ export class Flt extends MpClassSubtyped<ValueFlt, SubtypeFlt>() {
         return chunk;
     }
 
+    /**
+      * Decodes an appropriate MessagePack chunk and parses the decoded value.
+      *
+      * @param chunk the encoded MessagePack chunk
+      * @return a parser instance containing the decoded value
+      *
+      */
     static override decode(chunk: Uint8Array): Flt {
         const indices = this.deriveChunkIndices(chunk);
 
@@ -97,11 +128,25 @@ export class Flt extends MpClassSubtyped<ValueFlt, SubtypeFlt>() {
         return new Flt(chunk.subarray(iValueStart, iValueEnd), subtype);
     }
 
+    /**
+      * Converts a valid value to an appropriate subtype for the parser.
+      *
+      * @param value the specified value
+      * @return the subtype for the parser
+      *
+      */
     static override value2Subtype(value: ValueFlt): SubtypeFlt {
         if (typeof value !== "number") throw new MpError.InvalidValue(this.name, "MAP_SUBTYPE");
         return Object.is(value, Math.fround(value)) ? "F32" : "F64";
     }
 
+    /**
+      * Converts a supported MessagePack chunk header code to the subtype used by the parser.
+      *
+      * @param code the MessagePack chunk header code
+      * @return the subtype for the parser
+      *
+      */
     static override code2Subtype(code: number): SubtypeFlt {
         switch (code) {
             case 0xca: return "F32";
@@ -111,10 +156,24 @@ export class Flt extends MpClassSubtyped<ValueFlt, SubtypeFlt>() {
         throw new MpError.InvalidCode(this.name, "MAP_SUBTYPE", code);
     }
 
+    /**
+      * Computes the encoded MessagePack chunk length from a valid value.
+      *
+      * @param value the specified value
+      * @return the length of the MessagePack chunk
+      *
+      */
     static override value2LenEncoded(value: ValueFlt): number {
         return this.subtype2LenEncoded(this.value2Subtype(value));
     }
 
+    /**
+      * Computes the encoded MessagePack chunk length from a subtype.
+      *
+      * @param subtype the specified subtype
+      * @return the length of the MessagePack chunk
+      *
+      */
     static override subtype2LenEncoded(subtype: SubtypeFlt): number {
         switch (subtype) {
             case "F32": return 1 + 4;
@@ -122,11 +181,27 @@ export class Flt extends MpClassSubtyped<ValueFlt, SubtypeFlt>() {
         }
     }
 
+    /**
+      * Checks if a value is valid and can be parsed.
+      *
+      * @param value the value to check
+      * @param subtype the subtype which the value should be valid @default `"F64"`
+      *
+      * @return whether the value can be parsed
+      *
+      */
     static override isValueValid(value: unknown, subtype: SubtypeFlt = "F64"): value is ValueFlt {
         if (typeof value !== "number") return false;
         return subtype === "F32" ? Object.is(value, Math.fround(value)) : true;
     }
 
+    /**
+      * Checks if a subtype is valid and is used by the parser.
+      *
+      * @param subtype the subtype to check
+      * @return whether the subtype is used
+      *
+      */
     static override isSubtypeValid(subtype: string): subtype is SubtypeFlt {
         return (
             subtype === "F32" ||
@@ -134,8 +209,24 @@ export class Flt extends MpClassSubtyped<ValueFlt, SubtypeFlt>() {
         );
     }
 
+    /**
+      * Checks if a MessagePack chunk header code is supported by the parser.
+      *
+      * @param code the code to check
+      * @return whether the code is supported
+      *
+      */
     static override isCodeValid(code: number): false;
-    static override isCodeValid(code: number): SubtypeFlt | false;
+
+    /**
+      * Checks if a MessagePack chunk header code is supported by the parser.
+      *
+      * @param code the code to check
+      * @return the subtype that is derived from the code
+      *
+      */
+    static override isCodeValid(code: number): SubtypeFlt;
+
     static override isCodeValid(code: number): SubtypeFlt | false {
         switch (code) {
             case 0xca: return "F32";
@@ -145,8 +236,24 @@ export class Flt extends MpClassSubtyped<ValueFlt, SubtypeFlt>() {
         return false;
     }
 
+    /**
+      * Checks if a MessagePack chunk can be decoded by the parser.
+      *
+      * @param chunk the chunk to check
+      * @return whether the chunk can be decoded
+      *
+      */
     static override isChunkValid(chunk: Uint8Array): false;
-    static override isChunkValid(chunk: Uint8Array): SubtypeFlt | false;
+
+    /**
+      * Checks if a MessagePack chunk can be decoded by the parser.
+      *
+      * @param chunk the chunk to check
+      * @return the subtype that is derived by the chunk
+      *
+      */
+    static override isChunkValid(chunk: Uint8Array): SubtypeFlt;
+
     static override isChunkValid(chunk: Uint8Array): SubtypeFlt | false {
         const code = chunk[0 /* iCode */];
         if (code === undefined) throw new MpError.MissingCode(this.name, "VALIDATE_CHUNK");
@@ -154,6 +261,13 @@ export class Flt extends MpClassSubtyped<ValueFlt, SubtypeFlt>() {
         return this.isCodeValid(code);
     }
 
+    /**
+      * Retrieves and computes the indices of a supported MessagePack chunk used for decoding by the parser.
+      *
+      * @param chunk the MessagePack chunk to derive from
+      * @return the indices of each section within the chunk
+      *
+      */
     static override deriveChunkIndices(chunk: Uint8Array): [number, number, number] {
         const code = chunk[0 /* iCode */]!; // ignore undefined since it is checked by isChunkValid
 

@@ -1,10 +1,15 @@
 import { ExtUtils } from "../utils";
 import { MpError, type Constructor } from "../internal";
 
-/** A parser for custom classes, representing the `fixext` and `ext` format families in the MessagePack specification. */
-export abstract class Ext<T extends Constructor<unknown>, C extends number, S extends boolean = false> {
+/** A parser for encoding and decoding chunks from the `ext` MessagePack family. */
+export abstract class Ext<T extends Constructor<unknown>, C extends number> {
     #codes: Set<C>;
 
+    /**
+      * Creates an extension to be used with a list of extension codes specified.
+      * @param codes the list of extension that will be used
+      *
+      */
     protected constructor(codes: C[]) {
         for (const code of codes)
             if (
@@ -17,24 +22,56 @@ export abstract class Ext<T extends Constructor<unknown>, C extends number, S ex
         this.#codes = new Set(codes);
     }
 
-    /** Serialises data passed into the extension and converts it into a data buffer that will be later appended with additional header data to transform it into a MessagePack chunk. */
+    /**
+      * Encodes a supplied value which can be used to generate a MessagePack chunk.
+      *
+      * @param value the value to encode
+      * @return a tuple of the payload and the extension code to be used to create an extension MessagePack chunk.
+      *
+      */
     abstract encode(value: T["prototype"]): [Uint8Array, C];
 
-    /** Converts a data buffer stored in a MessagePack chunk assumed to be compatible with the extension and creates a class object supported by the extension. */
-    abstract decode(chunk: Uint8Array, code: true extends S ? C | null : C): T["prototype"];
+    /**
+      * Decodes an appropriate MessagePack chunk via a payload and the extension code from the chunk.
+      *
+      * @param payload the payload of the extension MessagePack chunk
+      * @param code the extension code
+      *
+      * @return the parsed value
+      *
+      */
+    abstract decode(payload: Uint8Array, code: C): T["prototype"];
 
-    /** Checks whether a value can be encoded by this extension. */
+    /**
+      * Checks if a value is valid and can be encoded by this extension.
+      *
+      * @param value the value to check
+      * @return whether the value can be encoded
+      *
+      */
     abstract isEncodable(value: unknown): value is T["prototype"];
 
-    /** Checks whether a chunk can be decoded by this extension. */
+    /**
+      * Checks if a MessagePack chunk can be decoded by this extension.
+      *
+      * @param chunk the chunk to check
+      * @return whether the chunk can be decoded
+      *
+      */
     isDecodable(chunk: Uint8Array): boolean {
         if (!ExtUtils.isChunkValid(chunk)) return false;
 
-        const extCode = ExtUtils.decodeRaw(chunk)[1];
-        return this.isCodeValid(extCode);
+        const codeExt = ExtUtils.decodeRaw(chunk)[1];
+        return this.isCodeValid(codeExt);
     }
 
-    /** Checks whether a extension header code is supported by this extension. */
+    /**
+      * Checks if an extension code is supported by this extension.
+      *
+      * @param code the code to check
+      * @return whether the code is supported
+      *
+      */
     isCodeValid(code: number): code is C {
         return this.#codes.has(code << 24 >> 24 as C);
     }

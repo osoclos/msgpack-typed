@@ -8,9 +8,31 @@ import { CODE_NIL, MpError, type Constructor } from "../internal";
 import { ExtUtils } from "./ExtUtils";
 import { LZ4Compression } from "./LZ4Compression";
 
+/**
+  * Encodes any valid value or parser into a MessagePack chunk with the option to deflate it using LZ4 compression.
+  *
+  * @param value the value to encode
+  * @param doCompression whether to compress the output MessagePack chunk
+  *
+  * @return the encoded MessagePack chunk
+  *
+  */
 export function encodeAny(value: unknown, doCompression?: boolean): Uint8Array;
-export function encodeAny(value: unknown, exts: Ext<Constructor<unknown>, number, boolean>[], doCompression?: boolean): Uint8Array;
-export function encodeAny(value: unknown, b?: boolean | Ext<Constructor<unknown>, number, boolean>[], c?: boolean): Uint8Array {
+
+/**
+  * Encodes any valid value or parser into a MessagePack chunk with the option to deflate it using LZ4 compression.
+  *
+  * @param value the value to encode
+  * @param exts the extensions used to properly encode custom classes into a MessagePack chunk
+  *
+  * @param doCompression whether to compress the output MessagePack chunk
+  *
+  * @return the encoded MessagePack chunk
+  *
+  */
+export function encodeAny(value: unknown, exts: Ext<Constructor<unknown>, number>[], doCompression?: boolean): Uint8Array;
+
+export function encodeAny(value: unknown, b?: boolean | Ext<Constructor<unknown>, number>[], c?: boolean): Uint8Array {
     const usesExt = Array.isArray(b);
 
     const exts = usesExt ? b : [];

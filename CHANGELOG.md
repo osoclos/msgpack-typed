@@ -2,7 +2,19 @@
 
 This file details the changes that happen in `msgpack-typed`.
 
-## v0.1.2 (17/04/26 - 11:41|UTC+8)
+## v0.2.0 (23/06/26 - 10:54pm|UTC+8)
+
+- Additions
+
+- - Added subtype specification of wrapper classes.
+
+- Fixes
+
+- - Improved general encoding/decoding performance and reliability (including edge cases)
+
+- - Changed certain names to fit their purpose better.
+
+## v0.1.2 (17/04/26 - 11:41am|UTC+8)
 
 - Fixes
 

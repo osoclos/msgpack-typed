@@ -1,11 +1,28 @@
 import { MpClassSubtyped, MpError } from "../internal";
 
+/** A parser for encoding and decoding chunks from the unsigned variants of the `int` MessagePack family. */
 export class Uint extends MpClassSubtyped<ValueUint, SubtypeUint>() {
     #value: ValueUint;
     #subtype: SubtypeUint;
 
+    /**
+      * Create a parser with a single value.
+      *
+      * @param value the number to specify @default `0`
+      * @param subtype the tag used to derive the code for encoding and decoding chunks @default `"U32"`
+      *
+      */
     constructor(value?: ValueUint, subtype?: SubtypeUint);
+
+    /**
+      * Create a parser accepting a value encoded in a buffer.
+      *
+      * @param bfr the buffer that contains the value
+      * @param subtype the tag used to derive the code for encoding and decoding chunks @default `"U32"`
+      *
+      */
     constructor(bfr: Uint8Array, subtype?: SubtypeUint);
+
     constructor(a: ValueUint | Uint8Array = 0, subtype: SubtypeUint = "U32") {
         super(a as ValueUint, subtype);
 
@@ -81,6 +98,7 @@ export class Uint extends MpClassSubtyped<ValueUint, SubtypeUint>() {
         else throw new MpError.InvalidValue(this[Symbol.toStringTag], "CONSTRUCTOR");
     }
 
+    /** The raw value contained in the parser. */
     override get value(): ValueUint {
         return this.#value;
     }
@@ -90,6 +108,7 @@ export class Uint extends MpClassSubtyped<ValueUint, SubtypeUint>() {
         else throw new MpError.InvalidValue(this[Symbol.toStringTag], "ASSIGNMENT");
     }
 
+    /** The string tag for locking values to certain ranges and for encoding chunks. */
     override get subtype(): SubtypeUint {
         return this.#subtype;
     }
@@ -99,6 +118,11 @@ export class Uint extends MpClassSubtyped<ValueUint, SubtypeUint>() {
         else throw new MpError.InvalidSubtype(this[Symbol.toStringTag], "ASSIGNMENT", subtype);
     }
 
+    /**
+      * Encodes the value contained within the parser and converts it into a MessagePack chunk.
+      * @return the encoded MessagePack chunk
+      *
+      */
     override encode(): Uint8Array {
         if (this.#subtype === "FIXINT") return new Uint8Array([Number(this.#value) /* code */]);
 
@@ -165,6 +189,13 @@ export class Uint extends MpClassSubtyped<ValueUint, SubtypeUint>() {
         return chunk;
     }
 
+    /**
+      * Decodes an appropriate MessagePack chunk and parses the decoded value.
+      *
+      * @param chunk the encoded MessagePack chunk
+      * @return a parser instance containing the decoded value
+      *
+      */
     static override decode(chunk: Uint8Array): Uint {
         const indices = this.deriveChunkIndices(chunk);
 
@@ -187,6 +218,13 @@ export class Uint extends MpClassSubtyped<ValueUint, SubtypeUint>() {
         return new Uint(chunk.subarray(iValueStart, iValueEnd), subtype);
     }
 
+    /**
+      * Converts a valid value to an appropriate subtype for the parser.
+      *
+      * @param value the specified value
+      * @return the subtype for the parser
+      *
+      */
     static override value2Subtype(value: ValueUint): SubtypeUint {
         if (typeof value === "number") {
             if (value < 0 || value % 1.0 !== 0.0) throw new MpError.InvalidValue(this.name, "MAP_SUBTYPE");
@@ -216,6 +254,13 @@ export class Uint extends MpClassSubtyped<ValueUint, SubtypeUint>() {
         throw new MpError.InvalidValue(this.name, "MAP_SUBTYPE");
     }
 
+    /**
+      * Converts a supported MessagePack chunk header code to the subtype used by the parser.
+      *
+      * @param code the MessagePack chunk header code
+      * @return the subtype for the parser
+      *
+      */
     static override code2Subtype(code: number): SubtypeUint {
         if (code <= 0x7f) return "FIXINT";
 
@@ -229,10 +274,24 @@ export class Uint extends MpClassSubtyped<ValueUint, SubtypeUint>() {
         throw new MpError.InvalidCode(this.name, "MAP_SUBTYPE", code);
     }
 
+    /**
+      * Computes the encoded MessagePack chunk length from a valid value.
+      *
+      * @param value the specified value
+      * @return the length of the MessagePack chunk
+      *
+      */
     static override value2LenEncoded(value: ValueUint): number {
         return this.subtype2LenEncoded(this.value2Subtype(value));
     }
 
+    /**
+      * Computes the encoded MessagePack chunk length from a subtype.
+      *
+      * @param subtype the specified subtype
+      * @return the length of the MessagePack chunk
+      *
+      */
     static override subtype2LenEncoded(subtype: SubtypeUint): number {
         switch (subtype) {
             case "FIXINT": return 1;
@@ -244,6 +303,15 @@ export class Uint extends MpClassSubtyped<ValueUint, SubtypeUint>() {
         }
     }
 
+    /**
+      * Checks if a value is valid and can be parsed.
+      *
+      * @param value the value to check
+      * @param subtype the subtype which the value should be valid @default `"U32"`
+      *
+      * @return whether the value can be parsed
+      *
+      */
     static override isValueValid(value: unknown, subtype: SubtypeUint = "U32"): value is ValueUint {
         if (typeof value === "number") {
             if (value < 0 || value % 1.0 !== 0.0) return false;
@@ -277,6 +345,13 @@ export class Uint extends MpClassSubtyped<ValueUint, SubtypeUint>() {
         return false;
     }
 
+    /**
+      * Checks if a subtype is valid and is used by the parser.
+      *
+      * @param subtype the subtype to check
+      * @return whether the subtype is used
+      *
+      */
     static override isSubtypeValid(subtype: string): subtype is SubtypeUint {
         return (
             subtype === "FIXINT" ||
@@ -288,8 +363,24 @@ export class Uint extends MpClassSubtyped<ValueUint, SubtypeUint>() {
         );
     }
 
+    /**
+      * Checks if a MessagePack chunk header code is supported by the parser.
+      *
+      * @param code the code to check
+      * @return whether the code is supported
+      *
+      */
     static override isCodeValid(code: number): false;
-    static override isCodeValid(code: number): SubtypeUint | false;
+
+    /**
+      * Checks if a MessagePack chunk header code is supported by the parser.
+      *
+      * @param code the code to check
+      * @return the subtype that is derived from the code
+      *
+      */
+    static override isCodeValid(code: number): SubtypeUint;
+
     static override isCodeValid(code: number): SubtypeUint | false {
         if (code <= 0x7f) return "FIXINT";
 
@@ -303,8 +394,24 @@ export class Uint extends MpClassSubtyped<ValueUint, SubtypeUint>() {
         return false;
     }
 
+    /**
+      * Checks if a MessagePack chunk can be decoded by the parser.
+      *
+      * @param chunk the chunk to check
+      * @return whether the chunk can be decoded
+      *
+      */
     static override isChunkValid(chunk: Uint8Array): false;
-    static override isChunkValid(chunk: Uint8Array): SubtypeUint | false;
+
+    /**
+      * Checks if a MessagePack chunk can be decoded by the parser.
+      *
+      * @param chunk the chunk to check
+      * @return the subtype that is derived by the chunk
+      *
+      */
+    static override isChunkValid(chunk: Uint8Array): SubtypeUint;
+
     static override isChunkValid(chunk: Uint8Array): SubtypeUint | false {
         const code = chunk[0 /* iCode */];
         if (code === undefined) throw new MpError.MissingCode(this.name, "VALIDATE_CHUNK");
@@ -312,6 +419,13 @@ export class Uint extends MpClassSubtyped<ValueUint, SubtypeUint>() {
         return this.isCodeValid(code);
     }
 
+    /**
+      * Retrieves and computes the indices of a supported MessagePack chunk used for decoding by the parser.
+      *
+      * @param chunk the MessagePack chunk to derive from
+      * @return the indices of each section within the chunk
+      *
+      */
     static override deriveChunkIndices(chunk: Uint8Array): [number, number] | [number, number, number] {
         const code = chunk[0 /* iCode */]!; // ignore undefined since it is checked by isChunkValid
 

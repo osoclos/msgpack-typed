@@ -1,17 +1,33 @@
 import type { Ext } from "../extensions";
 import { MpError, type Constructor } from "../internal";
 
-/** An object to handle any extension-related features and helper functions to ease extension development and usage. */
+/** An object containing methods to encode and decode chunks from the `ext` MessagePack family. */
 export const ExtUtils = {
-    /** Serialises data and converts it into a parsable MessagePack chunk using a specified extension that supports it. */
-    encodeWith<T extends Constructor<unknown>>(ext: Ext<T, number, boolean>, value: T["prototype"]) {
+    /**
+      * Encodes a value with a specified extension, converting it into a MessagePack chunk.
+      *
+      * @param ext the extension to encode the value with
+      * @param value the value to encode
+      *
+      * @return the encoded MessagePack chunk
+      *
+      */
+    encodeWith<T extends Constructor<unknown>>(ext: Ext<T, number>, value: T["prototype"]) {
         if (!ext.isEncodable(value)) throw new MpError.InvalidValue(ext[Symbol.toStringTag], "ENCODING");
 
         const [payload, codeExt] = ext.encode(value);
         return this.encodeRaw(payload, codeExt);
     },
 
-    /** Converts a buffer containing data into a parsable MessagePack chunk given an extension code. Useful if you already have custom data in byte form. */
+    /**
+      * Encodes a payload buffer with a specified extension code, converting it into a MessagePack chunk.
+      *
+      * @param payload the buffer to encode
+      * @param codeExt the extension code
+      *
+      * @return the encoded MessagePack chunk
+      *
+      */
     encodeRaw(payload: Uint8Array, codeExt: number) {
         let code: number;
         let lenLen: number;
@@ -113,8 +129,16 @@ export const ExtUtils = {
         return chunk;
     },
 
-    /** Converts a MessagePack chunk assumed to be in the `fixext`/`ext` format family and creates a class object using a specified extension that supports it. */
-    decodeWith<T extends Constructor<unknown>, S extends boolean>(ext: Ext<T, number, S>, chunk: Uint8Array): T["prototype"] {
+    /**
+      * Decodes an appropriate MessagePack chunk with a specified extension.
+      *
+      * @param ext the extension to decode the value with
+      * @param chunk the MessagePack chunk to decode
+      *
+      * @return the decoded value parsed by the extension
+      *
+      */
+    decodeWith<T extends Constructor<unknown>>(ext: Ext<T, number>, chunk: Uint8Array): T["prototype"] {
         const decodableRes = ext.isDecodable(chunk);
         if (!decodableRes) throw new MpError.IncompatibleChunk(ext[Symbol.toStringTag], "DECODING");
 
@@ -124,7 +148,13 @@ export const ExtUtils = {
         return ext.decode(payload, codeExt);
     },
 
-    /** Converts a MessagePack chunk assumed to be in the `fixext`/`ext` format family and parses it as a pair of an extension code and the data buffer that came with the chunk. */
+    /**
+      * Decodes an appropriate container MessagePack chunk and returns the extension code and its payload.
+      *
+      * @param chunk the encoded MessagePack chunk
+      * @return a tuple of the accompanying payload and the extension code it comes with
+      *
+      */
     decodeRaw(chunk: Uint8Array): [Uint8Array, number] {
         const indices = this.deriveChunkIndices(chunk);
 
@@ -141,7 +171,13 @@ export const ExtUtils = {
         return [chunk.subarray(iPayloadStart, iPayloadEnd), codeExt];
     },
 
-    /** Checks whether a chunk header code is supported by `Ext`. */
+    /**
+      * Checks if a MessagePack chunk header code is supported by extensions.
+      *
+      * @param code the code to check
+      * @return whether the code is supported
+      *
+      */
     isCodeValid(code: number): boolean {
         return (
             // FIXEXT
@@ -158,7 +194,13 @@ export const ExtUtils = {
         );
     },
 
-    /** Checks whether a chunk is supported by `Ext`. */
+    /**
+      * Checks if a MessagePack chunk can be decoded by extensions.
+      *
+      * @param chunk the chunk to check
+      * @return whether the chunk can be decoded
+      *
+      */
     isChunkValid(chunk: Uint8Array): boolean {
         const code = chunk[0];
         if (code === undefined) throw new MpError.MissingCode("ExtUtils", "VALIDATE_CHUNK");
@@ -166,7 +208,13 @@ export const ExtUtils = {
         return this.isCodeValid(code);
     },
 
-    /** Computes the index of the chunk header code, the starting index of the data containing the length (will not appear if the chunk in the positive `fixext` format family), the index of the extension header code, the starting index of the data containing the raw value, as well as the final exclusive index of the chunk. */
+    /**
+      * Retrieves and computes the indices of a supported MessagePack chunk used for decoding by extensions.
+      *
+      * @param chunk the MessagePack chunk to derive from
+      * @return the indices of each section within the chunk
+      *
+      */
     deriveChunkIndices(chunk: Uint8Array): [number, number, number, number] | [number, number, number, number, number] {
         const code = chunk[0 /* iCode */]!;
 

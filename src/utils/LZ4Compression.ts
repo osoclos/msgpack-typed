@@ -8,17 +8,21 @@ import { ExtUtils } from "./ExtUtils";
 
 let lz4Block = null as unknown as LZ4BlockModuleExports;
 
-/** An object to enable compression and decompression of MessagePack buffers. Used by this port and the most popular C# port of MessagePack. */
+/** An object to compress and decompress MessagePack chunks using LZ4 compression. */
 export const LZ4Compression = {
-    /** The maximum size for each uncompressed block of data when it is compressed */
+    /** The maximum number of bytes that can be compressed within a single data block. */
     maxBlockSize: 8192, // 2 ^ 13
 
-    /** Checks whether the LZ4 block modules have been initialized. */
+    /** Are the modules responsible for compressing and decompressing initialized? */
     get hasInitialized(): boolean {
         return lz4Block !== null;
     },
 
-    /** Initializes the modules used for the LZ4 block compression/decompression algorithms. */
+    /**
+      * Initializes the modules required for compression and decompression.
+      * @param nHashBits the size of the hash for identifying repeated chunks in bits
+      *
+      */
     async initModules(nHashBits: number = 12): Promise<void> {
         if (this.hasInitialized) return;
 
@@ -28,8 +32,14 @@ export const LZ4Compression = {
         lz4Block = await initLZ4BlockModule({ math, hashTable });
     },
 
-    /** Compresses data using the LZ4 block algorithm and converts it into a parsable MessagePack chunk. */
-    pack(bfrDecoded: Uint8Array): Uint8Array {
+    /**
+      * Compresses and deflates a buffer using LZ4 compression.
+      *
+      * @param bfrInflated the buffer to compress
+      * @return the LZ4-compressed buffer
+      *
+      */
+    pack(bfrInflated: Uint8Array): Uint8Array {
         if (!this.hasInitialized) throw new MpError.lz4.NotInitalized("LZ4Compression", "pack");
 
         const blocks: Uint8Array[] = [];
@@ -37,13 +47,13 @@ export const LZ4Compression = {
 
         let memLz4 = new Uint8Array();
 
-        for (let i: number = 0, len = this.maxBlockSize; i < bfrDecoded.byteLength; i += len) {
-            len = Math.min(len, bfrDecoded.byteLength - i);
+        for (let i: number = 0, len = this.maxBlockSize; i < bfrInflated.byteLength; i += len) {
+            len = Math.min(len, bfrInflated.byteLength - i);
 
             lz4Block.growPreEncode(len);
             if (memLz4.buffer !== lz4Block.memory.buffer) memLz4 = new Uint8Array(lz4Block.memory.buffer);
 
-            memLz4.set(bfrDecoded.subarray(i, i + len));
+            memLz4.set(bfrInflated.subarray(i, i + len));
 
             const iOutStart = len;
             const iOutEnd = lz4Block.encode(len);
@@ -114,7 +124,13 @@ export const LZ4Compression = {
         return chunk;
     },
 
-    /** Decompresses a MessagePack chunk assumed to be packed using the LZ4 block algorithm. */
+    /**
+      * Decompresses and inflates a MessagePack chunk compressed using LZ4 compression.
+      *
+      * @param chunk the MessagePack chunk to decompress
+      * @return the LZ4-decompressed MessagePack chunk
+      *
+      */
     unpack(chunk: Uint8Array): Uint8Array {
         if (!this.hasInitialized) throw new MpError.lz4.NotInitalized("LZ4Compression", "unpack");
 
@@ -212,7 +228,13 @@ export const LZ4Compression = {
         throw new MpError.IncompatibleChunk("LZ4Compression", "DECODING");
     },
 
-    /** Checks whether a MessagePack chunk can be decompressed using the LZ4 block algorithm. */
+    /**
+      * Determines whether a MessagePack chunk has been compressed using LZ4 compression.
+      *
+      * @param chunk the MessagePack chunk
+      * @return if the MessagePack chunk has been compressed
+      *
+      */
     isUnpackable(chunk: Uint8Array): boolean {
         if (ExtUtils.isChunkValid(chunk)) {
             const resDecoded = ExtUtils.decodeRaw(chunk);

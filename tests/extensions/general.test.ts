@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { Ext, ExtUtils } from "../../dist";
 
 describe("EXT", () => {
-    class ExtTest<C extends number> extends Ext<NumberConstructor, C, boolean> {
+    class ExtTest<C extends number> extends Ext<NumberConstructor, C> {
         #code: C;
 
         constructor(code: C) {
