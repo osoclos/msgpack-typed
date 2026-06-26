@@ -30,9 +30,9 @@ export function encodeAny(value: unknown, doCompression?: boolean): Uint8Array;
   * @return the encoded MessagePack chunk
   *
   */
-export function encodeAny(value: unknown, exts: Ext<Constructor<unknown>, number, boolean>[], doCompression?: boolean): Uint8Array;
+export function encodeAny(value: unknown, exts: Ext<Constructor<unknown>, number>[], doCompression?: boolean): Uint8Array;
 
-export function encodeAny(value: unknown, b?: boolean | Ext<Constructor<unknown>, number, boolean>[], c?: boolean): Uint8Array {
+export function encodeAny(value: unknown, b?: boolean | Ext<Constructor<unknown>, number>[], c?: boolean): Uint8Array {
     const usesExt = Array.isArray(b);
 
     const exts = usesExt ? b : [];

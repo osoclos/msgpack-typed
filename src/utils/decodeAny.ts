@@ -30,9 +30,9 @@ export function decodeAny<T extends MpClassInterface<unknown> | null | C | Value
   * @return the parser object or container inhabiting the decoded values
   *
   */
-export function decodeAny<T extends MpClassInterface<unknown> | null | C | ValueArr<MpClassInterface<unknown> | null | C> | ValueObj<MpClassInterface<unknown> | null | C, MpClassInterface<unknown> | null | C>, C extends unknown>(chunk: Uint8Array, exts?: Ext<Constructor<C>, number, boolean>[], doDecompression?: boolean): T;
+export function decodeAny<T extends MpClassInterface<unknown> | null | C | ValueArr<MpClassInterface<unknown> | null | C> | ValueObj<MpClassInterface<unknown> | null | C, MpClassInterface<unknown> | null | C>, C extends unknown>(chunk: Uint8Array, exts?: Ext<Constructor<C>, number>[], doDecompression?: boolean): T;
 
-export function decodeAny<T extends MpClassInterface<unknown> | null | C | ValueArr<MpClassInterface<unknown> | null | C> | ValueObj<MpClassInterface<unknown> | null | C, MpClassInterface<unknown> | null | C>, C extends unknown>(chunk: Uint8Array, b?: boolean | Ext<Constructor<C>, number, boolean>[], c?: boolean): T {
+export function decodeAny<T extends MpClassInterface<unknown> | null | C | ValueArr<MpClassInterface<unknown> | null | C> | ValueObj<MpClassInterface<unknown> | null | C, MpClassInterface<unknown> | null | C>, C extends unknown>(chunk: Uint8Array, b?: boolean | Ext<Constructor<C>, number>[], c?: boolean): T {
     const code = chunk[0 /* iCode */]!;
 
     if (code === undefined) throw new MpError.MissingCode("decodeAny", "VALIDATE_CHUNK");

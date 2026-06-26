@@ -47,7 +47,7 @@ export const Arr = {
       * @return the encoded MessagePack chunk
       *
       */
-    encode<T>(arr: ValueArr<T>, exts: Ext<Constructor<unknown>, number, boolean>[] = []): Uint8Array {
+    encode<T>(arr: ValueArr<T>, exts: Ext<Constructor<unknown>, number>[] = []): Uint8Array {
         const header = this.encodeHeader(arr);
 
         let subchunksLen: number = 0;
@@ -151,7 +151,7 @@ export const Arr = {
       * @return a container with corresponding parser objects
       *
       */
-    decode<T extends MpClassInterface<unknown> | null, C extends unknown>(chunk: Uint8Array, exts: Ext<Constructor<C>, number, boolean>[] = [], doDecompression: boolean = false): ValueArr<T | C> {
+    decode<T extends MpClassInterface<unknown> | null, C extends unknown>(chunk: Uint8Array, exts: Ext<Constructor<C>, number>[] = [], doDecompression: boolean = false): ValueArr<T | C> {
         const subchunks = this.decodeHeader(chunk);
         return subchunks.map((subchunk) => decodeAny(subchunk, exts, doDecompression));
     },

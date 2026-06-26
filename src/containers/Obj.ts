@@ -112,7 +112,7 @@ export const Obj = {
       * @return the encoded MessagePack chunk
       *
       */
-    encode<K, V>(obj: ValueObj<K, V>, exts: Ext<Constructor<unknown>, number, boolean>[] = []): Uint8Array {
+    encode<K, V>(obj: ValueObj<K, V>, exts: Ext<Constructor<unknown>, number>[] = []): Uint8Array {
         const header = this.encodeHeader(obj);
 
         const entries = obj instanceof Map ? [...obj.entries()] : Object.entries(obj);
@@ -222,7 +222,7 @@ export const Obj = {
       * @return a container with corresponding parser objects
       *
       */
-    decode<K extends Exclude<PropertyKey, symbol> | MpClassInterface<unknown> | null, V extends MpClassInterface<unknown> | null, C extends unknown>(chunk: Uint8Array, exts: Ext<Constructor<C>, number, boolean>[] = [], doDecompression: boolean = false): ValueObj<K | C, V | C> {
+    decode<K extends Exclude<PropertyKey, symbol> | MpClassInterface<unknown> | null, V extends MpClassInterface<unknown> | null, C extends unknown>(chunk: Uint8Array, exts: Ext<Constructor<C>, number>[] = [], doDecompression: boolean = false): ValueObj<K | C, V | C> {
         const subchunks = this.decodeHeader(chunk);
 
         const subchunksKey  = subchunks[0];

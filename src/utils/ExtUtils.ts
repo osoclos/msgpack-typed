@@ -12,7 +12,7 @@ export const ExtUtils = {
       * @return the encoded MessagePack chunk
       *
       */
-    encodeWith<T extends Constructor<unknown>>(ext: Ext<T, number, boolean>, value: T["prototype"]) {
+    encodeWith<T extends Constructor<unknown>>(ext: Ext<T, number>, value: T["prototype"]) {
         if (!ext.isEncodable(value)) throw new MpError.InvalidValue(ext[Symbol.toStringTag], "ENCODING");
 
         const [payload, codeExt] = ext.encode(value);
@@ -138,7 +138,7 @@ export const ExtUtils = {
       * @return the decoded value parsed by the extension
       *
       */
-    decodeWith<T extends Constructor<unknown>, S extends boolean>(ext: Ext<T, number, S>, chunk: Uint8Array): T["prototype"] {
+    decodeWith<T extends Constructor<unknown>>(ext: Ext<T, number>, chunk: Uint8Array): T["prototype"] {
         const decodableRes = ext.isDecodable(chunk);
         if (!decodableRes) throw new MpError.IncompatibleChunk(ext[Symbol.toStringTag], "DECODING");
 
